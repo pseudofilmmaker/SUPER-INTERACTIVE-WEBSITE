@@ -426,6 +426,28 @@
       gsap.set(r.track, { xPercent: r.dir > 0 ? -8 : -42 });
     });
 
+    // ---- Entrance: logos rise up from below the screen as section-2
+    // scrolls into view, per this turn's explicit "현재 첨부한
+    // 영상구간이 흘러나올 때, 이미 워크위드의 로고가 화면하단에서
+    // 올라오기 시작해야해" -- the SAME 'top bottom' start point used by
+    // bg-video-6's own ScrollTrigger (see setupFixedBgVideo()) so the
+    // logo wall's rise and the video-6 hard-cut both begin at the exact
+    // same scroll position, by construction.
+    const wallEntrance = document.getElementById('client-wall');
+    if (wallEntrance) {
+      gsap.set(wallEntrance, { y: window.innerHeight * 0.35, opacity: 0 });
+      ScrollTrigger.create({
+        trigger: section,
+        start: 'top bottom',
+        end: 'top 40%',
+        scrub: 0.4,
+        onUpdate: (self) => {
+          const p = self.progress;
+          gsap.set(wallEntrance, { y: window.innerHeight * 0.35 * (1 - p), opacity: p });
+        },
+      });
+    }
+
     ScrollTrigger.create({
       trigger: section,
       start: 'top bottom',
@@ -616,12 +638,13 @@
     const v2 = document.getElementById('bg-video-2');
     const v4 = document.getElementById('bg-video-4');
     const v5 = document.getElementById('bg-video-5');
+    const v6 = document.getElementById('bg-video-6');
     const s1 = document.getElementById('section-1');
     const s2 = document.getElementById('section-2');
     const s3 = document.getElementById('section-3');
-    if (!layer || !v1a || !v1b || !v2 || !v4 || !v5 || !s1 || !s2 || !s3) return;
+    if (!layer || !v1a || !v1b || !v2 || !v4 || !v5 || !v6 || !s1 || !s2 || !s3) return;
 
-    const videos = [v1a, v1b, v2, v4, v5]; // 0=1a, 1=1b, 2=ignite, 3=torch-approach, 4=torch-ignite
+    const videos = [v1a, v1b, v2, v4, v5, v6]; // 0=1a,1=1b,2=ignite,3=torch-approach,4=torch-ignite,5=torch-blaze
     gsap.set(videos, { opacity: 0 });
     gsap.set(v1a, { opacity: 1 });
 
@@ -645,10 +668,12 @@
     let dur2 = 6.0;
     let dur4 = 6.0;
     let dur5 = 6.0;
+    let dur6 = 6.0;
     v1a.addEventListener('loadedmetadata', () => { if (v1a.duration) dur1a = v1a.duration; });
     v1b.addEventListener('loadedmetadata', () => { if (v1b.duration) dur1b = v1b.duration; });
     v2.addEventListener('loadedmetadata', () => { if (v2.duration) dur2 = v2.duration; });
     v4.addEventListener('loadedmetadata', () => { if (v4.duration) dur4 = v4.duration; });
+    v6.addEventListener('loadedmetadata', () => { if (v6.duration) dur6 = v6.duration; });
     v5.addEventListener('loadedmetadata', () => { if (v5.duration) dur5 = v5.duration; });
 
     function seek(video, duration, localP) {
@@ -717,16 +742,18 @@
     // by direct call, not a second independent ScrollTrigger" pattern as
     // cubeScrubRenderer above). Housing all FOUR remaining clips inside
     // that ONE pin (rather than v5 living on its own separate,
-    // section-2-scoped trigger as in the previous iteration) is what
-    // guarantees the entire 1a->1b->2->4->5 chain finishes BEFORE the pin
-    // releases into section-2 (WORKED WITH) -- there is no scroll
-    // position where any clip is still playing while section-2 is
-    // simultaneously visible, satisfying this turn's explicit "워크
-    // 위드가 시작되기 전에 첨부한 5번영상까지 흘러나와야해" requirement
-    // by construction rather than by tuning a boundary anchor string.
+    // section-2-scoped trigger) is what guarantees the entire
+    // 1a->1b->2->4->5 chain finishes BEFORE the pin releases into
+    // section-2 (WORKED WITH) -- there is no scroll position where any
+    // clip is still playing while section-2 is simultaneously visible.
     // The 0->1 pin progress is split into four equal quarters; each phase
     // hard-cuts in the instant the previous one ends and plays its own
-    // clip out in full (currentTime 0 -> its own duration).
+    // clip out in full (currentTime 0 -> its own duration). v6 (the
+    // newest attached clip -- torch blazing, panning up) is deliberately
+    // NOT part of this pinned chain: per this turn's explicit "워크
+    // 위드가 끝날때까지 첨부한 6번 영상이 흘러나와야해" it instead plays
+    // across section-2's OWN natural (non-pinned) scroll transit, see the
+    // dedicated section-2 ScrollTrigger further below.
     const CHAIN = {
       PHASE_1B_END: 1 / 4,
       PHASE_V2_END: 2 / 4,
@@ -751,6 +778,39 @@
         seek(v5, dur5, localP);
       }
     }
+
+    // ------------------------------------------------------------------
+    // SECTION-2 (WORKED WITH) own video -- bg-video-6 (torch blazing,
+    // camera panning up to a vertical view), scrubbed against section-2's
+    // OWN natural (non-pinned) scroll transit rather than the work-reel
+    // pin above. Per this turn's explicit spec:
+    //   "현재 첨부한 영상구간이 흘러나올 때, 이미 워크위드의 로고가
+    //    화면하단에서 올라오기 시작해야해" -- v6 starts (hard-cut from
+    //    v5) at the EXACT same scroll position (section-2's own 'top
+    //    bottom') where the client-wall's new entrance ScrollTrigger
+    //    (see setupClientWall()) ALSO begins the logos' rise-from-below,
+    //    so the two are synchronized by construction (same trigger/start).
+    //   "워크 위드가 끝날때까지 첨부한 6번 영상이 흘러나와야해" -- v6's
+    //    currentTime is scrubbed 0 -> its own duration across section-2's
+    //    ENTIRE visible transit (top bottom -> bottom top), so it is
+    //    always still "playing" (never stuck on a frozen frame while
+    //    still the active layer) for the whole time WORKED WITH is on
+    //    screen, finishing exactly as section-2 itself finishes.
+    // section-2 is NOT pinned, so (unlike cubeScrubRenderer/
+    // workReelScrubRenderer) a plain independent ScrollTrigger here
+    // reliably gets its own correct progress -- no "shared render fn"
+    // indirection is needed for a non-pinned trigger.
+    ScrollTrigger.create({
+      trigger: s2,
+      start: 'top bottom',
+      end: 'bottom top',
+      scrub: true,
+      onUpdate: (self) => {
+        if (!self.isActive) return;
+        setActive(5);
+        seek(v6, dur6, self.progress);
+      },
+    });
 
     // Render an initial frame IMMEDIATELY (a ScrollTrigger's onUpdate only
     // fires once the user actually scrolls or on an explicit refresh) so
