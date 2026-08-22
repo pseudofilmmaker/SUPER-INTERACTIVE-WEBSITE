@@ -474,31 +474,39 @@
   setupClientWall('section-2');
 
   /* ============================================================
-     FIXED BACKGROUND VIDEO -- cube section (1) + logo wall (2)
+     FIXED BACKGROUND VIDEO -- cube section (1) + work-reel handoff +
+     logo wall (2)
      Per explicit spec: "영상은 백그라운드에 위치가 고정돼, 계속 반응
      연동형으로 재생돼야 해... 지금의 웹사이트 매트리얼은 영상 위에서
-     계속 움직이는 거지." The <video> elements in #fixed-bg-video
-     (position:fixed, see style.css) are layered behind everything:
-       - bg-video-1a / bg-video-1b (cube section, section-1): SCRUB-ONLY,
-         same technique as WORK REEL below -- muted, no autoplay/loop,
-         currentTime is set directly from the cube-section scroll
-         progress every frame (via the /reel-video Range-proxy route so
-         seeking stays smooth). 1a = matches fall, settle, then a hand
-         reaches in and lifts one out of frame (a single continuous
-         8s take); 1b = the same match now held static/unlit, the calm
-         beat right after the hard cut. This progress is read from the
-         SAME trigger/start/end as the cube's own "intro-pin" ScrollTrigger
-         above, so the footage advances in perfect lockstep with the
-         cube's rotation/growth -- true "반응연동형" (scroll-position-
-         linked) playback, not autoplay/loop.
-       - bg-video-2 (logo wall, section-2): ALSO scrub-only (not
-         autoplay/loop) -- the same held match now ignites into flame
-         partway through its own 6s runtime; currentTime is tied 1:1 to
-         the section-2 crossfade progress below so the strike/ignite
-         beat lands exactly as the logo wall scrolls into view. The
-         whole cube-group (1a+1b) crossfades into it as section-2
-         scrolls into view.
-       - the whole layer fades in in as section-1 begins and fades out
+     계속 움직이는 거지." + the follow-up spec: "섹션 2에서 2-3번째 첨부
+     영상이 반응연동형으로 모두 들어가야해. 마치 미디어 플레이어에서
+     연속 재생하는듯하게. 이건 섹션 1에서 2로 이어질 때도 마찬가지야."
+     The <video> elements in #fixed-bg-video (position:fixed, see
+     style.css) are layered behind everything, and ALL THREE clips are
+     genuinely scroll-scrubbed (never autoplay/loop, never left frozen
+     on a stale frame while still visible):
+       - bg-video-1a (matches fall -> settle -> a hand reaches in and
+         lifts one out of frame, a single continuous 8s take): scrubbed
+         across the cube-section's OWN "intro-pin" ScrollTrigger progress
+         (0 -> CUT_POINT), in perfect lockstep with the cube's rotation/
+         growth -- see renderCubeScrub() below.
+       - bg-video-1b (the same match now held static/unlit) and
+         bg-video-2 (that held match igniting into flame) are chained
+         into ONE continuous "media-player playlist": 1b plays out in
+         full (0 -> its own duration) across a SINGLE ScrollTrigger
+         spanning from the exact moment section-1's pin releases,
+         through the ENTIRE work-reel section, and into section-2's own
+         midpoint -- i.e. it stays reactive across the whole section-1
+         -> section-2 handoff instead of freezing on its last frame the
+         instant the intro-pin ends. The moment that trigger completes,
+         video-2 hard-cuts in (no crossfade, matching the existing 1a->1b
+         hard-cut convention) and plays out in full across a second
+         ScrollTrigger spanning from section-2's midpoint through to
+         section-3's top -- so both the "held match" and "ignite" beats
+         are actually on screen and scroll-reactive WHILE section-2
+         itself is being scrolled through, not just before it starts.
+         See renderV1b()/renderV2() below.
+       - the whole layer fades in as section-1 begins and fades out
          right before section-3/PHOTOS takes over (round scope is
          explicitly limited to "로고월섹션까지").
      ============================================================ */
@@ -596,23 +604,29 @@
       gsap.set(v2, { opacity: 1 - groupOpacity });
     }
 
-    // ---- cube-section scrub: currentTime of 1a/1b tied 1:1 to the SAME
+    // ---- cube-section scrub: currentTime of 1a tied 1:1 to the SAME
     // scroll range as the cube's own "intro-pin" ScrollTrigger (trigger
     // #section-1, start 'top top', end '+=220%') so the match footage
     // advances in perfect sync with the cube rotating/growing -- reusing
     // the identical trigger/start/end makes GSAP compute an identical
     // progress value across both ScrollTriggers.
     //
-    // NOTE (re-architected): NO crossfade between 1a and 1b anymore -- the
-    // two clips are shown as a hard, sequential cut (1a plays in full, THEN
-    // 1b appears), matching the "크로스 페이드는 필요없어" request. 1a itself
-    // is scrubbed across the ENTIRE 0 -> CUT_POINT range in two acts (see
-    // INTRO_TIMELINE / V1A_SETTLE_END_SEC above): the "settle" footage plays
-    // in the background while the cube animates (0 -> CUBE_EXIT_END), then
-    // once the cube is fully gone the SAME clip continues into its "hand
-    // grabs the match" footage (CUBE_EXIT_END -> CUT_POINT). At CUT_POINT
-    // the whole layer hard-cuts to 1b (the static held-match close-up),
-    // with zero opacity overlap between the two.
+    // NOTE: NO crossfade between 1a and 1b -- the two clips are shown as a
+    // hard, sequential cut (1a plays in full, THEN 1b appears), matching
+    // the "크로스 페이드는 필요없어" request. 1a itself is scrubbed across
+    // the ENTIRE 0 -> CUT_POINT range in two acts (see INTRO_TIMELINE /
+    // V1A_SETTLE_END_SEC above): the "settle" footage plays in the
+    // background while the cube animates (0 -> CUBE_EXIT_END), then once
+    // the cube is fully gone the SAME clip continues into its "hand grabs
+    // the match" footage (CUBE_EXIT_END -> CUT_POINT). At CUT_POINT the
+    // whole layer hard-cuts to 1b (the static held-match close-up), with
+    // zero opacity overlap between the two. 1b's OWN currentTime scrub
+    // from that point onward is NOT handled here -- it is picked up and
+    // continued seamlessly (starting from the same frame 0 it is already
+    // sitting on) by renderV1bChain()/the "bg-video-handoff-1b" trigger
+    // below, which keeps it playing continuously through the work-reel
+    // section and into section-2, instead of freezing the instant this
+    // intro-pin releases.
     function renderCubeScrub(p) {
       const t = INTRO_TIMELINE;
       // ---- Act 1 ("settle"): plays across 0 -> CUBE_EXIT_END, mapped onto
@@ -630,14 +644,11 @@
       }
       seek(v1a, dur1a, aSeconds / dur1a);
 
-      // 1b: held on its very first frame until the hard cut, then scrubs
-      // its own short static-shot duration across CUT_POINT -> 1.
-      const bP = Math.max(0, Math.min((p - t.CUT_POINT) / (1 - t.CUT_POINT), 1));
-      seek(v1b, dur1b, bP);
-
       // Hard cut at CUT_POINT: no blended opacity range at all -- 1a is
       // fully visible right up to CUT_POINT, then 1b is fully visible from
-      // CUT_POINT onward, in a single step.
+      // CUT_POINT onward, in a single step. v1b is left sitting on its
+      // very first frame (currentTime never touched here) so the handoff
+      // trigger below can pick it up from t=0 with zero discontinuity.
       const isPastCut = p >= t.CUT_POINT;
       localA = isPastCut ? 0 : 1;
       localB = isPastCut ? 1 : 0;
@@ -656,17 +667,50 @@
       gsap.set(layer, { opacity: Math.max(0, Math.min(1, op)) });
     }
     // v2 (section2-match-ignite.mp4): the static unlit match ignites into
-    // flame partway through its own 6.016s runtime -- unlike the old torch
-    // "loop" footage this is a one-shot, non-seamless ignition, so it is
-    // scrub-driven (currentTime tied 1:1 to the section-2 crossfade
-    // progress) rather than autoplay+loop, ensuring the strike/ignite beat
-    // always lands in perfect sync with the logo wall scrolling into view
-    // instead of looping/jumping unpredictably.
+    // flame partway through its own 6.016s runtime.
     let dur2 = 6.016;
     v2.addEventListener('loadedmetadata', () => { if (v2.duration) dur2 = v2.duration; });
 
-    function renderCrossfade(p) {
-      groupOpacity = 1 - p;
+    // ------------------------------------------------------------------
+    // "Media-player playlist" chain for 1b -> v2, spanning the section-1
+    // -> section-2 handoff and all of section-2 itself, so BOTH clips stay
+    // genuinely scroll-reactive ("반응연동형") the whole time they are on
+    // screen -- exactly like a media player continuing to the next track
+    // in a playlist -- instead of 1b freezing on a single frame the moment
+    // the intro-pin releases and v2 only reacting for a brief instant as
+    // section-2 first scrolls into view.
+    //
+    // HANDOFF anchors the shared boundary between the two clips as a
+    // position INSIDE section-2 itself ("55% top" = the point 55% of the
+    // way down section-2 reaching the top of the viewport). Using the
+    // exact same anchor string for both the end of the 1b trigger and the
+    // start of the v2 trigger guarantees GSAP computes an identical pixel
+    // boundary for both -- so the hard cut lands at precisely one scroll
+    // position with no gap and no overlap, and section-2 is split into a
+    // first ~55% (still showing the held-match clip reacting to scroll)
+    // and a remaining ~45% (the ignite clip reacting to scroll).
+    const HANDOFF = '55% top';
+
+    // Phase 2: 1b plays out in full (currentTime 0 -> dur1b) across the
+    // ENTIRE work-reel section plus the first ~55% of section-2 -- i.e.
+    // it keeps responding to scroll continuously through that whole span
+    // rather than being left stuck on whatever frame it was on when the
+    // cube's intro-pin released.
+    function renderV1bChain(p) {
+      localA = 0;
+      localB = 1;
+      groupOpacity = 1;
+      applyOpacities();
+      seek(v1b, dur1b, p);
+    }
+
+    // Phase 3: hard cut straight from the 1a/1b group into v2 the instant
+    // this phase begins (matching the existing 1a->1b hard-cut convention
+    // -- no crossfade), then v2 plays out in full (currentTime 0 -> dur2)
+    // across the remaining ~45% of section-2, finishing exactly as
+    // section-3 (PHOTOS) reaches the top of the viewport.
+    function renderV2Chain(p) {
+      groupOpacity = 0;
       applyOpacities();
       seek(v2, dur2, p);
     }
@@ -677,10 +721,12 @@
     // (or on an explicit refresh), so without this call the layer would
     // stay stuck at its pre-set opacity:0 on first paint even though the
     // page loads already sitting at the very top of section-1, where the
-    // video should already be fully visible.
+    // video should already be fully visible. renderV1bChain(0) is called
+    // BEFORE renderCubeScrub(0) so the latter's correct opening state
+    // (1a fully visible, group opacity 1) is what actually sticks.
     renderLayerOpacity(0);
+    renderV1bChain(0);
     renderCubeScrub(0);
-    renderCrossfade(0);
 
     // Whole-layer visibility: fades in the instant section-1 begins,
     // stays fully visible through section-1 -> work-reel -> section-2,
@@ -696,33 +742,51 @@
       onRefresh: (self) => renderLayerOpacity(self.progress),
     });
 
-    // Match-footage scrub: rather than creating a SECOND ScrollTrigger with
-    // the same trigger/start/end as the cube's own "intro-pin" (which was
-    // tried first and did NOT work -- GSAP measured it against a different
-    // pixel range than intro-pin's, e.g. start:1980/end:3960 vs intro-pin's
-    // start:-0.001/end:1980, because intro-pin's `pin:true` inserts a
-    // spacer that shifts the trigger element's OWN measured position, and
-    // a second independent ScrollTrigger on that same trigger element
-    // without a matching refreshPriority gets measured on a different
-    // refresh pass and lands on the POST-spacer-shifted range instead),
-    // we instead just expose this render function and call it DIRECTLY
-    // from inside intro-pin's own onUpdate/onRefresh (see below) with the
-    // exact same `self.progress` number that already drives the cube --
-    // guaranteeing perfect sync by construction rather than by trying to
-    // get two separate ScrollTriggers to agree on identical progress.
+    // Match-footage scrub (1a, cube section): rather than creating a
+    // SECOND ScrollTrigger with the same trigger/start/end as the cube's
+    // own "intro-pin" (which was tried first and did NOT work -- GSAP
+    // measured it against a different pixel range than intro-pin's, e.g.
+    // start:1980/end:3960 vs intro-pin's start:-0.001/end:1980, because
+    // intro-pin's `pin:true` inserts a spacer that shifts the trigger
+    // element's OWN measured position, and a second independent
+    // ScrollTrigger on that same trigger element without a matching
+    // refreshPriority gets measured on a different refresh pass and
+    // lands on the POST-spacer-shifted range instead), we instead just
+    // expose this render function and call it DIRECTLY from inside
+    // intro-pin's own onUpdate/onRefresh (see below) with the exact same
+    // `self.progress` number that already drives the cube -- guaranteeing
+    // perfect sync by construction rather than by trying to get two
+    // separate ScrollTriggers to agree on identical progress.
     cubeScrubRenderer = renderCubeScrub;
 
-    // Crossfade the cube-clip group (1a/1b) -> video-2 (ignite) as
-    // section-2 (the logo wall) scrolls up into place -- i.e. the
-    // backdrop itself transitions in lockstep with the user arriving
-    // at the logo wall.
+    // Phase 2 trigger: from the moment section-1's pin releases (= the
+    // instant #section-work-reel's top edge reaches the viewport top)
+    // through to the HANDOFF point inside section-2.
+    const workReelSection = document.getElementById('section-work-reel');
     ScrollTrigger.create({
+      id: 'bg-video-1b-chain',
+      trigger: workReelSection || s1,
+      start: 'top top',
+      endTrigger: s2,
+      end: HANDOFF,
+      scrub: true,
+      onUpdate: (self) => renderV1bChain(self.progress),
+      onRefresh: (self) => renderV1bChain(self.progress),
+    });
+
+    // Phase 3 trigger: from that exact same HANDOFF point through to
+    // section-3's top edge -- i.e. picks up precisely where phase 2 left
+    // off, with zero gap/overlap, continuing the "playlist" into the
+    // ignite clip for the remainder of section-2.
+    ScrollTrigger.create({
+      id: 'bg-video-2-chain',
       trigger: s2,
-      start: 'top bottom',
+      start: HANDOFF,
+      endTrigger: s3,
       end: 'top top',
       scrub: true,
-      onUpdate: (self) => renderCrossfade(self.progress),
-      onRefresh: (self) => renderCrossfade(self.progress),
+      onUpdate: (self) => renderV2Chain(self.progress),
+      onRefresh: (self) => renderV2Chain(self.progress),
     });
   }
   setupFixedBgVideo();
