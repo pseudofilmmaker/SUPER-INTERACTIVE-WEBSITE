@@ -617,6 +617,14 @@ html, body {
   font-size: clamp(20px, 3vw, 36px);
   line-height: 1.5;
   color: var(--fg);
+}
+/* Each line of the tagline is its own inline-block reveal unit -- scrubbed
+   individually (staggered) by app.js so the text keeps visibly reacting to
+   scroll for the whole hold window instead of a single flat fade-in/out
+   (per "더욱더 반응연동형이였으면 좋겠고" spec). display:block so each
+   <span> occupies its own line exactly like the original 3-line paragraph. */
+.wr-line {
+  display: block;
   will-change: opacity, transform, filter;
 }
 @media (max-width: 768px) {

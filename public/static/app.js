@@ -595,12 +595,13 @@
     const v1b = document.getElementById('bg-video-1b');
     const v2 = document.getElementById('bg-video-2');
     const v4 = document.getElementById('bg-video-4');
+    const v5 = document.getElementById('bg-video-5');
     const s1 = document.getElementById('section-1');
     const s2 = document.getElementById('section-2');
     const s3 = document.getElementById('section-3');
-    if (!layer || !v1a || !v1b || !v2 || !v4 || !s1 || !s2 || !s3) return;
+    if (!layer || !v1a || !v1b || !v2 || !v4 || !v5 || !s1 || !s2 || !s3) return;
 
-    const videos = [v1a, v1b, v2, v4]; // index 0=1a, 1=1b, 2=ignite, 3=torch-approach
+    const videos = [v1a, v1b, v2, v4, v5]; // 0=1a, 1=1b, 2=ignite, 3=torch-approach, 4=torch-ignite
     gsap.set(videos, { opacity: 0 });
     gsap.set(v1a, { opacity: 1 });
 
@@ -615,15 +616,20 @@
     // rather than played back linearly across the whole pin). 1b is a
     // static unlit-match held shot; v2 is that match igniting into
     // flame; v4 is the now-lit match approaching an unlit torch (which
-    // never ignites within v4's own 6s runtime).
+    // never ignites within v4's own 6s runtime); v5 is the payoff --
+    // the torch itself catches and flares up into a full steady burn --
+    // played out across section-2's OWN natural scroll transit (see
+    // renderSection2Scrub further below), not a pinned range.
     let dur1a = 8.0;
     let dur1b = 6.0;
     let dur2 = 6.0;
     let dur4 = 6.0;
+    let dur5 = 6.0;
     v1a.addEventListener('loadedmetadata', () => { if (v1a.duration) dur1a = v1a.duration; });
     v1b.addEventListener('loadedmetadata', () => { if (v1b.duration) dur1b = v1b.duration; });
     v2.addEventListener('loadedmetadata', () => { if (v2.duration) dur2 = v2.duration; });
     v4.addEventListener('loadedmetadata', () => { if (v4.duration) dur4 = v4.duration; });
+    v5.addEventListener('loadedmetadata', () => { if (v5.duration) dur5 = v5.duration; });
 
     function seek(video, duration, localP) {
       const t = Math.max(0, Math.min(1, localP)) * duration;
@@ -742,6 +748,44 @@
       scrub: true,
       onUpdate: (self) => renderLayerOpacity(self.progress),
       onRefresh: (self) => renderLayerOpacity(self.progress),
+    });
+
+    // ------------------------------------------------------------------
+    // "5th clip" -- the torch payoff (ignites + flares into a full steady
+    // burn), scrubbed directly against SECTION-2's OWN natural (non-pinned)
+    // scroll transit -- per this turn's explicit "로고가 하단에 올라올
+    // 때는 5번영상이 이미 반응연동형으로 미디어 플레이어식으로 재생되기
+    // 시작해야되고, 섹션2에 [...] 재생이 끝나게끔 반응연동형으로 만들어줘"
+    // spec: v5 hard-cuts in (from v4) at the EXACT instant section-2's top
+    // edge touches the viewport's bottom edge (i.e. the moment the logo
+    // wall first starts rising up from below the fold), then its
+    // currentTime is scrubbed 1:1 against section-2's own scroll progress
+    // so it visibly plays out DURING the wall's own scroll-up motion,
+    // finishing right as the wall reaches its exit-fade start point
+    // (matching the 'bottom 85%' anchor already used for the wall's own
+    // fade-out below) -- i.e. the whole 5-clip chain is complete well
+    // before section-2 hands off to section-3. This is a plain (non-pinned)
+    // ScrollTrigger on section-2, exactly like the client-wall marquee's
+    // own trigger below it in setupClientWall() -- adding a second,
+    // independent, NON-pinned trigger on the same element is safe (the
+    // "two triggers on one element disagree" gotcha documented elsewhere
+    // in this file is specific to PINNED elements with pin-spacer layout
+    // shifts, which does not apply here).
+    ScrollTrigger.create({
+      trigger: s2,
+      start: 'top bottom',
+      end: 'bottom 85%',
+      scrub: true,
+      onUpdate: (self) => {
+        setActive(4);
+        seek(v5, dur5, self.progress);
+      },
+      onRefresh: (self) => {
+        if (self.progress > 0) {
+          setActive(4);
+          seek(v5, dur5, self.progress);
+        }
+      },
     });
 
     // Expose both render functions so each section's OWN pinned
@@ -979,19 +1023,46 @@
   function setupWorkReel() {
     const section = document.getElementById('section-work-reel');
     const tagline = document.getElementById('work-reel-tagline');
-    if (!section || !tagline) return;
+    const lines = tagline ? gsap.utils.toArray(tagline.querySelectorAll('.wr-line')) : [];
+    if (!section || !tagline || !lines.length) return;
 
-    gsap.set(tagline, { opacity: 0, y: 26, filter: 'blur(6px)' });
+    gsap.set(lines, { opacity: 0, y: 26, filter: 'blur(6px)', letterSpacing: '0em' });
 
+    // ---- Per-line staggered reveal + a continuous subtle "breathing"
+    // letter-spacing pulse while each line holds, so the text keeps visibly
+    // reacting to scroll position for the ENTIRE hold window instead of
+    // sitting static once faded in -- per this turn's explicit "지루할
+    // 틈 없는, 더욱더 반응연동형이였으면 좋겠고" spec. Lines cascade IN
+    // top-to-bottom and cascade OUT bottom-to-top (reverse order) so the
+    // whole block always feels like it's actively assembling/dissolving
+    // rather than one flat opacity fade.
+    const LINE_STAGGER = 0.05;
+    const ENTER_SPAN = 0.20;
+    const EXIT_SPAN = 0.20;
     function renderTagline(p) {
-      // ---- tagline: fade/blur in across 0 -> 0.15, hold, fade out 0.85 -> 1.00
-      const inP = Math.min(p / 0.15, 1);
-      const outP = Math.max(0, Math.min((p - 0.85) / 0.15, 1));
-      const taglineOpacity = inP * (1 - outP);
-      gsap.set(tagline, {
-        opacity: taglineOpacity,
-        y: 26 * (1 - inP) + -14 * outP,
-        filter: `blur(${6 * (1 - inP) + 6 * outP}px)`,
+      lines.forEach((line, i) => {
+        const enterStart = i * LINE_STAGGER;
+        const enterEnd = enterStart + ENTER_SPAN;
+        const exitStart = 0.80 - (lines.length - 1 - i) * LINE_STAGGER;
+        const exitEnd = exitStart + EXIT_SPAN;
+
+        const inP = Math.max(0, Math.min((p - enterStart) / (enterEnd - enterStart), 1));
+        const outP = Math.max(0, Math.min((p - exitStart) / (exitEnd - exitStart), 1));
+        const lineOpacity = inP * (1 - outP);
+
+        // continuous reactive pulse during the settled hold window (between
+        // this line's own enter and exit) -- a slow letter-spacing breathe
+        // driven directly by scroll position p, not time/CSS-animation, so
+        // it's genuinely scroll-linked rather than autoplaying on its own.
+        const holdP = Math.max(0, Math.min(1, (p - enterEnd) / Math.max(0.0001, exitStart - enterEnd)));
+        const pulse = Math.sin(holdP * Math.PI * 5) * 0.012;
+
+        gsap.set(line, {
+          opacity: lineOpacity,
+          y: 22 * (1 - inP) + -12 * outP,
+          filter: `blur(${5 * (1 - inP) + 5 * outP}px)`,
+          letterSpacing: `${(0.03 * (1 - inP)) + pulse * inP * (1 - outP)}em`,
+        });
       });
     }
 
@@ -1019,7 +1090,11 @@
       id: 'work-reel-pin',
       trigger: section,
       start: 'top top',
-      end: '+=260%',
+      // Shortened from 260% -> 170% per "섹션 1에서 2로 넘어갈때 섹션
+      // 사이의 텀이 너무 길어" -- less scroll distance to traverse the
+      // whole tagline + 1b->2->4 chain before section-2 begins, without
+      // needing to speed up the individual video clips themselves.
+      end: '+=170%',
       pin: true,
       scrub: 0.4,
       // Sits between the intro pin (4, highest/earliest) and the PHOTOS
