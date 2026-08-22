@@ -462,12 +462,22 @@
       // BEFORE the section's bottom edge reaches the viewport top. The
       // fade window below is tuned (and verified) to fully reach opacity
       // 0 comfortably before that geometric overlap point is reached.
+      // Per this turn's explicit "로고는 모두 화면위로 사라져서, 포토가
+      // 나올 준비가 되어야해" -- a plain opacity fade left the logos
+      // visually "in place" (just invisible), which doesn't read as
+      // "disappearing off the top of the screen". Adding a upward
+      // translateY (to a full -100% of the wall's own height by the end
+      // of the window) alongside the existing opacity fade makes every
+      // row visibly exit UP and off-screen before PHOTOS appears.
       ScrollTrigger.create({
         trigger: section,
         start: 'bottom 85%',
         end: 'bottom 45%',
         scrub: true,
-        onUpdate: (self) => { gsap.set(wall, { opacity: 1 - self.progress }); },
+        onUpdate: (self) => {
+          const p = self.progress;
+          gsap.set(wall, { opacity: 1 - p, y: -p * window.innerHeight * 0.6 });
+        },
       });
     }
   }
@@ -485,14 +495,20 @@
      영상이 이어져야해. 이 모든 건, 마치 미디어 플레이어처럼 고정된
      화면에 계속 화면이 흐르는 것처럼 보여야하고, 화면이 스크롤 다운에
      반응하며 위로 올라가는 형식이 아닌 것이여야해. 대신 영상을 제외한
-     컨텐츠들만이 스크롤 다운에 반응하며 화면위로 올라가는 거야."
+     컨텐츠들만이 스크롤 다운에 반응하며 화면위로 올라가는 거야." + this
+     turn's further refinement: "워크 위드가 시작되기 전에 첨부한
+     5번영상까지 흘러나와야해" -- the 5th clip (torch ignites/flares into
+     a full steady burn) is now the FOURTH and final phase of the SAME
+     work-reel pin chain below (not its own separate section-2-scoped
+     trigger as in the prior iteration), so it too is guaranteed complete
+     before WORKED WITH appears."
      The <video> elements in #fixed-bg-video are `position: fixed` (see
      style.css) -- this is what makes them genuinely behave like a fixed
      media player: they NEVER physically move/scroll regardless of which
      section is pinned, unpinned, or in normal document flow above them.
      Only the FOREGROUND content (cube+hero text in section-1, the
      tagline in the work-reel span, then the WORKED WITH logo wall in
-     section-2) scrolls on top of this always-fixed layer. All FOUR
+     section-2) scrolls on top of this always-fixed layer. All FIVE
      clips are genuinely scroll-scrubbed (never autoplay/loop, never
      left frozen on a stale frame while still visible), and hard-cut
      between each other (no crossfades), in this exact order:
@@ -517,20 +533,24 @@
        4. bg-video-4 (the now-lit match approaching an unlit torch,
           which never ignites within this clip): hard-cuts in the
           instant video-2's phase ends, plays out across the THIRD
-          (final) phase of that same pinned range -- finishing EXACTLY
+          quarter of that same pinned range.
+       5. bg-video-5 (the torch ignites and flares up into a full steady
+          burn -- the payoff to video-4's tension): hard-cuts in the
+          instant video-4's phase ends, plays out across the FOURTH
+          (final) quarter of that same pinned range -- finishing EXACTLY
           as the work-reel pin releases, which is the same scroll
           position section-2 (WORKED WITH) begins entering the
-          viewport. This guarantees the entire 1a->1b->2->4 chain is
+          viewport. This guarantees the entire 1a->1b->2->4->5 chain is
           always fully complete before WORKED WITH appears, per this
           turn's explicit requirement.
-     Housing phases 2-4 inside ONE single pinned ScrollTrigger (rather
-     than the previous turn's three separate non-pinned "chain" triggers
-     spanning section boundaries) is also what delivers the "fixed media
-     player" feel: while that pin is engaged the viewport doesn't move
-     at all (matching the always-fixed video underneath), and only the
-     tagline text's own opacity reacts to the scrub -- there is no
-     in-between moment where a section is scrolling library-style up
-     and off screen while a video is still trying to play underneath it.
+     Housing phases 2-5 inside ONE single pinned ScrollTrigger (rather
+     than separate non-pinned "chain" triggers spanning section
+     boundaries) is also what delivers the "fixed media player" feel:
+     while that pin is engaged the viewport doesn't move at all (matching
+     the always-fixed video underneath), and only the tagline text's own
+     opacity reacts to the scrub -- there is no in-between moment where a
+     section is scrolling library-style up and off screen while a video
+     is still trying to play underneath it.
      The whole #fixed-bg-video layer fades in as section-1 begins and
      fades out right before section-3/PHOTOS takes over, remaining a
      static (non-scrubbing) backdrop behind section-2 in between.
@@ -690,25 +710,27 @@
     }
 
     // ------------------------------------------------------------------
-    // "Media-player playlist" chain for 1b -> v2 -> v4, driven ENTIRELY by
-    // the work-reel section's OWN pinned ScrollTrigger progress (see
-    // setupWorkReel() further below, which calls this function directly
-    // via workReelScrubRenderer -- same "share progress by direct call,
-    // not a second independent ScrollTrigger" pattern as cubeScrubRenderer
-    // above). Housing all three remaining clips inside that ONE pin (rather
-    // than three separate triggers spanning section boundaries, as in the
-    // previous iteration) is what guarantees the entire 1a->1b->2->4 chain
-    // finishes BEFORE the pin releases into section-2 (WORKED WITH) --
-    // there is no scroll position where the chain is still playing while
-    // section-2 is simultaneously visible, satisfying this turn's explicit
-    // "워크 위드 섹션이 나오기 전에 ... 4번째 영상이 이어져야해" requirement
+    // "Media-player playlist" chain for 1b -> v2 -> v4 -> v5, driven
+    // ENTIRELY by the work-reel section's OWN pinned ScrollTrigger
+    // progress (see setupWorkReel() further below, which calls this
+    // function directly via workReelScrubRenderer -- same "share progress
+    // by direct call, not a second independent ScrollTrigger" pattern as
+    // cubeScrubRenderer above). Housing all FOUR remaining clips inside
+    // that ONE pin (rather than v5 living on its own separate,
+    // section-2-scoped trigger as in the previous iteration) is what
+    // guarantees the entire 1a->1b->2->4->5 chain finishes BEFORE the pin
+    // releases into section-2 (WORKED WITH) -- there is no scroll
+    // position where any clip is still playing while section-2 is
+    // simultaneously visible, satisfying this turn's explicit "워크
+    // 위드가 시작되기 전에 첨부한 5번영상까지 흘러나와야해" requirement
     // by construction rather than by tuning a boundary anchor string.
-    // The 0->1 pin progress is split into three equal thirds; each phase
+    // The 0->1 pin progress is split into four equal quarters; each phase
     // hard-cuts in the instant the previous one ends and plays its own
     // clip out in full (currentTime 0 -> its own duration).
     const CHAIN = {
-      PHASE_1B_END: 1 / 3,
-      PHASE_V2_END: 2 / 3,
+      PHASE_1B_END: 1 / 4,
+      PHASE_V2_END: 2 / 4,
+      PHASE_V4_END: 3 / 4,
     };
     function renderVideoChain(p) {
       if (p <= CHAIN.PHASE_1B_END) {
@@ -719,10 +741,14 @@
         setActive(2);
         const localP = (p - CHAIN.PHASE_1B_END) / (CHAIN.PHASE_V2_END - CHAIN.PHASE_1B_END);
         seek(v2, dur2, localP);
-      } else {
+      } else if (p <= CHAIN.PHASE_V4_END) {
         setActive(3);
-        const localP = (p - CHAIN.PHASE_V2_END) / (1 - CHAIN.PHASE_V2_END);
+        const localP = (p - CHAIN.PHASE_V2_END) / (CHAIN.PHASE_V4_END - CHAIN.PHASE_V2_END);
         seek(v4, dur4, localP);
+      } else {
+        setActive(4);
+        const localP = (p - CHAIN.PHASE_V4_END) / (1 - CHAIN.PHASE_V4_END);
+        seek(v5, dur5, localP);
       }
     }
 
@@ -748,44 +774,6 @@
       scrub: true,
       onUpdate: (self) => renderLayerOpacity(self.progress),
       onRefresh: (self) => renderLayerOpacity(self.progress),
-    });
-
-    // ------------------------------------------------------------------
-    // "5th clip" -- the torch payoff (ignites + flares into a full steady
-    // burn), scrubbed directly against SECTION-2's OWN natural (non-pinned)
-    // scroll transit -- per this turn's explicit "로고가 하단에 올라올
-    // 때는 5번영상이 이미 반응연동형으로 미디어 플레이어식으로 재생되기
-    // 시작해야되고, 섹션2에 [...] 재생이 끝나게끔 반응연동형으로 만들어줘"
-    // spec: v5 hard-cuts in (from v4) at the EXACT instant section-2's top
-    // edge touches the viewport's bottom edge (i.e. the moment the logo
-    // wall first starts rising up from below the fold), then its
-    // currentTime is scrubbed 1:1 against section-2's own scroll progress
-    // so it visibly plays out DURING the wall's own scroll-up motion,
-    // finishing right as the wall reaches its exit-fade start point
-    // (matching the 'bottom 85%' anchor already used for the wall's own
-    // fade-out below) -- i.e. the whole 5-clip chain is complete well
-    // before section-2 hands off to section-3. This is a plain (non-pinned)
-    // ScrollTrigger on section-2, exactly like the client-wall marquee's
-    // own trigger below it in setupClientWall() -- adding a second,
-    // independent, NON-pinned trigger on the same element is safe (the
-    // "two triggers on one element disagree" gotcha documented elsewhere
-    // in this file is specific to PINNED elements with pin-spacer layout
-    // shifts, which does not apply here).
-    ScrollTrigger.create({
-      trigger: s2,
-      start: 'top bottom',
-      end: 'bottom 85%',
-      scrub: true,
-      onUpdate: (self) => {
-        setActive(4);
-        seek(v5, dur5, self.progress);
-      },
-      onRefresh: (self) => {
-        if (self.progress > 0) {
-          setActive(4);
-          seek(v5, dur5, self.progress);
-        }
-      },
     });
 
     // Expose both render functions so each section's OWN pinned
@@ -934,6 +922,23 @@
       if (eyebrowEl) eyebrowEl.style.letterSpacing = (0.5 - 0.28 * reactP) + 'em';
       if (heroOne) heroOne.style.backgroundPosition = (reactP * 100) + '% 50%';
 
+      // ---- extra scroll-reactive strengthening for "Be the ONE" per this
+      // turn's explicit "be the one도 스크롤연동 인터랙티브 요소가
+      // 더욱더 강화되었으면" request: a continuous subtle parallax drift +
+      // opacity-linked glow-intensity on the eyebrow, driven directly off
+      // the SAME 0->CUBE_GROW_END window as the font-weight ramp above, so
+      // the whole text block feels like it is actively responding to
+      // scroll (not just a one-shot weight change) for that entire span.
+      const driftX = -14 * reactP;
+      const driftY = 8 * Math.sin(reactP * Math.PI);
+      gsap.set(introText, { x: driftX });
+      if (eyebrowEl) {
+        eyebrowEl.style.opacity = String(0.55 + 0.45 * reactP);
+        eyebrowEl.style.textShadow = reactP > 0.05
+          ? `0 0 ${10 * reactP}px rgba(255, 138, 0, ${0.35 * reactP})`
+          : 'none';
+      }
+
       // ---- text exit: "Be the ONE" stays fully visible/reacted through the
       // ENTIRE cube animation (grow/hold/exit) AND through the hand reaching
       // in, gripping, and lifting the match out of frame -- it only begins
@@ -948,7 +953,7 @@
       const exitP = Math.max(0, Math.min((p - t.CUT_POINT) / (1 - t.CUT_POINT), 1));
       const exitT = exitEase(exitP);
       gsap.set(introText, {
-        y: -160 * exitT,
+        y: driftY + -160 * exitT,
         opacity: 1 - exitT,
       });
     }
@@ -1023,45 +1028,49 @@
   function setupWorkReel() {
     const section = document.getElementById('section-work-reel');
     const tagline = document.getElementById('work-reel-tagline');
-    const lines = tagline ? gsap.utils.toArray(tagline.querySelectorAll('.wr-line')) : [];
-    if (!section || !tagline || !lines.length) return;
+    const words = tagline ? gsap.utils.toArray(tagline.querySelectorAll('.wr-word')) : [];
+    if (!section || !tagline || !words.length) return;
 
-    gsap.set(lines, { opacity: 0, y: 26, filter: 'blur(6px)', letterSpacing: '0em' });
+    gsap.set(words, { opacity: 0.22, color: 'var(--fg-faint)' });
 
-    // ---- Per-line staggered reveal + a continuous subtle "breathing"
-    // letter-spacing pulse while each line holds, so the text keeps visibly
-    // reacting to scroll position for the ENTIRE hold window instead of
-    // sitting static once faded in -- per this turn's explicit "지루할
-    // 틈 없는, 더욱더 반응연동형이였으면 좋겠고" spec. Lines cascade IN
-    // top-to-bottom and cascade OUT bottom-to-top (reverse order) so the
-    // whole block always feels like it's actively assembling/dissolving
-    // rather than one flat opacity fade.
-    const LINE_STAGGER = 0.05;
-    const ENTER_SPAN = 0.20;
-    const EXIT_SPAN = 0.20;
+    // ---- Word-level "reading spotlight" reveal -- replaces the earlier
+    // per-LINE stagger per explicit feedback: "스크롤연동 인터랙티브
+    // 요소가 자꾸 줄이 바뀌는 건 아닌 거 같아. 다른 효과를 입혀줘." (the
+    // old effect visibly reflowed/moved text line-by-line, which read as
+    // unwanted layout motion rather than a pleasant reactive effect).
+    // Every word stays in its permanent inline position (no y-transform,
+    // no blur-driven reflow) -- instead a "highlight" band sweeps
+    // continuously left-to-right across the 17 words in lockstep with
+    // scroll position p, like a karaoke read-along: each word brightens
+    // from dim/faint to fully lit + a touch of scale as the sweep passes
+    // over it, then settles back to a slightly-dimmer "already read"
+    // state (not all the way back to invisible), so by the end of the
+    // hold window the whole sentence is legible while still having been
+    // continuously, visibly reactive to scroll for its entire duration.
+    const WORD_COUNT = words.length;
+    const SWEEP_START = 0.08; // sweep begins shortly after the pin engages
+    const SWEEP_END = 0.82;   // sweep fully complete before tagline exit
+    const BAND = 1 / WORD_COUNT; // how much of the sweep each word occupies
     function renderTagline(p) {
-      lines.forEach((line, i) => {
-        const enterStart = i * LINE_STAGGER;
-        const enterEnd = enterStart + ENTER_SPAN;
-        const exitStart = 0.80 - (lines.length - 1 - i) * LINE_STAGGER;
-        const exitEnd = exitStart + EXIT_SPAN;
-
-        const inP = Math.max(0, Math.min((p - enterStart) / (enterEnd - enterStart), 1));
-        const outP = Math.max(0, Math.min((p - exitStart) / (exitEnd - exitStart), 1));
-        const lineOpacity = inP * (1 - outP);
-
-        // continuous reactive pulse during the settled hold window (between
-        // this line's own enter and exit) -- a slow letter-spacing breathe
-        // driven directly by scroll position p, not time/CSS-animation, so
-        // it's genuinely scroll-linked rather than autoplaying on its own.
-        const holdP = Math.max(0, Math.min(1, (p - enterEnd) / Math.max(0.0001, exitStart - enterEnd)));
-        const pulse = Math.sin(holdP * Math.PI * 5) * 0.012;
-
-        gsap.set(line, {
-          opacity: lineOpacity,
-          y: 22 * (1 - inP) + -12 * outP,
-          filter: `blur(${5 * (1 - inP) + 5 * outP}px)`,
-          letterSpacing: `${(0.03 * (1 - inP)) + pulse * inP * (1 - outP)}em`,
+      // sweepP: 0->1 position of the reading spotlight across the sentence
+      const sweepP = Math.max(0, Math.min(1, (p - SWEEP_START) / (SWEEP_END - SWEEP_START)));
+      words.forEach((word, i) => {
+        const wordCenter = (i + 0.5) / WORD_COUNT;
+        // distance (in "word slots") between the sweep position and this
+        // word's own slot -- used to build a smooth brightening band
+        // rather than a hard on/off cut per word.
+        const dist = (sweepP - wordCenter) / BAND;
+        // "read" state: fully behind the sweep -> settled dim-lit;
+        // "active" state: right under the sweep -> peak brightness;
+        // "unread" state: ahead of the sweep -> faint.
+        const active = Math.max(0, 1 - Math.abs(dist));
+        const passed = Math.max(0, Math.min(1, -dist + 0.5));
+        const opacity = 0.22 + 0.78 * Math.max(active, passed * 0.62);
+        const scale = 1 + 0.05 * active;
+        gsap.set(word, {
+          opacity,
+          scale,
+          color: active > 0.5 ? 'var(--accent-gold)' : 'var(--fg)',
         });
       });
     }

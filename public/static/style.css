@@ -618,14 +618,19 @@ html, body {
   line-height: 1.5;
   color: var(--fg);
 }
-/* Each line of the tagline is its own inline-block reveal unit -- scrubbed
-   individually (staggered) by app.js so the text keeps visibly reacting to
-   scroll for the whole hold window instead of a single flat fade-in/out
-   (per "더욱더 반응연동형이였으면 좋겠고" spec). display:block so each
-   <span> occupies its own line exactly like the original 3-line paragraph. */
-.wr-line {
-  display: block;
-  will-change: opacity, transform, filter;
+/* Word-level "reading spotlight" reveal -- replaces the earlier per-LINE
+   stagger (user feedback: "자꾸 줄이 바뀌는 건 아닌 거 같아", i.e. the
+   text visibly reflowing/moving line-by-line read as unwanted layout
+   motion, not a pleasant reactive effect). Each word is its own inline
+   unit that never moves position (no y-transform, no line reflow) --
+   app.js instead drives per-word opacity/color/scale so a "highlight"
+   sweeps continuously left-to-right, word-by-word, in lockstep with
+   scroll position, like a karaoke read-along. This keeps the paragraph's
+   layout completely static while still feeling continuously
+   scroll-reactive for the ENTIRE hold window (not just entry/exit). */
+.wr-word {
+  display: inline-block;
+  will-change: opacity, color, transform;
 }
 @media (max-width: 768px) {
   .work-reel-tagline { font-size: clamp(16px, 4.6vw, 24px); padding: 0 22px; }

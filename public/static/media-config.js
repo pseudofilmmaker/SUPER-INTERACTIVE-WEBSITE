@@ -37,8 +37,13 @@ window.SITE_MEDIA = {
   // ── 3. 인물 사진(포트레이트) ─────────────────────────────
   splitPhoto: '',
 
-  // ── 4. PHOTOS 인트로 배경 영상 -- 불꽃 루프 ───────────────────
-  photosIntroImage: '/static/media/section3/section3-photos-flame-loop.mp4',
+  // ── 4. PHOTOS 인트로 배경 영상 -- 제거됨 (요청: "현재 포토스의 배경
+  //      영상은 제거해주고") -- 빈 문자열이면 title-bg-media는 자신의
+  //      CSS 그라디언트 배경(linear-gradient 160deg #1c0f06->#05050a)만
+  //      보여주고, 그 위에 완전 투명 배경의 PHOTOS 타이틀 텍스트가
+  //      스크롤 연동으로 하단에서 올라와 고정된다 (see .group-title /
+  //      setupGroupTitleFrameIn() in app.js).
+  photosIntroImage: '',
 
   // ── 5. PHOTOS 카드 스택 (5장) ───────────────────────────────
   photoCards: ['', '', '', '', ''],
