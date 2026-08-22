@@ -696,7 +696,27 @@
     // it keeps responding to scroll continuously through that whole span
     // rather than being left stuck on whatever frame it was on when the
     // cube's intro-pin released.
-    function renderV1bChain(p) {
+    //
+    // IMPORTANT: this trigger spans a scroll range that comes AFTER
+    // section-1's own intro-pin, but a `scrub` ScrollTrigger's onUpdate
+    // (and onRefresh) still fires with a CLAMPED progress of 0 while the
+    // user is scrolled to a position BEFORE this trigger's own start --
+    // it does not simply stay silent until reached. Without the
+    // `self.isActive` guard below, this callback would stomp the shared
+    // localA/localB/groupOpacity state back to "1b visible" (progress=0
+    // still resolves to frame 0, i.e. its OWN valid start frame, so
+    // nothing here looks obviously wrong in isolation) every time
+    // ScrollTrigger.refresh() runs (e.g. once automatically on window
+    // 'load', see bottom of file) -- and since this trigger's default
+    // refreshPriority (0) is lower than intro-pin's (4), its onRefresh
+    // fires AFTER intro-pin's, silently overwriting the correct
+    // "video-1a fully visible" state intro-pin had just set, hiding 1a
+    // completely from the very first paint even before the user
+    // scrolls at all. Gating on isActive ensures this phase only ever
+    // touches shared state while the scroll position is genuinely
+    // within ITS OWN range.
+    function renderV1bChain(p, isActive) {
+      if (!isActive) return;
       localA = 0;
       localB = 1;
       groupOpacity = 1;
@@ -709,7 +729,11 @@
     // -- no crossfade), then v2 plays out in full (currentTime 0 -> dur2)
     // across the remaining ~45% of section-2, finishing exactly as
     // section-3 (PHOTOS) reaches the top of the viewport.
-    function renderV2Chain(p) {
+    // Same isActive guard as renderV1bChain above, and for the same
+    // reason -- this phase must never touch shared state while the
+    // scroll position sits outside its own range.
+    function renderV2Chain(p, isActive) {
+      if (!isActive) return;
       groupOpacity = 0;
       applyOpacities();
       seek(v2, dur2, p);
@@ -721,11 +745,11 @@
     // (or on an explicit refresh), so without this call the layer would
     // stay stuck at its pre-set opacity:0 on first paint even though the
     // page loads already sitting at the very top of section-1, where the
-    // video should already be fully visible. renderV1bChain(0) is called
-    // BEFORE renderCubeScrub(0) so the latter's correct opening state
-    // (1a fully visible, group opacity 1) is what actually sticks.
+    // video should already be fully visible. On initial load the scroll
+    // position is section-1's very top, i.e. BEFORE both chain phases'
+    // own ranges, so neither is "active" yet -- only renderCubeScrub(0)
+    // (1a fully visible) should actually apply here.
     renderLayerOpacity(0);
-    renderV1bChain(0);
     renderCubeScrub(0);
 
     // Whole-layer visibility: fades in the instant section-1 begins,
@@ -770,8 +794,8 @@
       endTrigger: s2,
       end: HANDOFF,
       scrub: true,
-      onUpdate: (self) => renderV1bChain(self.progress),
-      onRefresh: (self) => renderV1bChain(self.progress),
+      onUpdate: (self) => renderV1bChain(self.progress, self.isActive),
+      onRefresh: (self) => renderV1bChain(self.progress, self.isActive),
     });
 
     // Phase 3 trigger: from that exact same HANDOFF point through to
@@ -785,8 +809,8 @@
       endTrigger: s3,
       end: 'top top',
       scrub: true,
-      onUpdate: (self) => renderV2Chain(self.progress),
-      onRefresh: (self) => renderV2Chain(self.progress),
+      onUpdate: (self) => renderV2Chain(self.progress, self.isActive),
+      onRefresh: (self) => renderV2Chain(self.progress, self.isActive),
     });
   }
   setupFixedBgVideo();
