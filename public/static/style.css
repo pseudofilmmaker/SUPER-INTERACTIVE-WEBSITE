@@ -314,16 +314,21 @@ html, body {
 }
 
 /* ============================================================
-   FIXED BACKGROUND VIDEO LAYER — cube section (1) + logo wall (2)
+   FIXED BACKGROUND VIDEO LAYER — persistent "media player"
    position:fixed to the viewport (NOT inside any .panel), sitting
-   behind the entire scroll experience for as long as section-1/2
-   are the active pair. Two <video> elements are stacked and
-   crossfaded by scroll progress (setupFixedBgVideo() in app.js) --
-   bg-video-1 = matchsticks falling (cube section), bg-video-2 =
-   torch/flame loop (logo wall, same asset previously embedded
-   directly inside #section-2). The whole layer fades out once
-   section-3 (PHOTOS) takes over, handing off to that group's own
-   existing per-section .title-bg-media pattern.
+   behind the ENTIRE section-1 -> work-reel -> section-2 span and
+   never itself scrolling/moving, no matter which of those sections
+   is currently pinned or in normal document flow (only their own
+   foreground content -- hero text, tagline, logo wall -- scrolls on
+   top of it). Four <video> elements are stacked and hard-cut (no
+   crossfade) in sequence by scroll progress (setupFixedBgVideo() in
+   app.js): bg-video-1a (matches fall/settle/hand-grab, cube section)
+   -> bg-video-1b (held static match) -> bg-video-2 (match ignites)
+   -> bg-video-4 (lit match approaches an unlit torch) -- the whole
+   4-clip chain always finishes before section-2 (WORKED WITH) comes
+   into view. The whole layer fades out once section-3 (PHOTOS) takes
+   over, handing off to that group's own existing per-section
+   .title-bg-media pattern.
    z-index: 0 keeps it below every panel's own content (which has
    no explicit background any more for sections 1-2, see below) but
    above <body>'s own flat --bg color.
@@ -586,40 +591,18 @@ html, body {
 }
 
 /* ============================================================
-   WORK REEL — scroll-scrubbed match videos + tagline
-   (inserted between SECTION 1 cube and SECTION 2 client wall)
-   Full-bleed video stage; both <video> elements stacked on top of
-   each other and crossfaded via opacity (app.js), currentTime
-   driven directly by scroll progress (scrub, no autoplay/loop).
+   WORK REEL — tagline only (inserted between SECTION 1 cube and
+   SECTION 2 client wall). This section no longer carries its own
+   video elements -- it has a transparent background so the
+   persistent #fixed-bg-video layer (continuing its 1b -> v2 -> v4
+   chain, see setupWorkReel()/setupFixedBgVideo() in app.js) shows
+   through underneath its own pinned scroll span, exactly like
+   section-1 and section-2 do. Only the tagline text itself is this
+   section's own foreground content, scrubbed in/out via app.js.
    ============================================================ */
 .work-reel-panel {
-  background: #030304;
+  background: transparent;
   padding: 0;
-}
-.work-reel-stage {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  overflow: hidden;
-}
-.work-reel-video {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  opacity: 0;
-  will-change: opacity;
-}
-.work-reel-video--1 { opacity: 1; }
-.work-reel-vignette {
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(3,3,4,0.65) 100%),
-    linear-gradient(180deg, rgba(3,3,4,0.55) 0%, transparent 22%, transparent 78%, rgba(3,3,4,0.75) 100%);
-  pointer-events: none;
-  z-index: 1;
 }
 .work-reel-tagline {
   position: relative;
@@ -646,8 +629,10 @@ html, body {
 .split-panel {
   align-items: center;
   justify-content: center;
-  /* transparent -- #fixed-bg-video (bg-video-2, torch loop) shows through
-     from underneath instead of this section carrying its own background */
+  /* transparent -- #fixed-bg-video shows through from underneath (by the
+     time this section is reached, the 1a->1b->2->4 chain has already
+     finished and the layer sits static on v4's last frame) instead of
+     this section carrying its own background */
   background: transparent;
 }
 

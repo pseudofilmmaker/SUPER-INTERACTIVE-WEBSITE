@@ -474,41 +474,66 @@
   setupClientWall('section-2');
 
   /* ============================================================
-     FIXED BACKGROUND VIDEO -- cube section (1) + work-reel handoff +
-     logo wall (2)
-     Per explicit spec: "영상은 백그라운드에 위치가 고정돼, 계속 반응
-     연동형으로 재생돼야 해... 지금의 웹사이트 매트리얼은 영상 위에서
-     계속 움직이는 거지." + the follow-up spec: "섹션 2에서 2-3번째 첨부
-     영상이 반응연동형으로 모두 들어가야해. 마치 미디어 플레이어에서
-     연속 재생하는듯하게. 이건 섹션 1에서 2로 이어질 때도 마찬가지야."
-     The <video> elements in #fixed-bg-video (position:fixed, see
-     style.css) are layered behind everything, and ALL THREE clips are
-     genuinely scroll-scrubbed (never autoplay/loop, never left frozen
-     on a stale frame while still visible):
-       - bg-video-1a (matches fall -> settle -> a hand reaches in and
-         lifts one out of frame, a single continuous 8s take): scrubbed
-         across the cube-section's OWN "intro-pin" ScrollTrigger progress
-         (0 -> CUT_POINT), in perfect lockstep with the cube's rotation/
-         growth -- see renderCubeScrub() below.
-       - bg-video-1b (the same match now held static/unlit) and
-         bg-video-2 (that held match igniting into flame) are chained
-         into ONE continuous "media-player playlist": 1b plays out in
-         full (0 -> its own duration) across a SINGLE ScrollTrigger
-         spanning from the exact moment section-1's pin releases,
-         through the ENTIRE work-reel section, and into section-2's own
-         midpoint -- i.e. it stays reactive across the whole section-1
-         -> section-2 handoff instead of freezing on its last frame the
-         instant the intro-pin ends. The moment that trigger completes,
-         video-2 hard-cuts in (no crossfade, matching the existing 1a->1b
-         hard-cut convention) and plays out in full across a second
-         ScrollTrigger spanning from section-2's midpoint through to
-         section-3's top -- so both the "held match" and "ignite" beats
-         are actually on screen and scroll-reactive WHILE section-2
-         itself is being scrolled through, not just before it starts.
-         See renderV1b()/renderV2() below.
-       - the whole layer fades in as section-1 begins and fades out
-         right before section-3/PHOTOS takes over (round scope is
-         explicitly limited to "로고월섹션까지").
+     FIXED BACKGROUND VIDEO -- a single persistent "media player" layer
+     spanning the cube section (1), the work-reel handoff, and playing
+     out to completion BEFORE the logo wall (2) begins.
+     Per explicit spec (this + two prior turns): "영상은 백그라운드에
+     위치가 고정돼, 계속 반응연동형으로 재생돼야 해..." + "...마치 미디어
+     플레이어에서 연속 재생하는듯하게..." + this turn's refinement:
+     "be the one 텍스트가 올라감과 동시에 2번째 영상이 나와야해. 그리고
+     워크 위드 섹션이 나오기 전에 3번째 영상이 끝나고, 첨부한 4번째
+     영상이 이어져야해. 이 모든 건, 마치 미디어 플레이어처럼 고정된
+     화면에 계속 화면이 흐르는 것처럼 보여야하고, 화면이 스크롤 다운에
+     반응하며 위로 올라가는 형식이 아닌 것이여야해. 대신 영상을 제외한
+     컨텐츠들만이 스크롤 다운에 반응하며 화면위로 올라가는 거야."
+     The <video> elements in #fixed-bg-video are `position: fixed` (see
+     style.css) -- this is what makes them genuinely behave like a fixed
+     media player: they NEVER physically move/scroll regardless of which
+     section is pinned, unpinned, or in normal document flow above them.
+     Only the FOREGROUND content (cube+hero text in section-1, the
+     tagline in the work-reel span, then the WORKED WITH logo wall in
+     section-2) scrolls on top of this always-fixed layer. All FOUR
+     clips are genuinely scroll-scrubbed (never autoplay/loop, never
+     left frozen on a stale frame while still visible), and hard-cut
+     between each other (no crossfades), in this exact order:
+       1. bg-video-1a (matches fall -> settle -> a hand reaches in and
+          lifts one out of frame): scrubbed across the cube-section's
+          own "intro-pin" ScrollTrigger progress (0 -> CUT_POINT), in
+          perfect lockstep with the cube's rotation/growth -- see
+          renderCubeScrub() below. At CUT_POINT the hand lifts the
+          match fully out of frame AND, in the exact same instant,
+          "Be the ONE" begins its rise/fade-out AND the hard cut to
+          1b fires -- all three are keyed off the identical CUT_POINT
+          value so they are simultaneous by construction (see
+          renderIntro()'s text-exit calc further down, which now uses
+          t.CUT_POINT directly instead of a separate earlier constant).
+       2. bg-video-1b (the same match now held static/unlit): plays out
+          in full immediately after the hard cut, across the FIRST
+          phase of the work-reel section's own pinned scroll range --
+          see renderWorkReelScrub() / setupWorkReel() below.
+       3. bg-video-2 (that held match igniting into flame): hard-cuts
+          in the instant 1b's phase ends, plays out across the SECOND
+          phase of that same pinned range.
+       4. bg-video-4 (the now-lit match approaching an unlit torch,
+          which never ignites within this clip): hard-cuts in the
+          instant video-2's phase ends, plays out across the THIRD
+          (final) phase of that same pinned range -- finishing EXACTLY
+          as the work-reel pin releases, which is the same scroll
+          position section-2 (WORKED WITH) begins entering the
+          viewport. This guarantees the entire 1a->1b->2->4 chain is
+          always fully complete before WORKED WITH appears, per this
+          turn's explicit requirement.
+     Housing phases 2-4 inside ONE single pinned ScrollTrigger (rather
+     than the previous turn's three separate non-pinned "chain" triggers
+     spanning section boundaries) is also what delivers the "fixed media
+     player" feel: while that pin is engaged the viewport doesn't move
+     at all (matching the always-fixed video underneath), and only the
+     tagline text's own opacity reacts to the scrub -- there is no
+     in-between moment where a section is scrolling library-style up
+     and off screen while a video is still trying to play underneath it.
+     The whole #fixed-bg-video layer fades in as section-1 begins and
+     fades out right before section-3/PHOTOS takes over, remaining a
+     static (non-scrubbing) backdrop behind section-2 in between.
      ============================================================ */
   // Exposed so the intro-pin ScrollTrigger (created further below, for the
   // cube itself) can drive the match-footage scrub DIRECTLY off its own
@@ -516,33 +541,45 @@
   // point below for why a second independent ScrollTrigger on the same
   // pinned trigger element does NOT reliably share the same progress.
   let cubeScrubRenderer = null;
+  // Same pattern as cubeScrubRenderer, but for the work-reel section's own
+  // pin (see setupWorkReel() further below): exposed here so that pin's
+  // onUpdate/onRefresh can drive the 1b -> video-2 -> video-4 chain
+  // scrub DIRECTLY off its own self.progress, for the exact same
+  // "two ScrollTriggers on one pinned element don't share progress"
+  // reason cubeScrubRenderer exists.
+  let workReelScrubRenderer = null;
 
   // Shared timeline breakpoints for the whole intro-pin sequence (cube +
-  // background video-01 scrub + text), consumed by BOTH renderCubeScrub()
+  // background video-1a scrub + text), consumed by BOTH renderCubeScrub()
   // (below, in setupFixedBgVideo) and renderIntro() (further down, in the
   // cube setup block) so the two stay perfectly in sync by construction.
   //   0        -> CUBE_EXIT_END   cube grows/holds/exits and is FULLY GONE
-  //                                by CUBE_EXIT_END; video-01 plays its
+  //                                by CUBE_EXIT_END; video-1a plays its
   //                                "matches fall & settle" footage (0s ->
   //                                V1A_SETTLE_END_SEC) synced to the cube's
   //                                own progress purely as background ambiance
-  //   CUBE_EXIT_END -> CUT_POINT  stage is clear (no cube) -- video-01 plays
-  //                                its "hand reaches in and grabs a match"
-  //                                footage (V1A_SETTLE_END_SEC -> its full
-  //                                duration); "Be the ONE" text stays FULLY
-  //                                VISIBLE through the reach + grip, then
-  //                                sweeps up/fades out ONLY during
-  //                                HAND_EXIT_START -> CUT_POINT, the narrow
-  //                                window where the hand actually lifts the
-  //                                match OUT of frame -- finishing exactly
-  //                                as the hard cut below fires
-  //   CUT_POINT -> 1              HARD CUT (no crossfade) to video-02, the
-  //                                static held-match close-up shot
+  //   CUBE_EXIT_END -> CUT_POINT  stage is clear (no cube) -- video-1a plays
+  //                                its "hand reaches in, grabs, and lifts the
+  //                                match out of frame" footage
+  //                                (V1A_SETTLE_END_SEC -> its full duration);
+  //                                "Be the ONE" text stays FULLY VISIBLE this
+  //                                entire time -- it does not start exiting
+  //                                here (see below).
+  //   CUT_POINT -> 1               HARD CUT (no crossfade) to video-1b, the
+  //                                static held-match close-up shot. Per this
+  //                                turn's explicit spec ("텍스트가 올라감과
+  //                                동시에 2번째 영상이 나와야해" -- the text
+  //                                rise must begin in the EXACT SAME instant
+  //                                video-1b appears), "Be the ONE" starts its
+  //                                upward sweep/fade-out AT CUT_POINT itself
+  //                                (not before) and finishes by p=1, so the
+  //                                rise plays out fully while 1b is on
+  //                                screen and completes exactly as the pin
+  //                                releases -- see renderIntro()'s exitP calc.
   const INTRO_TIMELINE = {
     CUBE_GROW_END: 0.30,
     CUBE_HOLD_END: 0.38,
     CUBE_EXIT_END: 0.45,
-    HAND_EXIT_START: 0.90,
     CUT_POINT: 0.95,
   };
   // Timestamp (seconds) inside section1-matches-scrub-01.mp4 where the
@@ -557,31 +594,36 @@
     const v1a = document.getElementById('bg-video-1a');
     const v1b = document.getElementById('bg-video-1b');
     const v2 = document.getElementById('bg-video-2');
+    const v4 = document.getElementById('bg-video-4');
     const s1 = document.getElementById('section-1');
     const s2 = document.getElementById('section-2');
     const s3 = document.getElementById('section-3');
-    if (!layer || !v1a || !v1b || !v2 || !s1 || !s2 || !s3) return;
+    if (!layer || !v1a || !v1b || !v2 || !v4 || !s1 || !s2 || !s3) return;
 
+    const videos = [v1a, v1b, v2, v4]; // index 0=1a, 1=1b, 2=ignite, 3=torch-approach
+    gsap.set(videos, { opacity: 0 });
     gsap.set(v1a, { opacity: 1 });
-    gsap.set(v1b, { opacity: 0 });
-    gsap.set(v2, { opacity: 0 });
 
-    // Known source durations (8.0s / 6.016s) used as a fallback until each
-    // video's real duration is available via loadedmetadata -- same
-    // pattern as setupWorkReel() below, so early scroll input before the
-    // browser finishes probing the file still maps to a sane currentTime.
-    // 1a (section1-matches-scrub-01.mp4) runs from the ABSOLUTE start (t=0)
-    // of its source through the full "matches fall -> settle -> a hand
-    // reaches in, grabs one match, and lifts it out of frame" action (see
-    // renderCubeScrub below for how its two acts, "settle" and "hand grabs
-    // + exits", are mapped onto two different scroll sub-ranges rather than
-    // played back linearly across the whole pin). 1b (scrub-02) is a static
-    // unlit-match held shot with no motion of its own -- shown after the
-    // hard cut as the calm "held match" beat before section-2's ignite.
+    // Known source durations used as a fallback until each video's real
+    // duration is available via loadedmetadata, so early scroll input
+    // before the browser finishes probing the file still maps to a sane
+    // currentTime. 1a runs from the ABSOLUTE start (t=0) of its source
+    // through the full "matches fall -> settle -> a hand reaches in,
+    // grabs one match, and lifts it out of frame" action (see
+    // renderCubeScrub below for how its two acts, "settle" and "hand
+    // grabs + exits", are mapped onto two different scroll sub-ranges
+    // rather than played back linearly across the whole pin). 1b is a
+    // static unlit-match held shot; v2 is that match igniting into
+    // flame; v4 is the now-lit match approaching an unlit torch (which
+    // never ignites within v4's own 6s runtime).
     let dur1a = 8.0;
-    let dur1b = 6.016;
+    let dur1b = 6.0;
+    let dur2 = 6.0;
+    let dur4 = 6.0;
     v1a.addEventListener('loadedmetadata', () => { if (v1a.duration) dur1a = v1a.duration; });
     v1b.addEventListener('loadedmetadata', () => { if (v1b.duration) dur1b = v1b.duration; });
+    v2.addEventListener('loadedmetadata', () => { if (v2.duration) dur2 = v2.duration; });
+    v4.addEventListener('loadedmetadata', () => { if (v4.duration) dur4 = v4.duration; });
 
     function seek(video, duration, localP) {
       const t = Math.max(0, Math.min(1, localP)) * duration;
@@ -590,50 +632,33 @@
       }
     }
 
-    // groupOpacity: how visible the whole cube-clip group (1a+1b combined)
-    // is vs. bg-video-2 -- driven by the section-2 crossfade trigger below.
-    let groupOpacity = 1;
-    // localA/localB: the 1a<->1b crossfade weights -- driven by the cube
-    // section's own scroll progress (cubeP trigger below).
-    let localA = 1;
-    let localB = 0;
-
-    function applyOpacities() {
-      gsap.set(v1a, { opacity: localA * groupOpacity });
-      gsap.set(v1b, { opacity: localB * groupOpacity });
-      gsap.set(v2, { opacity: 1 - groupOpacity });
+    // activeIndex: which single video (0=1a, 1=1b, 2=v2, 3=v4) is currently
+    // opaque. All transitions in this whole 4-clip sequence are HARD cuts
+    // (no crossfade, matching the established "크로스 페이드는 필요없어"
+    // convention) -- so exactly one video is ever opacity:1 at a time, the
+    // other three are opacity:0. setActive() is a no-op if already on the
+    // requested index, avoiding redundant gsap.set calls every scroll frame.
+    let activeIndex = 0;
+    function setActive(idx) {
+      if (idx === activeIndex) return;
+      activeIndex = idx;
+      videos.forEach((v, i) => gsap.set(v, { opacity: i === idx ? 1 : 0 }));
     }
 
-    // ---- cube-section scrub: currentTime of 1a tied 1:1 to the SAME
-    // scroll range as the cube's own "intro-pin" ScrollTrigger (trigger
-    // #section-1, start 'top top', end '+=220%') so the match footage
-    // advances in perfect sync with the cube rotating/growing -- reusing
-    // the identical trigger/start/end makes GSAP compute an identical
-    // progress value across both ScrollTriggers.
-    //
-    // NOTE: NO crossfade between 1a and 1b -- the two clips are shown as a
-    // hard, sequential cut (1a plays in full, THEN 1b appears), matching
-    // the "크로스 페이드는 필요없어" request. 1a itself is scrubbed across
-    // the ENTIRE 0 -> CUT_POINT range in two acts (see INTRO_TIMELINE /
-    // V1A_SETTLE_END_SEC above): the "settle" footage plays in the
-    // background while the cube animates (0 -> CUBE_EXIT_END), then once
-    // the cube is fully gone the SAME clip continues into its "hand grabs
-    // the match" footage (CUBE_EXIT_END -> CUT_POINT). At CUT_POINT the
-    // whole layer hard-cuts to 1b (the static held-match close-up), with
-    // zero opacity overlap between the two. 1b's OWN currentTime scrub
-    // from that point onward is NOT handled here -- it is picked up and
-    // continued seamlessly (starting from the same frame 0 it is already
-    // sitting on) by renderV1bChain()/the "bg-video-handoff-1b" trigger
-    // below, which keeps it playing continuously through the work-reel
-    // section and into section-2, instead of freezing the instant this
-    // intro-pin releases.
+    // ---- cube-section scrub: currentTime of 1a tied 1:1 to the cube's own
+    // "intro-pin" ScrollTrigger progress (see cubeScrubRenderer below for
+    // why this is called directly rather than via a second ScrollTrigger).
+    // 1a is scrubbed across the ENTIRE 0 -> CUT_POINT range in two acts
+    // (see INTRO_TIMELINE / V1A_SETTLE_END_SEC above): the "settle" footage
+    // plays while the cube animates (0 -> CUBE_EXIT_END), then once the
+    // cube is fully gone the SAME clip continues into its "hand grabs +
+    // lifts the match out of frame" footage (CUBE_EXIT_END -> CUT_POINT).
+    // AT CUT_POINT the layer hard-cuts to 1b -- this is the exact same
+    // instant renderIntro() (below, in the cube setup block) begins the
+    // "Be the ONE" text's rise/exit, so the two are simultaneous by
+    // construction (both keyed off the identical CUT_POINT constant).
     function renderCubeScrub(p) {
       const t = INTRO_TIMELINE;
-      // ---- Act 1 ("settle"): plays across 0 -> CUBE_EXIT_END, mapped onto
-      // 1a's own 0 -> V1A_SETTLE_END_SEC seconds.
-      // ---- Act 2 ("hand grabs + exits"): plays across CUBE_EXIT_END ->
-      // CUT_POINT, mapped onto 1a's remaining V1A_SETTLE_END_SEC -> dur1a
-      // seconds.
       let aSeconds;
       if (p <= t.CUBE_EXIT_END) {
         const actP = t.CUBE_EXIT_END > 0 ? Math.max(0, p / t.CUBE_EXIT_END) : 0;
@@ -643,16 +668,7 @@
         aSeconds = V1A_SETTLE_END_SEC + actP * (dur1a - V1A_SETTLE_END_SEC);
       }
       seek(v1a, dur1a, aSeconds / dur1a);
-
-      // Hard cut at CUT_POINT: no blended opacity range at all -- 1a is
-      // fully visible right up to CUT_POINT, then 1b is fully visible from
-      // CUT_POINT onward, in a single step. v1b is left sitting on its
-      // very first frame (currentTime never touched here) so the handoff
-      // trigger below can pick it up from t=0 with zero discontinuity.
-      const isPastCut = p >= t.CUT_POINT;
-      localA = isPastCut ? 0 : 1;
-      localB = isPastCut ? 1 : 0;
-      applyOpacities();
+      setActive(p >= t.CUT_POINT ? 1 : 0);
     }
 
     function renderLayerOpacity(p) {
@@ -666,96 +682,58 @@
       if (p > FADE_OUT_START) op = 1 - (p - FADE_OUT_START) / (1 - FADE_OUT_START);
       gsap.set(layer, { opacity: Math.max(0, Math.min(1, op)) });
     }
-    // v2 (section2-match-ignite.mp4): the static unlit match ignites into
-    // flame partway through its own 6.016s runtime.
-    let dur2 = 6.016;
-    v2.addEventListener('loadedmetadata', () => { if (v2.duration) dur2 = v2.duration; });
 
     // ------------------------------------------------------------------
-    // "Media-player playlist" chain for 1b -> v2, spanning the section-1
-    // -> section-2 handoff and all of section-2 itself, so BOTH clips stay
-    // genuinely scroll-reactive ("반응연동형") the whole time they are on
-    // screen -- exactly like a media player continuing to the next track
-    // in a playlist -- instead of 1b freezing on a single frame the moment
-    // the intro-pin releases and v2 only reacting for a brief instant as
-    // section-2 first scrolls into view.
-    //
-    // HANDOFF anchors the shared boundary between the two clips as a
-    // position INSIDE section-2 itself ("55% top" = the point 55% of the
-    // way down section-2 reaching the top of the viewport). Using the
-    // exact same anchor string for both the end of the 1b trigger and the
-    // start of the v2 trigger guarantees GSAP computes an identical pixel
-    // boundary for both -- so the hard cut lands at precisely one scroll
-    // position with no gap and no overlap, and section-2 is split into a
-    // first ~55% (still showing the held-match clip reacting to scroll)
-    // and a remaining ~45% (the ignite clip reacting to scroll).
-    const HANDOFF = '55% top';
-
-    // Phase 2: 1b plays out in full (currentTime 0 -> dur1b) across the
-    // ENTIRE work-reel section plus the first ~55% of section-2 -- i.e.
-    // it keeps responding to scroll continuously through that whole span
-    // rather than being left stuck on whatever frame it was on when the
-    // cube's intro-pin released.
-    //
-    // IMPORTANT: this trigger spans a scroll range that comes AFTER
-    // section-1's own intro-pin, but a `scrub` ScrollTrigger's onUpdate
-    // (and onRefresh) still fires with a CLAMPED progress of 0 while the
-    // user is scrolled to a position BEFORE this trigger's own start --
-    // it does not simply stay silent until reached. Without the
-    // `self.isActive` guard below, this callback would stomp the shared
-    // localA/localB/groupOpacity state back to "1b visible" (progress=0
-    // still resolves to frame 0, i.e. its OWN valid start frame, so
-    // nothing here looks obviously wrong in isolation) every time
-    // ScrollTrigger.refresh() runs (e.g. once automatically on window
-    // 'load', see bottom of file) -- and since this trigger's default
-    // refreshPriority (0) is lower than intro-pin's (4), its onRefresh
-    // fires AFTER intro-pin's, silently overwriting the correct
-    // "video-1a fully visible" state intro-pin had just set, hiding 1a
-    // completely from the very first paint even before the user
-    // scrolls at all. Gating on isActive ensures this phase only ever
-    // touches shared state while the scroll position is genuinely
-    // within ITS OWN range.
-    function renderV1bChain(p, isActive) {
-      if (!isActive) return;
-      localA = 0;
-      localB = 1;
-      groupOpacity = 1;
-      applyOpacities();
-      seek(v1b, dur1b, p);
+    // "Media-player playlist" chain for 1b -> v2 -> v4, driven ENTIRELY by
+    // the work-reel section's OWN pinned ScrollTrigger progress (see
+    // setupWorkReel() further below, which calls this function directly
+    // via workReelScrubRenderer -- same "share progress by direct call,
+    // not a second independent ScrollTrigger" pattern as cubeScrubRenderer
+    // above). Housing all three remaining clips inside that ONE pin (rather
+    // than three separate triggers spanning section boundaries, as in the
+    // previous iteration) is what guarantees the entire 1a->1b->2->4 chain
+    // finishes BEFORE the pin releases into section-2 (WORKED WITH) --
+    // there is no scroll position where the chain is still playing while
+    // section-2 is simultaneously visible, satisfying this turn's explicit
+    // "워크 위드 섹션이 나오기 전에 ... 4번째 영상이 이어져야해" requirement
+    // by construction rather than by tuning a boundary anchor string.
+    // The 0->1 pin progress is split into three equal thirds; each phase
+    // hard-cuts in the instant the previous one ends and plays its own
+    // clip out in full (currentTime 0 -> its own duration).
+    const CHAIN = {
+      PHASE_1B_END: 1 / 3,
+      PHASE_V2_END: 2 / 3,
+    };
+    function renderVideoChain(p) {
+      if (p <= CHAIN.PHASE_1B_END) {
+        setActive(1);
+        const localP = CHAIN.PHASE_1B_END > 0 ? p / CHAIN.PHASE_1B_END : 1;
+        seek(v1b, dur1b, localP);
+      } else if (p <= CHAIN.PHASE_V2_END) {
+        setActive(2);
+        const localP = (p - CHAIN.PHASE_1B_END) / (CHAIN.PHASE_V2_END - CHAIN.PHASE_1B_END);
+        seek(v2, dur2, localP);
+      } else {
+        setActive(3);
+        const localP = (p - CHAIN.PHASE_V2_END) / (1 - CHAIN.PHASE_V2_END);
+        seek(v4, dur4, localP);
+      }
     }
 
-    // Phase 3: hard cut straight from the 1a/1b group into v2 the instant
-    // this phase begins (matching the existing 1a->1b hard-cut convention
-    // -- no crossfade), then v2 plays out in full (currentTime 0 -> dur2)
-    // across the remaining ~45% of section-2, finishing exactly as
-    // section-3 (PHOTOS) reaches the top of the viewport.
-    // Same isActive guard as renderV1bChain above, and for the same
-    // reason -- this phase must never touch shared state while the
-    // scroll position sits outside its own range.
-    function renderV2Chain(p, isActive) {
-      if (!isActive) return;
-      groupOpacity = 0;
-      applyOpacities();
-      seek(v2, dur2, p);
-    }
-
-    // Render an initial frame IMMEDIATELY (matching the renderIntro(0) /
-    // work-reel render(0) pattern used elsewhere in this file): a
-    // ScrollTrigger's onUpdate only fires once the user actually scrolls
-    // (or on an explicit refresh), so without this call the layer would
-    // stay stuck at its pre-set opacity:0 on first paint even though the
-    // page loads already sitting at the very top of section-1, where the
-    // video should already be fully visible. On initial load the scroll
-    // position is section-1's very top, i.e. BEFORE both chain phases'
-    // own ranges, so neither is "active" yet -- only renderCubeScrub(0)
-    // (1a fully visible) should actually apply here.
+    // Render an initial frame IMMEDIATELY (a ScrollTrigger's onUpdate only
+    // fires once the user actually scrolls or on an explicit refresh) so
+    // the layer doesn't stay stuck at its pre-set opacity:0 on first paint
+    // even though the page loads already sitting at section-1's very top,
+    // where the video should already be fully visible.
     renderLayerOpacity(0);
     renderCubeScrub(0);
 
-    // Whole-layer visibility: fades in the instant section-1 begins,
-    // stays fully visible through section-1 -> work-reel -> section-2,
-    // then fades out right before section-3 (PHOTOS) takes over so it
-    // hands off cleanly to that group's own existing background pattern.
+    // Whole-layer visibility: fades in the instant section-1 begins, stays
+    // fully visible through section-1 -> work-reel -> section-2, then
+    // fades out right before section-3 (PHOTOS) takes over so it hands off
+    // cleanly to that group's own existing background pattern. This is a
+    // plain (non-pinned) scrub over ordinary document position, independent
+    // of the pinned chains above.
     ScrollTrigger.create({
       trigger: s1,
       start: 'top top',
@@ -766,52 +744,14 @@
       onRefresh: (self) => renderLayerOpacity(self.progress),
     });
 
-    // Match-footage scrub (1a, cube section): rather than creating a
-    // SECOND ScrollTrigger with the same trigger/start/end as the cube's
-    // own "intro-pin" (which was tried first and did NOT work -- GSAP
-    // measured it against a different pixel range than intro-pin's, e.g.
-    // start:1980/end:3960 vs intro-pin's start:-0.001/end:1980, because
-    // intro-pin's `pin:true` inserts a spacer that shifts the trigger
-    // element's OWN measured position, and a second independent
-    // ScrollTrigger on that same trigger element without a matching
-    // refreshPriority gets measured on a different refresh pass and
-    // lands on the POST-spacer-shifted range instead), we instead just
-    // expose this render function and call it DIRECTLY from inside
-    // intro-pin's own onUpdate/onRefresh (see below) with the exact same
-    // `self.progress` number that already drives the cube -- guaranteeing
-    // perfect sync by construction rather than by trying to get two
-    // separate ScrollTriggers to agree on identical progress.
+    // Expose both render functions so each section's OWN pinned
+    // ScrollTrigger (intro-pin below, work-reel-pin in setupWorkReel())
+    // can drive them DIRECTLY off its own self.progress -- see the long
+    // comment above cubeScrubRenderer's declaration for why a second
+    // independent ScrollTrigger on the same pinned trigger element does
+    // NOT reliably compute the same progress.
     cubeScrubRenderer = renderCubeScrub;
-
-    // Phase 2 trigger: from the moment section-1's pin releases (= the
-    // instant #section-work-reel's top edge reaches the viewport top)
-    // through to the HANDOFF point inside section-2.
-    const workReelSection = document.getElementById('section-work-reel');
-    ScrollTrigger.create({
-      id: 'bg-video-1b-chain',
-      trigger: workReelSection || s1,
-      start: 'top top',
-      endTrigger: s2,
-      end: HANDOFF,
-      scrub: true,
-      onUpdate: (self) => renderV1bChain(self.progress, self.isActive),
-      onRefresh: (self) => renderV1bChain(self.progress, self.isActive),
-    });
-
-    // Phase 3 trigger: from that exact same HANDOFF point through to
-    // section-3's top edge -- i.e. picks up precisely where phase 2 left
-    // off, with zero gap/overlap, continuing the "playlist" into the
-    // ignite clip for the remainder of section-2.
-    ScrollTrigger.create({
-      id: 'bg-video-2-chain',
-      trigger: s2,
-      start: HANDOFF,
-      endTrigger: s3,
-      end: 'top top',
-      scrub: true,
-      onUpdate: (self) => renderV2Chain(self.progress, self.isActive),
-      onRefresh: (self) => renderV2Chain(self.progress, self.isActive),
-    });
+    workReelScrubRenderer = renderVideoChain;
   }
   setupFixedBgVideo();
 
@@ -832,15 +772,17 @@
        0.38 - 0.45  (CUBE_EXIT_END) cube slides out to the left and fades
                     away -- FULLY GONE by 0.45. Text remains fully visible
                     throughout (no longer exits here).
-       0.45 - 0.90  (HAND_EXIT_START) stage is clear; the background video
-                    plays its "hand reaches in, grips a match" footage.
-                    Text keeps sitting fully visible/reacted the entire time.
-       0.90 - 0.95  (CUT_POINT) the hand LIFTS the match up and out of frame
-                    -- text sweeps upward and fades out in lockstep with it,
-                    finishing exactly as CUT_POINT hard-cuts the background
-                    to the static held-match close-up shot.
-       0.95 - 1.00  static held-match shot holds; text stays hidden, pin
-                    releases at 1.0 revealing the section right after.
+       0.45 - 0.95  (CUT_POINT) stage is clear; the background video plays
+                    its "hand reaches in, grips, and lifts the match out of
+                    frame" footage. Text keeps sitting fully visible/reacted
+                    the entire time -- it does NOT exit here.
+       0.95 - 1.00  AT CUT_POINT the background hard-cuts to bg-video-1b
+                    (the static held-match shot) and, in that exact same
+                    instant, "Be the ONE" begins sweeping upward and fading
+                    out -- the two are simultaneous by construction (both
+                    keyed off CUT_POINT). The rise finishes exactly as the
+                    pin releases at p=1.0, handing off into the work-reel
+                    section's own pinned 1b->2->4 video chain.
      ============================================================ */
   const cube = document.getElementById('cube');
   const cubeStageEl = document.getElementById('cube-stage');
@@ -948,14 +890,18 @@
       if (eyebrowEl) eyebrowEl.style.letterSpacing = (0.5 - 0.28 * reactP) + 'em';
       if (heroOne) heroOne.style.backgroundPosition = (reactP * 100) + '% 50%';
 
-      // ---- text exit: "Be the ONE" now stays fully visible/reacted through
-      // the ENTIRE cube animation (grow/hold/exit) AND through the hand
-      // reaching in and gripping the match -- it only sweeps upward and
-      // fades out during HAND_EXIT_START -> CUT_POINT, the narrow window
-      // where the hand actually LIFTS the match out of frame in the
-      // background video, finishing exactly as CUT_POINT hard-cuts to the
-      // static held-match shot.
-      const exitP = Math.max(0, Math.min((p - t.HAND_EXIT_START) / (t.CUT_POINT - t.HAND_EXIT_START), 1));
+      // ---- text exit: "Be the ONE" stays fully visible/reacted through the
+      // ENTIRE cube animation (grow/hold/exit) AND through the hand reaching
+      // in, gripping, and lifting the match out of frame -- it only begins
+      // sweeping upward and fading out AT CUT_POINT, the exact same scroll
+      // position where the background video hard-cuts to bg-video-1b (see
+      // INTRO_TIMELINE above). Using CUT_POINT as the exit's own START
+      // (rather than an earlier "HAND_EXIT_START" window) is what makes the
+      // text-rise and video-1b's appearance genuinely SIMULTANEOUS, per this
+      // turn's explicit "텍스트가 올라감과 동시에 2번째 영상이 나와야해"
+      // spec -- the rise then plays out over the remaining CUT_POINT -> 1
+      // range, finishing exactly as the pin releases.
+      const exitP = Math.max(0, Math.min((p - t.CUT_POINT) / (1 - t.CUT_POINT), 1));
       const exitT = exitEase(exitP);
       gsap.set(introText, {
         y: -160 * exitT,
@@ -1002,79 +948,72 @@
   }
 
   /* ============================================================
-     WORK REEL -- scroll-scrubbed match videos + tagline, inserted
-     between SECTION 1 (cube) and SECTION 2 (client logo wall).
-     Single pinned ScrollTrigger, whole sequence mapped over 0->1:
-       0.00 - 0.15  tagline fades/blurs in over video 1's still frame
-       0.15 - 0.45  video 1 (match moves, ends on a fast zoom into
-                    the match head) scrubs from 0 -> its own duration
-       0.45 - 0.50  crossfade video1 -> video2, tagline fades out
-       0.50 - 1.00  video 2 (match ignites, chars from red to black)
-                    scrubs from 0 -> its own duration, finishing
-                    EXACTLY as the pin releases (p=1) so the very
-                    next thing the user sees is section-2's logo
-                    wall beginning to enter -- matches the explicit
-                    "로고가 나오기 전까지 2번 영상이 마무리" requirement.
-     Both <video> elements are scrub-only: muted, no autoplay/loop,
-     currentTime is set directly from scroll progress every frame.
-     Source files were re-encoded with all-intraframe keyframes
-     (ffmpeg -g 1 -keyint_min 1 -sc_threshold 0) specifically so
-     currentTime seeks stay smooth during fast scroll scrubbing.
+     WORK REEL -- tagline text, pinned between SECTION 1 (cube) and
+     SECTION 2 (client logo wall). This section no longer carries its
+     own separate video elements -- per this turn's explicit "고정된
+     화면에 계속 화면이 흐르는 것처럼 보여야하고... 영상을 제외한
+     컨텐츠들만이 스크롤 다운에 반응하며 화면위로 올라가는 거야" spec,
+     the ONLY thing that belongs to (and pins with) this section is its
+     own foreground content -- the tagline. The actual video being
+     shown underneath during this section's pinned span is the SAME
+     persistent #fixed-bg-video layer used by section-1, continuing its
+     1b -> v2 -> v4 chain (see renderVideoChain() / workReelScrubRenderer
+     inside setupFixedBgVideo() above) -- driven DIRECTLY off this
+     section's own pin progress, exactly the same "expose a render fn,
+     call it from the pin's own onUpdate" pattern used for the cube's
+     video-1a scrub in the intro-pin ScrollTrigger below.
+     Whole sequence mapped over this pin's own 0->1 progress:
+       0.00 - 0.15  tagline fades/blurs in
+       0.15 - 0.85  tagline holds fully visible while, underneath, the
+                    fixed video layer hard-cuts through 1b -> v2 -> v4
+                    in three equal thirds (see CHAIN inside
+                    setupFixedBgVideo())
+       0.85 - 1.00  tagline fades back out, finishing just as the pin
+                    releases (p=1) so the very next thing the user
+                    sees is section-2's logo wall beginning to enter --
+                    and by that exact point v4 (the final clip in the
+                    chain) has ALSO finished, per this turn's explicit
+                    "워크 위드 섹션이 나오기 전에 ... 4번째 영상이
+                    이어져야해" requirement.
      ============================================================ */
   function setupWorkReel() {
     const section = document.getElementById('section-work-reel');
-    const v1 = document.getElementById('work-reel-video-1');
-    const v2 = document.getElementById('work-reel-video-2');
     const tagline = document.getElementById('work-reel-tagline');
-    if (!section || !v1 || !v2 || !tagline) return;
+    if (!section || !tagline) return;
 
     gsap.set(tagline, { opacity: 0, y: 26, filter: 'blur(6px)' });
-    gsap.set(v2, { opacity: 0 });
 
-    // Fallback duration (matches the known 6.016s source length) used until
-    // each video's real duration is available via loadedmetadata, so early
-    // scroll input before the browser finishes probing the file still maps
-    // to a sane (if approximate) currentTime instead of doing nothing.
-    const FALLBACK_DURATION = 6.016;
-    let dur1 = FALLBACK_DURATION;
-    let dur2 = FALLBACK_DURATION;
-    v1.addEventListener('loadedmetadata', () => { if (v1.duration) dur1 = v1.duration; });
-    v2.addEventListener('loadedmetadata', () => { if (v2.duration) dur2 = v2.duration; });
-
-    function seek(video, duration, localP) {
-      const t = Math.max(0, Math.min(1, localP)) * duration;
-      // guard against redundant/NaN seeks (readyState 0 = HAVE_NOTHING)
-      if (video.readyState > 0 && Number.isFinite(t)) {
-        video.currentTime = t;
-      }
-    }
-
-    function render(p) {
-      // ---- tagline: fade/blur in across 0 -> 0.15, hold, fade out 0.42 -> 0.50
+    function renderTagline(p) {
+      // ---- tagline: fade/blur in across 0 -> 0.15, hold, fade out 0.85 -> 1.00
       const inP = Math.min(p / 0.15, 1);
-      const outP = Math.max(0, Math.min((p - 0.42) / 0.08, 1));
+      const outP = Math.max(0, Math.min((p - 0.85) / 0.15, 1));
       const taglineOpacity = inP * (1 - outP);
       gsap.set(tagline, {
         opacity: taglineOpacity,
         y: 26 * (1 - inP) + -14 * outP,
         filter: `blur(${6 * (1 - inP) + 6 * outP}px)`,
       });
-
-      // ---- video 1: scrubs across 0.15 -> 0.45
-      const v1P = Math.max(0, Math.min((p - 0.15) / 0.30, 1));
-      seek(v1, dur1, v1P);
-
-      // ---- crossfade video1 -> video2 across 0.45 -> 0.50
-      const crossP = Math.max(0, Math.min((p - 0.45) / 0.05, 1));
-      gsap.set(v1, { opacity: 1 - crossP });
-      gsap.set(v2, { opacity: crossP });
-
-      // ---- video 2: scrubs across 0.50 -> 1.00, finishing exactly at p=1
-      // (pin release), right before section-2's logo wall begins.
-      const v2P = Math.max(0, Math.min((p - 0.50) / 0.50, 1));
-      seek(v2, dur2, v2P);
     }
-    render(0);
+
+    function render(p, isActive) {
+      renderTagline(p);
+
+      // ---- drive the fixed-bg-video layer's 1b -> v2 -> v4 chain off this
+      // EXACT same pin progress (see the long comment above this function
+      // for why this must be a direct call rather than a second
+      // independent ScrollTrigger on the same pinned trigger element).
+      //
+      // IMPORTANT: only forward to the chain when this pin is genuinely
+      // active/in-view (or being explicitly refreshed while active).
+      // ScrollTrigger evaluates progress as CLAMPED 0 at setup time / before
+      // the trigger's own start is reached -- calling this unconditionally
+      // on the very first `render(0)` below would stomp setupFixedBgVideo()'s
+      // correct initial "1a visible" state with "1b visible" (since p=0 <=
+      // CHAIN.PHASE_1B_END), producing a wrong-video flash on first paint
+      // before the user has scrolled at all. Gating on isActive avoids that.
+      if (isActive && workReelScrubRenderer) workReelScrubRenderer(p);
+    }
+    renderTagline(0);
 
     ScrollTrigger.create({
       id: 'work-reel-pin',
@@ -1087,8 +1026,8 @@
       // conveyor (3) -- a non-integer priority slots it in document order
       // without needing to renumber either of those existing values.
       refreshPriority: 3.5,
-      onUpdate: (self) => render(self.progress),
-      onRefresh: (self) => render(self.progress),
+      onUpdate: (self) => render(self.progress, self.isActive),
+      onRefresh: (self) => render(self.progress, self.isActive),
     });
   }
   setupWorkReel();
