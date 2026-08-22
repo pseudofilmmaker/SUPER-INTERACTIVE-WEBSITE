@@ -483,17 +483,21 @@
          same technique as WORK REEL below -- muted, no autoplay/loop,
          currentTime is set directly from the cube-section scroll
          progress every frame (via the /reel-video Range-proxy route so
-         seeking stays smooth). 1a = matches falling+settling, 1b = a
-         hand plucking one match out; they were shot as one continuous
-         take so scrubbing from 1a straight into 1b reads as a single
-         unbroken clip. This progress is read from the SAME trigger/
-         start/end as the cube's own "intro-pin" ScrollTrigger above,
-         so the footage advances in perfect lockstep with the cube's
-         rotation/growth -- true "반응연동형" (scroll-position-linked)
-         playback, not autoplay/loop.
-       - bg-video-2 (logo wall, section-2): unchanged autoplay/loop
-         torch footage; the whole cube-group (1a+1b) crossfades into it
-         as section-2 scrolls into view.
+         seeking stays smooth). 1a = matches fall, settle, then a hand
+         reaches in and lifts one out of frame (a single continuous
+         8s take); 1b = the same match now held static/unlit, the calm
+         beat right after the hard cut. This progress is read from the
+         SAME trigger/start/end as the cube's own "intro-pin" ScrollTrigger
+         above, so the footage advances in perfect lockstep with the
+         cube's rotation/growth -- true "반응연동형" (scroll-position-
+         linked) playback, not autoplay/loop.
+       - bg-video-2 (logo wall, section-2): ALSO scrub-only (not
+         autoplay/loop) -- the same held match now ignites into flame
+         partway through its own 6s runtime; currentTime is tied 1:1 to
+         the section-2 crossfade progress below so the strike/ignite
+         beat lands exactly as the logo wall scrolls into view. The
+         whole cube-group (1a+1b) crossfades into it as section-2
+         scrolls into view.
        - the whole layer fades in in as section-1 begins and fades out
          right before section-3/PHOTOS takes over (round scope is
          explicitly limited to "로고월섹션까지").
@@ -535,10 +539,10 @@
   };
   // Timestamp (seconds) inside section1-matches-scrub-01.mp4 where the
   // match pile has finished falling and settled -- found by frame-by-frame
-  // inspection of the source footage (matches fall 0->~1s, settle ~1->4.3s,
-  // a hand then reaches in and grips one match by ~6.5s, lifting it fully
-  // out of frame by the clip's own end at ~6.8s).
-  const V1A_SETTLE_END_SEC = 4.3;
+  // inspection of the source footage (matches fall 0->~1s, settle ~1->4.5s
+  // static hold, a hand then enters at ~4.5s and grips one match by ~5.5s,
+  // lifting it fully out of frame by ~7.5-8s, the clip's own end).
+  const V1A_SETTLE_END_SEC = 4.5;
 
   function setupFixedBgVideo() {
     const layer = document.getElementById('fixed-bg-video');
@@ -554,20 +558,20 @@
     gsap.set(v1b, { opacity: 0 });
     gsap.set(v2, { opacity: 0 });
 
-    // Known source durations (~6.83s / 6.0s) used as a fallback until each
+    // Known source durations (8.0s / 6.016s) used as a fallback until each
     // video's real duration is available via loadedmetadata -- same
     // pattern as setupWorkReel() below, so early scroll input before the
     // browser finishes probing the file still maps to a sane currentTime.
-    // 1a (section1-matches-scrub-01.mp4) now runs from the ABSOLUTE start
-    // (t=0) of its source through the full "matches fall -> settle -> a
-    // hand reaches in, grabs one match, and lifts it out of frame" action
-    // -- i.e. what used to be trimmed off as a supposed "black tail" in an
-    // earlier pass was actually this hand-grab payoff, so the whole thing
-    // is kept now (see renderCubeScrub below for how its two acts, "settle"
-    // and "hand grabs + exits", are mapped onto two different scroll
-    // sub-ranges rather than played back linearly across the whole pin).
-    let dur1a = 6.83;
-    let dur1b = 6.0;
+    // 1a (section1-matches-scrub-01.mp4) runs from the ABSOLUTE start (t=0)
+    // of its source through the full "matches fall -> settle -> a hand
+    // reaches in, grabs one match, and lifts it out of frame" action (see
+    // renderCubeScrub below for how its two acts, "settle" and "hand grabs
+    // + exits", are mapped onto two different scroll sub-ranges rather than
+    // played back linearly across the whole pin). 1b (scrub-02) is a static
+    // unlit-match held shot with no motion of its own -- shown after the
+    // hard cut as the calm "held match" beat before section-2's ignite.
+    let dur1a = 8.0;
+    let dur1b = 6.016;
     v1a.addEventListener('loadedmetadata', () => { if (v1a.duration) dur1a = v1a.duration; });
     v1b.addEventListener('loadedmetadata', () => { if (v1b.duration) dur1b = v1b.duration; });
 
@@ -651,9 +655,20 @@
       if (p > FADE_OUT_START) op = 1 - (p - FADE_OUT_START) / (1 - FADE_OUT_START);
       gsap.set(layer, { opacity: Math.max(0, Math.min(1, op)) });
     }
+    // v2 (section2-match-ignite.mp4): the static unlit match ignites into
+    // flame partway through its own 6.016s runtime -- unlike the old torch
+    // "loop" footage this is a one-shot, non-seamless ignition, so it is
+    // scrub-driven (currentTime tied 1:1 to the section-2 crossfade
+    // progress) rather than autoplay+loop, ensuring the strike/ignite beat
+    // always lands in perfect sync with the logo wall scrolling into view
+    // instead of looping/jumping unpredictably.
+    let dur2 = 6.016;
+    v2.addEventListener('loadedmetadata', () => { if (v2.duration) dur2 = v2.duration; });
+
     function renderCrossfade(p) {
       groupOpacity = 1 - p;
       applyOpacities();
+      seek(v2, dur2, p);
     }
 
     // Render an initial frame IMMEDIATELY (matching the renderIntro(0) /
@@ -697,7 +712,7 @@
     // get two separate ScrollTriggers to agree on identical progress.
     cubeScrubRenderer = renderCubeScrub;
 
-    // Crossfade the cube-clip group (1a/1b) -> video-2 (torch) as
+    // Crossfade the cube-clip group (1a/1b) -> video-2 (ignite) as
     // section-2 (the logo wall) scrolls up into place -- i.e. the
     // backdrop itself transitions in lockstep with the user arriving
     // at the logo wall.
