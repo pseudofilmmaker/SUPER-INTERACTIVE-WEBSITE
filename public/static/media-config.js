@@ -45,8 +45,14 @@ window.SITE_MEDIA = {
   //      setupGroupTitleFrameIn() in app.js).
   photosIntroImage: '',
 
-  // ── 5. PHOTOS 카드 스택 (5장) ───────────────────────────────
-  photoCards: ['', '', '', '', ''],
+  // ── 5. PHOTOS 카드 스택 (5장, 순서: Food/Fashion/Product/Places/AI) ──
+  photoCards: [
+    '/static/media/photos/food/food-01.jpg',
+    '/static/media/photos/fashion/fashion-02.jpg',
+    '/static/media/photos/product/product-01.jpg',
+    '/static/media/photos/places/places-01.jpg',
+    '/static/media/photos/ai/ai-01.jpg'
+  ],
 
   // ── 6. VIDEOS 인트로 썸네일 ─────────────────────────────────
   videosIntroThumb: '',

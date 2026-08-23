@@ -1059,6 +1059,36 @@ html, body {
   .thumb-frame--card .thumb-item { width: 150px; height: min(210px, calc(100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 80px)); }
 }
 
+/* ------------------------------------------------------------
+   PHOTOS thumbnail — polaroid picture-frame treatment.
+   Only the photo cards (.thumb-frame--card, section-4) get the
+   classic instant-film look: a cream paper "mat" around the photo
+   with a noticeably thicker strip at the bottom, plus a faint warm
+   shadow. Padding (not a border) creates the mat, because the photo
+   <img>/<video> is sized to 100%/100% of its parent's *content* box
+   (box-sizing: border-box is global) -- so insetting via padding
+   automatically reveals the cream background as an even frame
+   without any HTML/JS changes. Video/landscape/reel carousels
+   (.thumb-frame--landscape / --reel) are untouched. GSAP drives this
+   item's position via an inline `transform: translate()`, so no
+   `transform`/`rotate` is added here -- it would be clobbered by
+   that inline style every frame. */
+.thumb-frame--card .thumb-item {
+  background: linear-gradient(165deg, #fbf8f1, #f1ece0);
+  border: 1px solid rgba(0,0,0,0.06);
+  border-radius: 3px;
+  padding: 14px 14px 46px;
+  box-shadow:
+    0 25px 60px rgba(0,0,0,0.55),
+    0 2px 0 rgba(255,255,255,0.5) inset;
+}
+.thumb-frame--card .thumb-item .face-placeholder {
+  color: rgba(20,14,8,0.4);
+}
+@media (max-width: 768px) {
+  .thumb-frame--card .thumb-item { padding: 8px 8px 28px; }
+}
+
 /* ============================================================
    SECTIONS 6 & 7 — Video carousels (landscape / reels)
    Same reserved-safe-zone treatment as .stack-panel above (px-based
@@ -1251,6 +1281,23 @@ html, body {
 }
 .detail-card-media img, .detail-card-media video {
   width: 100%; height: 100%; object-fit: cover;
+}
+/* Photos detail page ONLY -- same polaroid mat treatment as the home-page
+   teaser cards (see .thumb-frame--card .thumb-item above): cream paper
+   frame with a thicker bottom strip. Scoped to .detail-page--photos so the
+   /videos detail grid (which shares .detail-card/.detail-grid) is
+   untouched. */
+.detail-page--photos .detail-card {
+  background: linear-gradient(165deg, #fbf8f1, #f1ece0);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.45), 0 2px 0 rgba(255,255,255,0.5) inset;
+  border: 1px solid rgba(0,0,0,0.06);
+}
+.detail-page--photos .detail-card-media {
+  padding: 12px 12px 0;
+}
+.detail-page--photos .detail-card-caption {
+  color: rgba(20,14,8,0.55);
+  padding: 10px 14px 16px;
 }
 .detail-card-caption {
   padding: 12px 14px;
