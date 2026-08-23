@@ -163,8 +163,8 @@
       });
     });
 
-    // arrays: photoCards, landscapeVideos, reelVideos
-    ['photoCards', 'landscapeVideos', 'reelVideos'].forEach((key) => {
+    // arrays: photoCards, photoCardsBack, landscapeVideos, reelVideos
+    ['photoCards', 'photoCardsBack', 'landscapeVideos', 'reelVideos'].forEach((key) => {
       (MEDIA[key] || []).forEach((src, i) => {
         const el = document.querySelector(`[data-media-slot="${key}:${i}"]`);
         if (el) fill(el, src);
@@ -173,6 +173,27 @@
 
   }
   injectMedia();
+
+  /* ---------- PHOTOS polaroid stack: click/tap to flip ----------
+     Each .polaroid-stack card holds two stacked polaroid photos (front
+     visible, back peeking out behind). Clicking/tapping (or pressing
+     Enter/Space when focused) flips the front photo away via a 3D
+     rotateY, revealing the second photo underneath -- a lightweight,
+     self-contained interaction independent of the GSAP scroll-scrub
+     conveyor (which only ever moves the outer .thumb-item via `x`, so
+     it never touches this inner flip state). */
+  document.querySelectorAll('.polaroid-stack').forEach((card) => {
+    function toggleFlip() {
+      card.classList.toggle('is-flipped');
+    }
+    card.addEventListener('click', toggleFlip);
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        toggleFlip();
+      }
+    });
+  });
 
   /* ---------- reveal animations per panel ---------- */
   document.querySelectorAll('.panel').forEach((panel) => {
