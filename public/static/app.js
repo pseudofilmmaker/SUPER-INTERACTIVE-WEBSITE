@@ -46,25 +46,54 @@
      2/4/5/6 and photos-bg-video-7/8) via blobifySeekableVideo() below,
      called once per video as soon as the page loads.
      ============================================================ */
-  function blobifySeekableVideo(video) {
+  function blobifySeekableVideo(video, delayMs) {
     if (!video || video.dataset.blobified) return;
     video.dataset.blobified = '1';
     const originalSrc = video.currentSrc || video.src;
     if (!originalSrc) return;
-    fetch(originalSrc)
-      .then((res) => res.blob())
-      .then((blob) => {
-        const blobUrl = URL.createObjectURL(blob);
-        const wasPlaying = !video.paused;
-        video.src = blobUrl;
-        video.load();
-        if (wasPlaying) video.play().catch(() => {});
-      })
-      .catch(() => {
-        // Network hiccup -- leave the original network src in place; the
-        // video still plays/displays normally, it just won't be
-        // frame-accurately scrub-seekable until a page reload retries.
-      });
+    const run = () => {
+      fetch(originalSrc)
+        .then((res) => res.blob())
+        .then((blob) => {
+          const blobUrl = URL.createObjectURL(blob);
+          const wasPlaying = !video.paused;
+          video.src = blobUrl;
+          video.load();
+          if (wasPlaying) video.play().catch(() => {});
+        })
+        .catch(() => {
+          // Network hiccup -- leave the original network src in place; the
+          // video still plays/displays normally, it just won't be
+          // frame-accurately scrub-seekable until a page reload retries.
+        });
+    };
+    // BUG FIX (this turn): "왜 섹션 1에 이 영상이 보이는 거야?" -- torch
+    // (bg-video-6) was visibly painted INSIDE bg-video-1a's own box on
+    // first paint, even though bg-video-1a's own JS-readable state
+    // (currentTime, and a <canvas> drawImage() readback of its true
+    // decoded frame) was always correct (dark, matches-consistent).
+    // Isolating the DOM to bg-video-1a alone (display:none on all 5
+    // other <video> elements) did NOT fix it -- the wrong texture was
+    // already latched onto that element's compositor layer. Root cause:
+    // ALL 6 fixed-bg videos called blobifySeekableVideo() -> fetch ->
+    // URL.createObjectURL -> video.load() in the SAME tick on page load
+    // (videos.forEach(v => blobifySeekableVideo(v))), so Chromium was
+    // simultaneously (re)initializing 6 video decoders/compositor
+    // textures at once; under that load it can cross-wire which decoded
+    // texture gets composited into which <video> element's layer -- a
+    // browser compositor bug, not an app-logic bug (confirmed: disabling
+    // GPU/hardware video decode did not fix it, and the wrong frame was
+    // visible with a completely fresh page load, no scrolling). FIX:
+    // stagger each video's own load() by delayMs so at most one decoder
+    // is being (re)initialized at a time -- the visible one (index 0,
+    // delay 0) blobifies immediately/alone, every other still-hidden
+    // clip's own reload is spread out afterward, eliminating the
+    // simultaneous-init race that caused the cross-talk.
+    if (delayMs) {
+      setTimeout(run, delayMs);
+    } else {
+      run();
+    }
   }
 
   /* ---------- mobile 100vh fix ---------- */
@@ -769,7 +798,14 @@
     // the full explanation): swap each network video src for a Blob URL
     // so it becomes genuinely seekable, independent of server range
     // support. Applied once per video as soon as it starts loading.
-    videos.forEach((v) => blobifySeekableVideo(v));
+    // Staggered (see blobifySeekableVideo()'s own comment for the full
+    // "simultaneous decoder init -> compositor cross-talk" root-cause
+    // explanation of the torch-in-section-1 bug this fixes): v1a (the
+    // only one visible on first paint) blobifies immediately/alone;
+    // every other still-hidden clip's own reload is spread out 250ms
+    // apart afterward so at most one video decoder is being
+    // (re)initialized at any given moment.
+    videos.forEach((v, i) => blobifySeekableVideo(v, i * 250));
 
     function seek(video, duration, localP) {
       const t = Math.max(0, Math.min(1, localP)) * duration;
@@ -1008,8 +1044,10 @@
     v8.addEventListener('loadedmetadata', () => { if (v8.duration) dur8 = v8.duration; });
 
     // Same root-cause fix as setupFixedBgVideo() above -- see
-    // blobifySeekableVideo()'s top-of-file comment.
-    videos.forEach((v) => blobifySeekableVideo(v));
+    // blobifySeekableVideo()'s top-of-file comment. Staggered for the
+    // same "avoid simultaneous decoder init" reason (see that function's
+    // comment for the torch-in-section-1 bug this fixes).
+    videos.forEach((v, i) => blobifySeekableVideo(v, i * 250));
 
     function seek(video, duration, localP) {
       const t = Math.max(0, Math.min(1, localP)) * duration;
