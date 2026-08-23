@@ -355,13 +355,28 @@ html, body {
 #bg-video-1a { opacity: 1; }
 /* Scrim: matches the dark-vignette treatment used elsewhere (.title-overlay/
    .work-reel-vignette) so foreground text stays legible over the brighter
-   matchstick/flame footage regardless of which frame is showing. */
+   matchstick/flame footage regardless of which frame is showing.
+   ROOT-CAUSE FIX (this turn's "영상연결부 opacity/밝기 차이" bug, found via
+   uploaded 6.mp4/7.mp4 forensics): this scrim used to be MUCH darker
+   (radial 0.25->0.72, linear up to 0.65) than #photos-bg-video-layer's own
+   .photos-bg-video-scrim (radial 0->0.32, linear up to 0.3) just below.
+   The two raw source clips (section2-torch-blaze.mp4 / photos-intro-07.mp4)
+   are near-identical in brightness at the exact section-2->section-3 cut
+   point (mean gray 15.66 vs 15.93, confirmed via frame-accurate ffmpeg
+   extraction) -- the visible brightness jump the user reported was NOT in
+   either video file, it was this layer's own much-heavier vignette making
+   the v6 side look artificially dim right up until the instant it hard-cuts
+   to the far-lighter-scrimmed v7 side (composited screenshot mean: 14.0
+   before the cut vs 22.0 after, a ~57% jump). Fix: match this scrim's alpha
+   stops to .photos-bg-video-scrim's exact values so sections 1-2 and
+   sections 3-4 share the same vignette weight and the cut no longer reads
+   as a brightness change. */
 .fixed-bg-scrim {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse at 50% 45%, rgba(5,3,2,0.25) 0%, rgba(5,3,2,0.72) 78%),
-    linear-gradient(180deg, rgba(5,3,2,0.55) 0%, transparent 26%, transparent 74%, rgba(5,3,2,0.65) 100%);
+    radial-gradient(ellipse at 50% 45%, rgba(5,3,2,0) 0%, rgba(5,3,2,0.32) 82%),
+    linear-gradient(180deg, rgba(5,3,2,0.22) 0%, transparent 22%, transparent 78%, rgba(5,3,2,0.3) 100%);
 }
 
 /* ============================================================
