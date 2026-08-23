@@ -404,12 +404,23 @@ html, body {
   will-change: opacity;
 }
 #photos-bg-video-7 { opacity: 1; }
+/* Kept deliberately much lighter than #fixed-bg-video's own
+   .fixed-bg-scrim (sections 1-2): that layer's video is a mostly-black
+   match-strike/ignite clip where a heavy scrim barely registers, but
+   here video-7/8 is a bright, fully-lit torch flame filling most of the
+   frame -- the old values (radial 0.25->0.72, linear up to 0.65) measured
+   ~38-40% average brightness loss across the flame itself (confirmed via
+   canvas drawImage() readback of the raw decoded frame vs the final
+   composited screenshot), reading as a dull/muddy/"opaque" haze rather
+   than a crisp flame. Cut all alpha stops so only a light vignette
+   remains at the very edges (for title-text legibility) while the
+   flame's own brightness/saturation stays close to the source clip. */
 .photos-bg-video-scrim {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse at 50% 45%, rgba(5,3,2,0.25) 0%, rgba(5,3,2,0.72) 78%),
-    linear-gradient(180deg, rgba(5,3,2,0.55) 0%, transparent 26%, transparent 74%, rgba(5,3,2,0.65) 100%);
+    radial-gradient(ellipse at 50% 45%, rgba(5,3,2,0) 0%, rgba(5,3,2,0.32) 82%),
+    linear-gradient(180deg, rgba(5,3,2,0.22) 0%, transparent 22%, transparent 78%, rgba(5,3,2,0.3) 100%);
 }
 
 /* ============================================================
