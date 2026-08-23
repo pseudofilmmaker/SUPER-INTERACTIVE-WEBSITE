@@ -45,21 +45,21 @@ window.SITE_MEDIA = {
   //      setupGroupTitleFrameIn() in app.js).
   photosIntroImage: '',
 
-  // ── 5. PHOTOS 카드 스택 (5장, 순서: Food/Fashion/Product/Places/AI) ──
-  // 각 카드는 폴라로이드 2장이 겹쳐진 더미로 표시되며, 클릭하면 앞장이
-  // 뒤로 넘어가며(3D flip) photoCardsBack의 두 번째 사진이 드러난다.
+  // ── 5. PHOTOS 카드 컨베이어 (10장, 카테고리당 2장 연속 배치) ──
+  // 순서: Food x2, Fashion x2, Product x2, Places x2, AI x2
+  // (VIDEOS 랜드스케이프 캐러셀과 동일한 패턴 -- 카테고리당 여러 장을
+  // 컨베이어에 연속 배치하고 categoryForIndex: idx => Math.floor(idx/2)
+  // 로 카테고리 리스트 하이라이트에 매핑한다.)
   photoCards: [
     '/static/media/photos/food/food-01.jpg',
-    '/static/media/photos/fashion/fashion-02.jpg',
-    '/static/media/photos/product/product-01.jpg',
-    '/static/media/photos/places/places-01.jpg',
-    '/static/media/photos/ai/ai-01.jpg'
-  ],
-  photoCardsBack: [
     '/static/media/photos/food/food-02.jpg',
     '/static/media/photos/fashion/fashion-01.jpg',
+    '/static/media/photos/fashion/fashion-02.jpg',
+    '/static/media/photos/product/product-01.jpg',
     '/static/media/photos/product/product-02.jpg',
+    '/static/media/photos/places/places-01.jpg',
     '/static/media/photos/places/places-02.jpg',
+    '/static/media/photos/ai/ai-01.jpg',
     '/static/media/photos/ai/ai-02.jpg'
   ],
 

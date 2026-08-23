@@ -163,8 +163,8 @@
       });
     });
 
-    // arrays: photoCards, photoCardsBack, landscapeVideos, reelVideos
-    ['photoCards', 'photoCardsBack', 'landscapeVideos', 'reelVideos'].forEach((key) => {
+    // arrays: photoCards, landscapeVideos, reelVideos
+    ['photoCards', 'landscapeVideos', 'reelVideos'].forEach((key) => {
       (MEDIA[key] || []).forEach((src, i) => {
         const el = document.querySelector(`[data-media-slot="${key}:${i}"]`);
         if (el) fill(el, src);
@@ -173,27 +173,6 @@
 
   }
   injectMedia();
-
-  /* ---------- PHOTOS polaroid stack: click/tap to flip ----------
-     Each .polaroid-stack card holds two stacked polaroid photos (front
-     visible, back peeking out behind). Clicking/tapping (or pressing
-     Enter/Space when focused) flips the front photo away via a 3D
-     rotateY, revealing the second photo underneath -- a lightweight,
-     self-contained interaction independent of the GSAP scroll-scrub
-     conveyor (which only ever moves the outer .thumb-item via `x`, so
-     it never touches this inner flip state). */
-  document.querySelectorAll('.polaroid-stack').forEach((card) => {
-    function toggleFlip() {
-      card.classList.toggle('is-flipped');
-    }
-    card.addEventListener('click', toggleFlip);
-    card.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        toggleFlip();
-      }
-    });
-  });
 
   /* ---------- reveal animations per panel ---------- */
   document.querySelectorAll('.panel').forEach((panel) => {
@@ -1841,11 +1820,12 @@
   // using stale pre-pin offsets, same reasoning as the intro pin above.
   // intro pin = 4 (highest, earliest); these three conveyors follow in order.
 
-  // PHOTOS: 5 cards <-> 5 categories, 1:1 mapping
+  // PHOTOS: 10 cards spread across the 5 categories, 2 items per
+  // category (same pattern as the VIDEOS landscape carousel below)
   setupConveyor({
-    sectionId: 'section-4', frameId: 'photo-stack', count: 5, gap: 46,
-    categoryForIndex: (idx) => idx, categoryListId: 'photos-category-list',
-    pinPercentPerItem: 30, refreshPriority: 3,
+    sectionId: 'section-4', frameId: 'photo-stack', count: 10, gap: 46,
+    categoryForIndex: (idx) => Math.floor(idx / 2), categoryListId: 'photos-category-list',
+    pinPercentPerItem: 22, refreshPriority: 3,
   });
 
   // VIDEOS landscape: 10 items spread across the first 5 (non-Reels)

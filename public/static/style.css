@@ -1060,114 +1060,38 @@ html, body {
 }
 
 /* ------------------------------------------------------------
-   PHOTOS thumbnail — polaroid stack + click-to-flip interaction.
-   Only the photo cards (.thumb-frame--card, section-4) get this
-   treatment. Instead of a single static photo, each card
-   (.polaroid-stack) shows TWO real photos stacked like loose
-   polaroid prints: the front photo (.polaroid-front) sits flat and
-   square on top; a second photo (.polaroid-peek, sourced from
-   photoCardsBack) peeks out from behind at a slight offset/angle,
-   signalling there's more to see. Clicking/tapping the card (or
-   pressing Enter/Space when focused -- see the click/keydown
-   handlers in app.js) 3D-flips the front photo away via rotateY
-   (backface-visibility:hidden makes it vanish past 90deg) while the
-   peeking photo simultaneously straightens up and slides forward to
-   become the new front -- like turning over a real photo to reveal
-   another one underneath.
-   Both .polaroid-front/.polaroid-peek are still `[data-media-slot]`
-   targets nested inside .thumb-item, so the real <img>/<video>
-   injected by app.js's fill() is sized by the existing
-   `.thumb-item img, .thumb-item video { object-fit: cover }` rule
-   above with zero changes there.
-   IMPORTANT: GSAP only ever transforms the OUTER .thumb-item (for
-   the scroll conveyor's x position) -- never .polaroid-front/
-   .polaroid-peek -- so this inner flip animation can never be
-   clobbered by the conveyor's per-frame `gsap.set(item, { x })`. */
-.thumb-frame--card .thumb-item.polaroid-stack {
-  background: none;
-  border: none;
-  box-shadow: none;
-  overflow: visible;
-  cursor: pointer;
-  perspective: 1200px;
-}
-.thumb-frame--card .thumb-item.polaroid-stack:focus-visible {
-  outline: 2px solid var(--accent-flame);
-  outline-offset: 8px;
-  border-radius: 3px;
-}
-.polaroid-layer {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  border-radius: 3px;
+   PHOTOS thumbnail — polaroid picture-frame treatment.
+   Only the photo cards (.thumb-frame--card, section-4) get the
+   classic instant-film look: a cream paper "mat" around the photo
+   with a noticeably thicker strip at the bottom, plus a faint warm
+   shadow. Padding (not a border) creates the mat, because the photo
+   <img>/<video> is sized to 100%/100% of its parent's *content* box
+   (box-sizing: border-box is global) -- so insetting via padding
+   automatically reveals the cream background as an even frame
+   without any HTML/JS changes. Video/landscape/reel carousels
+   (.thumb-frame--landscape / --reel) are untouched. GSAP drives this
+   item's position via an inline `transform: translate()`, so no
+   `transform`/`rotate` is added here -- it would be clobbered by
+   that inline style every frame.
+   All 10 cards (2 per category) sit in a single flat conveyor row --
+   same left/right frame-in/frame-out mechanism as the VIDEOS
+   carousels below -- rather than a stacked/flippable pair, so every
+   photo is visible on its own as it scrolls through, with no cards
+   clipped behind the frame edge. */
+.thumb-frame--card .thumb-item {
   background: linear-gradient(165deg, #fbf8f1, #f1ece0);
   border: 1px solid rgba(0,0,0,0.06);
+  border-radius: 3px;
   padding: 14px 14px 46px;
   box-shadow:
     0 25px 60px rgba(0,0,0,0.55),
     0 2px 0 rgba(255,255,255,0.5) inset;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  transition: transform 0.65s cubic-bezier(0.5, 0.05, 0.15, 1), box-shadow 0.4s ease;
 }
-.polaroid-layer .face-placeholder {
+.thumb-frame--card .thumb-item .face-placeholder {
   color: rgba(20,14,8,0.4);
 }
-.polaroid-peek {
-  transform: rotate(7deg) translate(12px, 16px);
-  z-index: 1;
-}
-.polaroid-front {
-  transform: rotate(0deg);
-  z-index: 2;
-}
-.polaroid-stack:hover .polaroid-front {
-  transform: translateY(-4px);
-  box-shadow:
-    0 32px 70px rgba(0,0,0,0.6),
-    0 2px 0 rgba(255,255,255,0.5) inset;
-}
-.polaroid-stack.is-flipped .polaroid-front {
-  transform: rotateY(-165deg);
-}
-.polaroid-stack.is-flipped .polaroid-peek {
-  transform: rotate(0deg) translate(0, 0);
-  z-index: 3;
-  transition-delay: 0.12s;
-}
-/* small circular "flip" affordance badge, bottom-right corner */
-.polaroid-flip-hint {
-  position: absolute;
-  right: 10px;
-  bottom: 10px;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: rgba(20,14,8,0.55);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 4;
-  pointer-events: none;
-  opacity: 0.85;
-  transition: transform 0.35s ease, opacity 0.3s ease;
-}
-.polaroid-icon::before {
-  content: '\21BB'; /* ↻ */
-  font-size: 14px;
-  color: #fff;
-  line-height: 1;
-}
-.polaroid-stack:hover .polaroid-flip-hint { transform: scale(1.15); opacity: 1; }
-.polaroid-stack.is-flipped .polaroid-flip-hint { transform: rotate(180deg); }
 @media (max-width: 768px) {
-  .polaroid-layer { padding: 8px 8px 28px; }
-  .polaroid-flip-hint { width: 20px; height: 20px; right: 6px; bottom: 6px; }
-  .polaroid-icon::before { font-size: 11px; }
+  .thumb-frame--card .thumb-item { padding: 8px 8px 28px; }
 }
 
 /* ============================================================
@@ -1245,16 +1169,12 @@ html, body {
 /* ============================================================
    Generic media-slot fill (once real files are injected via JS)
    ============================================================ */
-/* NOTE: scoped to :not(.thumb-item):not(.polaroid-layer) -- .thumb-item
-   also carries a data-media-slot attribute but needs to keep its own
+/* NOTE: scoped to :not(.thumb-item) -- .thumb-item also carries a
+   data-media-slot attribute but needs to keep its own
    `position: absolute` (set above, for the conveyor's transform-driven
    layout) rather than being knocked back to `relative` by this generic
-   media-slot rule; likewise .polaroid-layer (the polaroid front/peek
-   faces inside a photo .thumb-item) needs to keep ITS OWN
-   `position: absolute; inset: 0` (set above) for the two stacked photos
-   to overlay each other -- without this exclusion they'd collapse back
-   to normal document flow and stack vertically instead of overlapping. */
-[data-media-slot]:not(.thumb-item):not(.polaroid-layer) { position: relative; }
+   media-slot rule. */
+[data-media-slot]:not(.thumb-item) { position: relative; }
 [data-media-slot] .face-placeholder { position: relative; z-index: 1; }
 [data-media-slot].has-media .face-placeholder { display: none; }
 /* .title-bg-media is itself a data-media-slot target (section2Media /
