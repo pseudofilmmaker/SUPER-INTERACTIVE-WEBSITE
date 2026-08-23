@@ -1076,6 +1076,50 @@
     const V8_SAFE_START = 1.3;
     const V8_SAFE_END = 4.0;
 
+    // ---- SECOND, ACTUAL ROOT CAUSE of the persistent black flash ----
+    // (found only after the safe-window fix above still didn't resolve
+    // the user's report -- "네 말대로 하나도 수정된 게 없어"). Confirmed
+    // via polling video.seeking/readyState + a canvas drawImage()
+    // brightness readback on every frame across the v7->v8 handoff:
+    // video-8 sits completely hidden (opacity:0) with its currentTime
+    // frozen at its native t=0.0 (near-black first frame, mean
+    // brightness 0.85) for the ENTIRE time v7 is playing. The instant
+    // scroll crosses the v7->v8 boundary, its opacity flips to 1 AND its
+    // currentTime is set for the very FIRST TIME to V8_SAFE_START (1.3s)
+    // in the same tick. Because this is video-8's first-ever seek, the
+    // browser's decoder has to cold-start rather than advance from an
+    // already-warm position -- confirmed this cold-start seek takes
+    // ~400-600ms to resolve (`seeking` stays true, the canvas readback
+    // stays pinned to the stale near-black t=0 frame throughout), and
+    // since it happens at the EXACT moment opacity also flips to 1, the
+    // user sees a solid black layer for that whole window. This is
+    // genuinely invisible to a single static screenshot/CSS inspection,
+    // since by the time any one frame is captured and examined the seek
+    // has often already resolved -- it only shows up as a live black
+    // flash mid-scroll, exactly matching the user's repeated complaint.
+    // FIX: "pre-warm" each video's decoder by seeking it to its own
+    // SAFE_START once, immediately, WHILE STILL HIDDEN (opacity:0) right
+    // after its blob source finishes loading -- paying that one-time
+    // ~400-600ms cold-seek cost invisibly, long before the user ever
+    // scrolls anywhere near the handoff. By the time the real handoff
+    // happens, the decoder is already warm at that exact timestamp, so
+    // the opacity flip and the (now already-seeked, effectively free)
+    // currentTime assignment both resolve with no black frame in
+    // between. No `{ once: true }` on the listener: blobifySeekableVideo()
+    // swaps `video.src` to a blob URL and calls `video.load()`
+    // ASYNCHRONOUSLY after its own fetch() resolves, which fires its own
+    // fresh 'loadedmetadata' -- if this listener were removed after the
+    // first (pre-blob, non-seekable network src) firing, the seek that
+    // actually matters (on the seekable blob src) would never happen.
+    function prewarmSeek(video, t) {
+      video.addEventListener('loadedmetadata', () => {
+        video.currentTime = t;
+      });
+      if (video.readyState > 0) video.currentTime = t;
+    }
+    prewarmSeek(v7, V7_SAFE_START);
+    prewarmSeek(v8, V8_SAFE_START);
+
     function seek(video, safeStart, safeEnd, localP) {
       const lp = Math.max(0, Math.min(1, localP));
       const t = safeStart + lp * (safeEnd - safeStart);
