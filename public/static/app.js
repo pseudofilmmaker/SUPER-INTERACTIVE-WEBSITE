@@ -17,6 +17,56 @@
   // variable follows for the exact same reason.
   let workReelWallPreRiseRenderer = null;
 
+  /* ============================================================
+     ROOT-CAUSE FIX for every scroll-scrubbed <video> on the page
+     silently failing to seek (currentTime stuck at 0, or only ever
+     advancing via real-time playback) -- confirmed via direct testing:
+     when a <video>'s src points at a normal network URL, this server
+     serves the file as a single chunked 200 OK response with NO
+     Accept-Ranges/206 support (verified with curl -H "Range: ..." --
+     it always returns 200, never 206). Per the HTML spec a video
+     element's `seekable` TimeRanges is derived from what the network
+     resource can ACTUALLY be byte-range-seeked to; with no server-side
+     range support, `seekable` stays a degenerate [[0,0]] no matter how
+     much of the file is already buffered/decoded, so any explicit
+     `video.currentTime = t` assignment silently clamps back to 0 --
+     this is true for every video on the site (old and new alike),
+     which is exactly why it looked like a fixed-bg-video pause/jump
+     during the section-1 -> section-2 hand-off AND an apparent
+     dissolve/hard-cut ambiguity between the PHOTOS videos: the visible
+     clip was never actually scrubbing frame-by-frame at all, only ever
+     snapping into place once playback (or the opacity swap) caught up.
+     FIX: fetch() the whole (small, already-optimized-for-web) file as a
+     Blob and point the <video> at a `URL.createObjectURL(blob)` instead
+     of the network URL. A Blob URL's data is fully local to the page,
+     so the browser can seek it freely -- `seekable` immediately reports
+     the video's true full duration and `currentTime` assignment works
+     instantly, with no dependency on server range support at all. This
+     is applied uniformly to every scroll-scrubbed clip (bg-video-1a/1b/
+     2/4/5/6 and photos-bg-video-7/8) via blobifySeekableVideo() below,
+     called once per video as soon as the page loads.
+     ============================================================ */
+  function blobifySeekableVideo(video) {
+    if (!video || video.dataset.blobified) return;
+    video.dataset.blobified = '1';
+    const originalSrc = video.currentSrc || video.src;
+    if (!originalSrc) return;
+    fetch(originalSrc)
+      .then((res) => res.blob())
+      .then((blob) => {
+        const blobUrl = URL.createObjectURL(blob);
+        const wasPlaying = !video.paused;
+        video.src = blobUrl;
+        video.load();
+        if (wasPlaying) video.play().catch(() => {});
+      })
+      .catch(() => {
+        // Network hiccup -- leave the original network src in place; the
+        // video still plays/displays normally, it just won't be
+        // frame-accurately scrub-seekable until a page reload retries.
+      });
+  }
+
   /* ---------- mobile 100vh fix ---------- */
   function setVH() {
     document.documentElement.style.setProperty('--vh', window.innerHeight * 0.01 + 'px');
@@ -715,30 +765,11 @@
     v6.addEventListener('loadedmetadata', () => { if (v6.duration) dur6 = v6.duration; });
     v5.addEventListener('loadedmetadata', () => { if (v5.duration) dur5 = v5.duration; });
 
-    // ROOT-CAUSE FIX for the "currentTime stuck at 0 / seek never takes
-    // effect" bug: a muted <video> that has never actually started
-    // playback has an empty (or [[0,0]]) `seekable` TimeRanges in this
-    // browser build, so an explicit `currentTime = t` assignment silently
-    // no-ops back to 0 even though `seeking`/`seeked` events still fire
-    // normally. Priming each video with a real (silent, near-instant)
-    // play()+pause() cycle as soon as it has metadata establishes a
-    // genuine seekable range BEFORE any scroll-driven seek is attempted,
-    // fixing the underlying cause rather than papering over the symptom.
-    const primed = new WeakSet();
-    function primeVideo(video) {
-      if (primed.has(video)) return;
-      primed.add(video);
-      const p = video.play();
-      if (p && typeof p.then === 'function') {
-        p.then(() => video.pause()).catch(() => {});
-      } else {
-        video.pause();
-      }
-    }
-    videos.forEach((v) => {
-      if (v.readyState > 0) primeVideo(v);
-      v.addEventListener('loadeddata', () => primeVideo(v), { once: true });
-    });
+    // Root-cause fix (see blobifySeekableVideo() top-of-file comment for
+    // the full explanation): swap each network video src for a Blob URL
+    // so it becomes genuinely seekable, independent of server range
+    // support. Applied once per video as soon as it starts loading.
+    videos.forEach((v) => blobifySeekableVideo(v));
 
     function seek(video, duration, localP) {
       const t = Math.max(0, Math.min(1, localP)) * duration;
@@ -976,24 +1007,9 @@
     v7.addEventListener('loadedmetadata', () => { if (v7.duration) dur7 = v7.duration; });
     v8.addEventListener('loadedmetadata', () => { if (v8.duration) dur8 = v8.duration; });
 
-    // Same root-cause seek fix as setupFixedBgVideo() above: prime each
-    // video with a silent play()+pause() as soon as it has data, so its
-    // `seekable` range is real before any scroll-driven seek is tried.
-    const primed = new WeakSet();
-    function primeVideo(video) {
-      if (primed.has(video)) return;
-      primed.add(video);
-      const p = video.play();
-      if (p && typeof p.then === 'function') {
-        p.then(() => video.pause()).catch(() => {});
-      } else {
-        video.pause();
-      }
-    }
-    videos.forEach((v) => {
-      if (v.readyState > 0) primeVideo(v);
-      v.addEventListener('loadeddata', () => primeVideo(v), { once: true });
-    });
+    // Same root-cause fix as setupFixedBgVideo() above -- see
+    // blobifySeekableVideo()'s top-of-file comment.
+    videos.forEach((v) => blobifySeekableVideo(v));
 
     function seek(video, duration, localP) {
       const t = Math.max(0, Math.min(1, localP)) * duration;

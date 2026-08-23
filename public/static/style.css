@@ -827,7 +827,23 @@ html, body {
      row without re-introducing the vertical whitespace the 6-row
      restructure was meant to eliminate -- per explicit "로고는 6줄로
      작게 들어가야할 거 같고". */
-  height: clamp(40px, 9vh, 92px);
+  /* RAISED this turn: measured via Playwright that each row's actual
+     flex:1 slice was ~132px tall on a common 900px-viewport, but the old
+     92px ceiling left the logo filling only ~61% of that band -- the
+     dark/video background showed through as a clearly visible empty
+     strip above AND below every single logo, row after row (confirmed
+     via screenshot analysis: "significant amount of visible empty
+     vertical space... allows the dark background to visibly show
+     through as distinct, continuous empty horizontal gaps"). This is a
+     PER-ROW vertical gap, not a "not enough logos" problem -- each row's
+     track already loops its own content infinitely (doubled DOM +
+     -50% xPercent wrap), so more logos would just make the horizontal
+     loop longer without touching the vertical whitespace at all. Raising
+     the ceiling to ~94% of a typical row's own height (92px -> 124px)
+     and the vh-mid value proportionally closes that gap so each logo
+     genuinely fills its row band edge-to-edge instead of floating in
+     the middle of it. */
+  height: clamp(48px, 12vh, 124px);
   width: auto;
   max-width: 230px;
   object-fit: contain;
