@@ -1713,9 +1713,32 @@
     gsap.set(items, { xPercent: -50, yPercent: -50 });
 
     let spacing = 260;
+    // `edgeMargin` = how many extra "item slots" of travel to add PAST each
+    // end of the [0, count-1] index range so the first/last item actually
+    // clears the frame's edge (fully hidden) before curIdx hits its limit,
+    // instead of just reaching the frame's boundary. A flat margin of "1
+    // item" is only enough when the item is roughly as wide as the frame
+    // itself (true for the landscape/reel carousels, where one item
+    // basically fills the whole frame) -- but PHOTOS shows several
+    // 220px-wide cards inside a much wider ~900px frame, so 1 item's worth
+    // of travel (spacing) falls far short of sliding a card from fully
+    // off-screen-right to fully off-screen-left. Concretely this was the
+    // cause of the user's reported bug: the LAST card was still straddling
+    // the right frame edge (only partially traveled off) at the exact
+    // moment the section's pin released and the page scrolled on to
+    // VIDEOS, so the card visually got "sliced" by the section handoff
+    // instead of finishing its frame-out. Computing the margin from the
+    // actual frame/item widths (half-frame + half-item, divided by
+    // spacing, rounded up) guarantees enough travel on BOTH edges for
+    // every conveyor, regardless of how many items fit in the frame at
+    // once.
+    let edgeMargin = 1;
     function computeSpacing() {
       const w = items[0] ? items[0].getBoundingClientRect().width : frame.getBoundingClientRect().width;
       spacing = w + (gap != null ? gap : 32);
+      const frameW = frame.getBoundingClientRect().width;
+      const needed = frameW / 2 + w / 2;
+      edgeMargin = Math.max(1, Math.ceil(needed / spacing));
     }
     computeSpacing();
 
@@ -1755,11 +1778,11 @@
     }
 
     function render(t) {
-      // extend the index range slightly past [0, count-1] so the very
-      // first item still frames in from off-right, and the very last
-      // item fully frames out past the left edge, instead of both
-      // snapping straight to/from the centered position.
-      const curIdx = -1 + t * (count + 1);
+      // extend the index range past [0, count-1] by `edgeMargin` slots on
+      // each side so the very first item starts FULLY hidden off-right and
+      // the very last item ends FULLY hidden off-left (see edgeMargin's
+      // comment above), instead of both merely reaching the frame's edge.
+      const curIdx = -edgeMargin + t * (count - 1 + 2 * edgeMargin);
       items.forEach((item, i) => {
         // negated vs. the old left-to-right version: items with a HIGHER
         // index start further to the right and travel toward/past the left.
