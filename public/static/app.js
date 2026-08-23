@@ -1097,13 +1097,23 @@
       scrub: true,
       onUpdate: (self) => {
         // layer visible only while genuinely inside the PHOTOS group's
-        // own span -- avoids a stray opacity:1 flash if this trigger's
-        // progress is ever evaluated outside [0,1] during a fast refresh.
-        gsap.set(layer, { opacity: self.progress >= 0 && self.progress <= 1 ? 1 : 0 });
+        // own span. NOTE (root-cause fix, this turn): `self.progress` is
+        // ALWAYS clamped to [0,1] by GSAP regardless of whether the
+        // trigger is actually active, so a `progress >= 0 && progress <=
+        // 1` check is a tautology that is permanently true -- that was
+        // the actual cause of "torch visible in section-1 on first
+        // paint": ScrollTrigger.refresh() on page load fired onRefresh
+        // once while scrollY was still 0 (long before section-3), and
+        // this tautological check unconditionally set the layer to
+        // opacity:1, painting photos-bg-video-7 (a torch/flame frame)
+        // directly over section-1's hero. Use `self.isActive` instead,
+        // which correctly reflects whether the scroll position is
+        // presently inside [start, end].
+        gsap.set(layer, { opacity: self.isActive ? 1 : 0 });
         renderPhotosChain(self.progress);
       },
       onRefresh: (self) => {
-        gsap.set(layer, { opacity: self.progress >= 0 && self.progress <= 1 ? 1 : 0 });
+        gsap.set(layer, { opacity: self.isActive ? 1 : 0 });
         renderPhotosChain(self.progress);
       },
       onLeave: () => gsap.set(layer, { opacity: 0 }),
