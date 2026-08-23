@@ -715,6 +715,31 @@
     v6.addEventListener('loadedmetadata', () => { if (v6.duration) dur6 = v6.duration; });
     v5.addEventListener('loadedmetadata', () => { if (v5.duration) dur5 = v5.duration; });
 
+    // ROOT-CAUSE FIX for the "currentTime stuck at 0 / seek never takes
+    // effect" bug: a muted <video> that has never actually started
+    // playback has an empty (or [[0,0]]) `seekable` TimeRanges in this
+    // browser build, so an explicit `currentTime = t` assignment silently
+    // no-ops back to 0 even though `seeking`/`seeked` events still fire
+    // normally. Priming each video with a real (silent, near-instant)
+    // play()+pause() cycle as soon as it has metadata establishes a
+    // genuine seekable range BEFORE any scroll-driven seek is attempted,
+    // fixing the underlying cause rather than papering over the symptom.
+    const primed = new WeakSet();
+    function primeVideo(video) {
+      if (primed.has(video)) return;
+      primed.add(video);
+      const p = video.play();
+      if (p && typeof p.then === 'function') {
+        p.then(() => video.pause()).catch(() => {});
+      } else {
+        video.pause();
+      }
+    }
+    videos.forEach((v) => {
+      if (v.readyState > 0) primeVideo(v);
+      v.addEventListener('loadeddata', () => primeVideo(v), { once: true });
+    });
+
     function seek(video, duration, localP) {
       const t = Math.max(0, Math.min(1, localP)) * duration;
       if (video.readyState > 0 && Number.isFinite(t)) {
@@ -950,6 +975,25 @@
     let dur8 = 6.0;
     v7.addEventListener('loadedmetadata', () => { if (v7.duration) dur7 = v7.duration; });
     v8.addEventListener('loadedmetadata', () => { if (v8.duration) dur8 = v8.duration; });
+
+    // Same root-cause seek fix as setupFixedBgVideo() above: prime each
+    // video with a silent play()+pause() as soon as it has data, so its
+    // `seekable` range is real before any scroll-driven seek is tried.
+    const primed = new WeakSet();
+    function primeVideo(video) {
+      if (primed.has(video)) return;
+      primed.add(video);
+      const p = video.play();
+      if (p && typeof p.then === 'function') {
+        p.then(() => video.pause()).catch(() => {});
+      } else {
+        video.pause();
+      }
+    }
+    videos.forEach((v) => {
+      if (v.readyState > 0) primeVideo(v);
+      v.addEventListener('loadeddata', () => primeVideo(v), { once: true });
+    });
 
     function seek(video, duration, localP) {
       const t = Math.max(0, Math.min(1, localP)) * duration;

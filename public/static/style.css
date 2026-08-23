@@ -298,15 +298,6 @@ html, body {
   background: radial-gradient(circle, var(--accent-gold), transparent 70%);
   bottom: -15%; left: -10%;
 }
-.bg-noise {
-  position: absolute;
-  inset: 0;
-  background-image: radial-gradient(rgba(255,255,255,0.035) 1px, transparent 1px);
-  background-size: 3px 3px;
-  pointer-events: none;
-  z-index: 0;
-}
-
 /* generic reveal state, animated via JS/ScrollTrigger */
 [data-reveal] {
   opacity: 0;
@@ -423,20 +414,17 @@ html, body {
 
 /* ============================================================
    SECTION 1 — Intro + Cube
-   The section's own background is now fully transparent so the
-   #fixed-bg-video layer underneath shows through continuously as
-   this panel's content scrolls past on top of it. An extra local
-   scrim (on top of the shared .fixed-bg-scrim) darkens things
-   further right behind the hero text for guaranteed legibility.
+   The section's own background is fully transparent -- NO extra
+   texture/scrim layers of its own -- so the #fixed-bg-video layer
+   underneath (with its single shared .fixed-bg-scrim) shows through
+   as the only thing behind this panel's content. Previously this
+   section stacked its own .bg-noise dot-grid texture PLUS a second
+   .section1-scrim gradient on top of the already-scrimmed video
+   layer, which read as a visible "extra layer" muddying the
+   background instead of a clean transparent panel; both were
+   removed so section-1 has zero background styling of its own.
    ============================================================ */
 #section-1 { background: transparent; }
-.section1-scrim {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  background: linear-gradient(90deg, rgba(5,3,2,0.55) 0%, rgba(5,3,2,0.15) 45%, transparent 68%);
-  pointer-events: none;
-}
 
 .intro-content {
   position: absolute;
