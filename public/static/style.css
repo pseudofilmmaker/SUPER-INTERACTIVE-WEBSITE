@@ -637,7 +637,7 @@ html, body {
 }
 
 /* ============================================================
-   SECTION 2 — Full-screen white-logo client wall (5 rows)
+   SECTION 2 — Full-screen white-logo client wall (6 rows)
    ============================================================ */
 .split-panel {
   align-items: center;
@@ -652,17 +652,17 @@ html, body {
 /* ------------------------------------------------------------
    Client / logo wall -- fills the ENTIRE section-2 box (the old
    centered portrait frame has been removed entirely per spec:
-   "중앙에 포트레이트 영역을 없애주고, 로고가 꽉차게끔"). Five equally
-   spaced rows of pure-white vector-silhouette logos stack top to
-   bottom. Each row's track is rendered TWICE in the DOM (see
-   index.tsx) so a -50% xPercent translate is a perfectly seamless
-   loop point -- JS (setupClientWall in app.js) scrubs each track's
-   xPercent against section-2's own scroll position; the topmost
-   row moves right-to-left and the rest alternate so the wall reads
-   as a lively criss-cross rather than one flat block. Rows are
-   wider than the viewport and clipped by .panel's own
-   `overflow: hidden`, which is what produces the intentional
-   "슬쩍 넘치는" (slightly overflowing) edges.
+   "중앙에 포트레이트 영역을 없애주고, 로고가 꽉차게끔"). Six equally
+   spaced rows (5 -> 6 this turn, see .client-wall's padding comment)
+   of pure-white vector-silhouette logos stack top to bottom. Each
+   row's track is rendered TWICE in the DOM (see home.html) so a -50%
+   xPercent translate is a perfectly seamless loop point -- JS
+   (setupClientWall in app.js) scrubs each track's xPercent against
+   section-2's own scroll position; the topmost row moves right-to-left
+   and the rest alternate so the wall reads as a lively criss-cross
+   rather than one flat block. Rows are wider than the viewport and
+   clipped by .panel's own `overflow: hidden`, which is what produces
+   the intentional "슬쩍 넘치는" (slightly overflowing) edges.
    ------------------------------------------------------------ */
 .client-wall {
   /* CHANGED absolute -> fixed this turn. Root-cause of the "logos never
@@ -696,14 +696,26 @@ html, body {
      empty bands between rows on any viewport taller than a phone --
      the flame/video behind visibly bled through those bands (exactly
      what the attached fullscreen screenshot showed). Switching each
-     row to `flex: 1` (see .client-row below) makes the 5 rows divide
+     row to `flex: 1` (see .client-row below) makes the rows divide
      the ENTIRE available height evenly with no extra distributed gap
      at all -- rows now abut edge-to-edge -- and .client-logo's height
      is now viewport-relative (vh-based) so the logos themselves scale
      up to occupy a large, consistent share of each row's own slot
      instead of staying a fixed small px size regardless of screen
-     height. */
-  padding: 76px 0 44px;
+     height.
+     FURTHER REVISED (this turn, 5 rows -> 6 rows): even with the
+     flex:1 fix above, the user's fresh fullscreen screenshot still
+     showed visible dark gaps between rows -- per explicit "로고는
+     6줄로 작게 들어가야할 거 같고... 절대적으로 이걸 채워줘야할 거
+     같아", going from 5 to 6 rows (see ROW_COUNT in app.js and the
+     6th client-track added in home.html) with correspondingly SMALLER
+     per-row clamp() bounds (see .client-logo below) packs the same
+     total logo count into more, shorter rows -- each row's flex:1
+     slice of the viewport is smaller, so any residual row-internal
+     whitespace above/below a logo shrinks too, tightening the fill
+     further. Padding trimmed slightly further for the same reason
+     (more of the viewport height goes to the 6 equal row slices). */
+  padding: 68px 0 36px;
 }
 
 .client-wall-eyebrow {
@@ -767,25 +779,32 @@ html, body {
   display: block;
   /* Viewport-relative (vh) instead of a fixed px height, clamped between
      a floor and ceiling -- so on a tall/fullscreen viewport the logos
-     scale UP to genuinely fill each row's now-much-taller flex:1 slot
-     (previously a fixed 58px logo inside a >150px-tall row left huge
-     bare margins above/below it, which is what read as "not filling the
-     screen" even after the row-height fix above). clamp() keeps it from
-     ever growing absurdly large on very tall/narrow viewports either. */
-  height: clamp(46px, 11vh, 108px);
+     scale UP to genuinely fill each row's own flex:1 slot (previously a
+     fixed 58px logo inside a >150px-tall row left huge bare margins
+     above/below it, which is what read as "not filling the screen").
+     clamp() keeps it from ever growing absurdly large on very
+     tall/narrow viewports either.
+     RE-TUNED for 6 rows (was 5): each row's flex:1 slice of the wall's
+     height is now ~1/6 instead of ~1/5, so the vh-based mid value and
+     ceiling are both scaled down proportionally (11vh->9vh,
+     108px->92px) to keep the logo comfortably inside its now-shorter
+     row without re-introducing the vertical whitespace the 6-row
+     restructure was meant to eliminate -- per explicit "로고는 6줄로
+     작게 들어가야할 거 같고". */
+  height: clamp(40px, 9vh, 92px);
   width: auto;
-  max-width: 260px;
+  max-width: 230px;
   object-fit: contain;
   opacity: 0.92;
   filter: drop-shadow(0 4px 18px rgba(0,0,0,0.45));
 }
 
 @media (max-width: 768px) {
-  .client-wall { padding: 64px 0 32px; }
-  .client-wall-eyebrow { font-size: 10px; letter-spacing: 0.26em; top: 5%; }
+  .client-wall { padding: 56px 0 28px; }
+  .client-wall-eyebrow { font-size: 10px; letter-spacing: 0.26em; top: 4%; }
   .client-row { left: -10vw; width: 120vw; }
-  .client-tile { margin: 0 14px; }
-  .client-logo { height: clamp(30px, 8vh, 60px); max-width: 150px; }
+  .client-tile { margin: 0 12px; }
+  .client-logo { height: clamp(24px, 6.5vh, 48px); max-width: 130px; }
 }
 
 /* ============================================================
