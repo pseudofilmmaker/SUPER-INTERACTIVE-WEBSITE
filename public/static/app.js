@@ -422,7 +422,11 @@
     // Empirically verified via Playwright (transform readout + before/
     // after screenshots) -- do not flip this without re-testing.
     // Row 0 (topmost) MUST be dir -1 per explicit spec.
-    const ROW_COUNT = 5;
+    // 5 -> 6 this turn per explicit "로고는 6줄로 작게 들어가야할 거
+    // 같고... 절대적으로 이걸 채워줘야할 거 같아" -- see home.html's
+    // client-track-0..5 (6 tracks now) and .client-logo's re-tuned
+    // clamp() bounds in style.css for the matching smaller-logo sizing.
+    const ROW_COUNT = 6;
     const rows = Array.from({ length: ROW_COUNT }, (_, i) => ({
       track: document.getElementById(`client-track-${i}`),
       dir: i % 2 === 0 ? -1 : 1,
@@ -789,10 +793,32 @@
     // 위드가 끝날때까지 첨부한 6번 영상이 흘러나와야해" it instead plays
     // across section-2's OWN natural (non-pinned) scroll transit, see the
     // dedicated section-2 ScrollTrigger further below.
+    // PHASE_1B_END shrunk from 1/4 -> 0.10 this turn per explicit "be the
+    // one에 영상이 끝나자마자, 다음영상이 바로 나와야해. 지금 텀이 너무
+    // 길어" -- video-1b is a STATIC held-match shot (near-zero visible
+    // motion frame-to-frame), so the old 1/4-of-the-pin allotment for it
+    // meant a long stretch of scroll (5% tail of intro-pin's own 220% +
+    // fully 25% of work-reel-pin's 170%, ~53% of a full viewport's worth
+    // of scroll) where nothing visually NEW was happening right after
+    // "Be the ONE" (video-1a) finished -- exactly the "too long an
+    // interval before the next video" the user is describing. Cutting
+    // 1b's own share down to 0.10 means video-2 (the match actually
+    // igniting -- the first genuinely NEW footage after 1a) now appears
+    // almost immediately once work-reel-pin engages, right on the heels
+    // of 1a's hard cut. The freed 0.15 is folded into V2/V4's own
+    // phases (now 0.30 wide each instead of 0.25) rather than shortened
+    // away entirely, so those two chain links still each get a full,
+    // comfortable on-screen dwell -- only 1b's own dead-air stretch was
+    // the actual complaint target. PHASE_V4_END intentionally still
+    // lands at 0.70 (was 0.75) -- deliberately kept aligned with
+    // PRERISE_START (0.70, see workReelWallPreRiseRenderer /
+    // setupClientWall) and comfortably after EXIT_END (0.68, see
+    // renderTagline in setupWorkReel) so both of those existing timing
+    // relationships stay intact without needing their own re-tuning.
     const CHAIN = {
-      PHASE_1B_END: 1 / 4,
-      PHASE_V2_END: 2 / 4,
-      PHASE_V4_END: 3 / 4,
+      PHASE_1B_END: 0.10,
+      PHASE_V2_END: 0.40,
+      PHASE_V4_END: 0.70,
     };
     function renderVideoChain(p) {
       if (p <= CHAIN.PHASE_1B_END) {
@@ -881,6 +907,112 @@
     workReelScrubRenderer = renderVideoChain;
   }
   setupFixedBgVideo();
+
+  /* ============================================================
+     PHOTOS BACKGROUND VIDEO -- a second persistent "media player"
+     layer (#photos-bg-video-layer, see style.css), independent of
+     #fixed-bg-video above (which is already fully faded out by the
+     time section-3 is reached -- see FADE_OUT_START in
+     renderLayerOpacity). Per this turn's explicit spec: "Photos가
+     시작될 때는 7번 영상이 나와야하고, 비디오스로 넘어가기 전에 8번
+     영상 재생이 끝나야해":
+       - video-7 (photos-intro-07.mp4) is the layer's default visible
+         clip and starts playing the INSTANT the PHOTOS group begins
+         (section-3's own top).
+       - video-8 (photos-outro-08.mp4) hard-cuts in partway through
+         the group's own scroll transit and MUST finish playing (reach
+         its own full duration) before section-5 (VIDEOS) begins.
+     Both clips are scrubbed against ONE continuous progress value
+     spanning the ENTIRE PHOTOS group (section-3's normal-flow entrance
+     THROUGH section-4's own pinned card-conveyor run) via a single
+     ScrollTrigger from section-3's 'top top' to section-5's 'top top'
+     -- the same "whole-group span" pattern already used for
+     #fixed-bg-video's own whole-layer opacity trigger (trigger: s1,
+     endTrigger: s3 further up). Splitting that 0->1 span into two
+     equal halves (v7 first, v8 second) guarantees v8 always reaches
+     its own currentTime === duration (fully finished) by the exact
+     scroll position section-5 begins, regardless of how much of that
+     total span section-4's conveyor pin itself consumes.
+     ============================================================ */
+  function setupPhotosBgVideo() {
+    const layer = document.getElementById('photos-bg-video-layer');
+    const v7 = document.getElementById('photos-bg-video-7');
+    const v8 = document.getElementById('photos-bg-video-8');
+    const s3 = document.getElementById('section-3');
+    const s5 = document.getElementById('section-5');
+    if (!layer || !v7 || !v8 || !s3 || !s5) return;
+
+    const videos = [v7, v8];
+    gsap.set(videos, { opacity: 0 });
+    gsap.set(v7, { opacity: 1 });
+
+    let dur7 = 6.0;
+    let dur8 = 6.0;
+    v7.addEventListener('loadedmetadata', () => { if (v7.duration) dur7 = v7.duration; });
+    v8.addEventListener('loadedmetadata', () => { if (v8.duration) dur8 = v8.duration; });
+
+    function seek(video, duration, localP) {
+      const t = Math.max(0, Math.min(1, localP)) * duration;
+      if (video.readyState > 0 && Number.isFinite(t)) {
+        video.currentTime = t;
+      }
+    }
+
+    let activeIndex = 0;
+    function setActive(idx) {
+      if (idx === activeIndex) return;
+      activeIndex = idx;
+      videos.forEach((v, i) => gsap.set(v, { opacity: i === idx ? 1 : 0 }));
+    }
+
+    // Even split: v7 owns the first half of the whole PHOTOS-group
+    // transit, v8 the second half -- see the long comment above for why
+    // this guarantees v8 finishes exactly as section-5 begins.
+    const PHASE_V7_END = 0.5;
+    function renderPhotosChain(p) {
+      if (p <= PHASE_V7_END) {
+        setActive(0);
+        const localP = PHASE_V7_END > 0 ? p / PHASE_V7_END : 1;
+        seek(v7, dur7, localP);
+      } else {
+        setActive(1);
+        const localP = (p - PHASE_V7_END) / (1 - PHASE_V7_END);
+        seek(v8, dur8, localP);
+      }
+    }
+
+    // Single ScrollTrigger spanning the ENTIRE PHOTOS group (section-3's
+    // own top through section-5's own top) -- NOT pinned itself, so
+    // (unlike the intro-pin/work-reel-pin patterns elsewhere in this
+    // file) a plain independent ScrollTrigger here reliably computes its
+    // own correct progress; no "shared render fn direct call" indirection
+    // is needed. Covers section-4's pinned conveyor transparently since
+    // that pin's own pinSpacing simply stretches the ordinary document
+    // scroll distance between section-3's top and section-5's top --
+    // this trigger's start/end still land exactly on those two edges.
+    ScrollTrigger.create({
+      id: 'photos-bg-video',
+      trigger: s3,
+      endTrigger: s5,
+      start: 'top top',
+      end: 'top top',
+      scrub: true,
+      onUpdate: (self) => {
+        // layer visible only while genuinely inside the PHOTOS group's
+        // own span -- avoids a stray opacity:1 flash if this trigger's
+        // progress is ever evaluated outside [0,1] during a fast refresh.
+        gsap.set(layer, { opacity: self.progress >= 0 && self.progress <= 1 ? 1 : 0 });
+        renderPhotosChain(self.progress);
+      },
+      onRefresh: (self) => {
+        gsap.set(layer, { opacity: self.progress >= 0 && self.progress <= 1 ? 1 : 0 });
+        renderPhotosChain(self.progress);
+      },
+      onLeave: () => gsap.set(layer, { opacity: 0 }),
+      onLeaveBack: () => gsap.set(layer, { opacity: 0 }),
+    });
+  }
+  setupPhotosBgVideo();
 
   /* ============================================================
      SECTION 1 -- Pinned intro (merged former section 1 + 2):

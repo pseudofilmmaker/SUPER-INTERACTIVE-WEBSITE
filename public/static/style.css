@@ -374,6 +374,54 @@ html, body {
 }
 
 /* ============================================================
+   PHOTOS BACKGROUND VIDEO -- a second persistent "media player"
+   layer, same pattern as #fixed-bg-video above but scoped to the
+   PHOTOS group (sections 3-4) instead of the intro/work-reel/logo-
+   wall run. Per this turn's explicit spec: "Photos가 시작될 때는
+   7번 영상이 나와야하고, 비디오스로 넘어가기 전에 8번 영상 재생이
+   끝나야해" -- video-7 (uploaded 7.mp4, re-encoded to
+   photos-intro-07.mp4) plays as PHOTOS begins, hard-cutting to
+   video-8 (photos-outro-08.mp4) partway through, which must finish
+   its own full playthrough before section-5 (VIDEOS) takes over.
+   Kept as its OWN separate fixed layer (rather than appended to
+   #fixed-bg-video's own videos[] array) because #fixed-bg-video
+   ALREADY fades fully to opacity:0 by the time section-3 begins
+   (see FADE_OUT_START in renderLayerOpacity, app.js) -- reusing that
+   layer would mean fading it back in for PHOTOS then back out again
+   for VIDEOS, undoing its own existing "done after section-2" fade
+   contract. A second independent fixed layer avoids that conflict:
+   #fixed-bg-video owns sections 1-2, #photos-bg-video-layer owns
+   sections 3-4 exclusively, and only one of the two is ever visible
+   at a time (see setupPhotosBgVideo() in app.js).
+   ============================================================ */
+#photos-bg-video-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  will-change: opacity;
+}
+.photos-bg-video-el {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  will-change: opacity;
+}
+#photos-bg-video-7 { opacity: 1; }
+.photos-bg-video-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(5,3,2,0.25) 0%, rgba(5,3,2,0.72) 78%),
+    linear-gradient(180deg, rgba(5,3,2,0.55) 0%, transparent 26%, transparent 74%, rgba(5,3,2,0.65) 100%);
+}
+
+/* ============================================================
    SECTION 1 — Intro + Cube
    The section's own background is now fully transparent so the
    #fixed-bg-video layer underneath shows through continuously as
@@ -826,6 +874,14 @@ html, body {
   background-position: center;
   z-index: 0;
 }
+/* section-3's own .title-bg-media gradient would otherwise paint ON TOP
+   of the new #photos-bg-video-layer fixed layer behind it (same "later
+   DOM element wins at equal z-index" rule that #section-1/#section-2
+   already had to work around by going transparent -- see the comment
+   on #section-1 above). Making it transparent here lets video-7/8 show
+   through for the whole PHOTOS group, same pattern, scoped ONLY to
+   section-3 so section-5's own videosIntroThumb gradient is untouched. */
+#section-3 .title-bg-media { background: transparent; }
 .title-overlay {
   position: absolute;
   inset: 0;
