@@ -1045,9 +1045,29 @@ html, body {
 
 /* dots row (~14px) + gap (18px) + panel's own vertical padding (60px) =
    ~92px of non-frame content inside the safe area (no carousel-label on
-   this panel, unlike the video carousels below) */
+   this panel, unlike the video carousels below).
+   FULL-BLEED WIDTH: unlike the video carousels below (which stay inset
+   at ~70vw), the photo conveyor's "stage" must span the entire browser
+   width edge-to-edge -- per explicit user feedback, a narrow centered
+   900px box surrounded by large empty black margins on both sides read
+   as broken/incomplete, and also meant each card had to travel much
+   further off-screen (past this narrow box's edges, per the dynamic
+   edgeMargin fix) before becoming visible at all, reading as "too slow
+   to appear". Breaking the frame out to the FULL viewport width fixes
+   both: the frame's hidden edge now coincides with the actual screen
+   edge (so cards genuinely slide in/out from off-screen, not from a
+   mysterious gap in the middle of the screen), and several cards are
+   visible across the screen at once instead of just one in a narrow
+   strip. `calc(100% + 48px)` + matching negative left/right margins
+   exactly cancels out .panel's own `padding: 60px 24px` (24px each
+   side) without relying on 100vw (which can overflow by a scrollbar's
+   width on some browsers) -- .panel is itself always exactly viewport-
+   width, so this reaches the true screen edges while staying safely
+   inside .panel's own overflow:hidden boundary. */
 .thumb-frame--card {
-  width: min(70vw, 900px);
+  width: calc(100% + 48px);
+  margin-left: -24px;
+  margin-right: -24px;
   height: min(320px, calc(100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 92px));
 }
 .thumb-frame--card .thumb-item {
