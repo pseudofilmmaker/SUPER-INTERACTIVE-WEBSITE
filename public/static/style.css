@@ -665,15 +665,45 @@ html, body {
    "슬쩍 넘치는" (slightly overflowing) edges.
    ------------------------------------------------------------ */
 .client-wall {
-  position: absolute;
+  /* CHANGED absolute -> fixed this turn. Root-cause of the "logos never
+     visibly rise during the still-pinned ignition footage" bug: while
+     work-reel-pin is engaged, #section-2 (this element's absolute
+     positioning parent) sits ENTIRELY below the viewport the whole time
+     (a pin, by definition, keeps the viewport locked on the pinned
+     section until its own scroll range ends) -- so ANY opacity/transform
+     app.js set on an absolutely-positioned .client-wall during the pin's
+     tail was computed correctly but rendered far off-screen, invisible.
+     `position: fixed` (matching the existing #fixed-bg-video layer's own
+     pattern) lets the wall render as a true viewport-relative overlay
+     ON TOP of the still-playing background video during the pin-tail
+     pre-rise (see workReelWallPreRiseRenderer in app.js), then continues
+     to work identically once section-2 is unpinned and scrolling
+     normally -- app.js's marquee/exit-fade ScrollTriggers already scrub
+     this element's opacity/xPercent/y purely off section-2's own scroll
+     PROGRESS (not off the element's own natural in-flow position), so
+     nothing else needed to change for the post-release behavior. */
+  position: fixed;
   inset: 0;
   z-index: 2;
   pointer-events: none;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  justify-content: space-evenly;
-  padding: 96px 0 56px;
+  /* REVISED this turn per explicit "워크 위드를 풀스크린으로 띄우면,
+     로고가 꽉 차지 않아보여서... 화면에 꽉차보이게끔". Root cause
+     (confirmed via computed-style inspection): `justify-content:
+     space-evenly` with 5 intrinsically-short (~58px) rows left large
+     empty bands between rows on any viewport taller than a phone --
+     the flame/video behind visibly bled through those bands (exactly
+     what the attached fullscreen screenshot showed). Switching each
+     row to `flex: 1` (see .client-row below) makes the 5 rows divide
+     the ENTIRE available height evenly with no extra distributed gap
+     at all -- rows now abut edge-to-edge -- and .client-logo's height
+     is now viewport-relative (vh-based) so the logos themselves scale
+     up to occupy a large, consistent share of each row's own slot
+     instead of staying a fixed small px size regardless of screen
+     height. */
+  padding: 76px 0 44px;
 }
 
 .client-wall-eyebrow {
@@ -694,9 +724,17 @@ html, body {
 }
 
 .client-row {
+  /* flex: 1 -- each of the 5 rows claims an EQUAL, full share of
+     .client-wall's available height (see the comment on .client-wall
+     above) instead of being sized to its own short intrinsic content
+     height with big leftover gaps distributed by space-evenly. */
+  flex: 1 1 0;
   position: relative;
   left: -6vw;
   width: 112vw;
+  min-height: 0;
+  display: flex;
+  align-items: center;
   overflow: hidden;
   -webkit-mask-image: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.9) 8%, rgba(0,0,0,0.9) 92%, transparent 100%);
   mask-image: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.9) 8%, rgba(0,0,0,0.9) 92%, transparent 100%);
@@ -727,20 +765,27 @@ html, body {
 }
 .client-logo {
   display: block;
-  height: 58px;
+  /* Viewport-relative (vh) instead of a fixed px height, clamped between
+     a floor and ceiling -- so on a tall/fullscreen viewport the logos
+     scale UP to genuinely fill each row's now-much-taller flex:1 slot
+     (previously a fixed 58px logo inside a >150px-tall row left huge
+     bare margins above/below it, which is what read as "not filling the
+     screen" even after the row-height fix above). clamp() keeps it from
+     ever growing absurdly large on very tall/narrow viewports either. */
+  height: clamp(46px, 11vh, 108px);
   width: auto;
-  max-width: 220px;
+  max-width: 260px;
   object-fit: contain;
   opacity: 0.92;
   filter: drop-shadow(0 4px 18px rgba(0,0,0,0.45));
 }
 
 @media (max-width: 768px) {
-  .client-wall { padding: 84px 0 40px; }
+  .client-wall { padding: 64px 0 32px; }
   .client-wall-eyebrow { font-size: 10px; letter-spacing: 0.26em; top: 5%; }
   .client-row { left: -10vw; width: 120vw; }
   .client-tile { margin: 0 14px; }
-  .client-logo { height: 36px; max-width: 130px; }
+  .client-logo { height: clamp(30px, 8vh, 60px); max-width: 150px; }
 }
 
 /* ============================================================

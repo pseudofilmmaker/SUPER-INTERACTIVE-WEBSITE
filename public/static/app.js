@@ -7,6 +7,16 @@
 
   gsap.registerPlugin(ScrollTrigger);
 
+  // Declared up here (ahead of setupClientWall()'s own call site further
+  // below) specifically to avoid a `let`-hoisting TDZ ReferenceError:
+  // setupClientWall('section-2') runs and assigns this variable well
+  // before execution reaches the "Shared timeline breakpoints" block
+  // further down where cubeScrubRenderer/workReelScrubRenderer are
+  // declared -- see the long comment next to those two for the shared
+  // "direct call, not a second independent ScrollTrigger" rationale this
+  // variable follows for the exact same reason.
+  let workReelWallPreRiseRenderer = null;
+
   /* ---------- mobile 100vh fix ---------- */
   function setVH() {
     document.documentElement.style.setProperty('--vh', window.innerHeight * 0.01 + 'px');
@@ -426,27 +436,47 @@
       gsap.set(r.track, { xPercent: r.dir > 0 ? -8 : -42 });
     });
 
-    // ---- Entrance: logos rise up from below the screen as section-2
-    // scrolls into view, per this turn's explicit "현재 첨부한
-    // 영상구간이 흘러나올 때, 이미 워크위드의 로고가 화면하단에서
-    // 올라오기 시작해야해" -- the SAME 'top bottom' start point used by
-    // bg-video-6's own ScrollTrigger (see setupFixedBgVideo()) so the
-    // logo wall's rise and the video-6 hard-cut both begin at the exact
-    // same scroll position, by construction.
+    // ---- Entrance: logos rise up from below the screen.
+    // IMPORTANT (revised this turn): this used to be its own ScrollTrigger
+    // scoped to section-2's own 'top bottom' -> 'top 40%' scroll range.
+    // But 'top bottom' on section-2 fires at the EXACT SAME scroll
+    // position as the work-reel-pin's own RELEASE (the two are adjacent
+    // full-height panels, so the instant the pin lets go is precisely
+    // when section-2 begins entering) -- i.e. the rise only ever BEGAN
+    // once the pin had already fully released, never any earlier. Per
+    // this turn's explicit "불을 붙이기 시작할 때... 워크 위드의
+    // 로고들이 올라오기 시작해야돼", the rise must already be underway
+    // WHILE the pin is still engaged and video-5 (the torch just catching
+    // fire) is playing -- i.e. strictly BEFORE release. So the entrance is
+    // now driven directly off the work-reel-pin's OWN progress instead
+    // (see renderWallPreRise()/workReelWallPreRiseRenderer below, called
+    // from setupWorkReel()'s render() -- same "direct call, shared
+    // progress" pattern as workReelScrubRenderer/cubeScrubRenderer, for
+    // the same reason: a second independent ScrollTrigger on that same
+    // still-pinned element would not reliably compute matching progress).
+    // This block now only sets the wall's initial (fully hidden) state;
+    // the actual rise happens entirely inside renderWallPreRise().
     const wallEntrance = document.getElementById('client-wall');
     if (wallEntrance) {
       gsap.set(wallEntrance, { y: window.innerHeight * 0.35, opacity: 0 });
-      ScrollTrigger.create({
-        trigger: section,
-        start: 'top bottom',
-        end: 'top 40%',
-        scrub: 0.4,
-        onUpdate: (self) => {
-          const p = self.progress;
-          gsap.set(wallEntrance, { y: window.innerHeight * 0.35 * (1 - p), opacity: p });
-        },
-      });
     }
+    // PRERISE_START: chosen to sit just before video-5 (torch-ignite, the
+    // "flame just starting to catch" clip -- see CHAIN.PHASE_V4_END in
+    // setupFixedBgVideo, which plays across pin progress 0.75 -> 1.0) so
+    // the logos are ALREADY visibly rising by the moment that footage is
+    // on screen. PRERISE_END = 1.0 means the wall finishes its rise to
+    // fully opaque/settled EXACTLY as the pin releases -- the same instant
+    // video-6 (torch-blaze) takes over as the active background clip.
+    const PRERISE_START = 0.70;
+    const PRERISE_END = 1.0;
+    const preRiseEase = gsap.parseEase('power2.out');
+    function renderWallPreRise(p) {
+      if (!wallEntrance) return;
+      const riseP = Math.max(0, Math.min(1, (p - PRERISE_START) / (PRERISE_END - PRERISE_START)));
+      const riseT = preRiseEase(riseP);
+      gsap.set(wallEntrance, { y: window.innerHeight * 0.35 * (1 - riseT), opacity: riseT });
+    }
+    workReelWallPreRiseRenderer = renderWallPreRise;
 
     ScrollTrigger.create({
       trigger: section,
@@ -590,6 +620,11 @@
   // "two ScrollTriggers on one pinned element don't share progress"
   // reason cubeScrubRenderer exists.
   let workReelScrubRenderer = null;
+  // (workReelWallPreRiseRenderer -- the same "direct call, shared
+  // progress" pattern again, for the client-wall's PRE-rise -- is
+  // declared at the very top of this IIFE instead of here, since
+  // setupClientWall() which assigns it runs before this point; see the
+  // comment there.)
 
   // Shared timeline breakpoints for the whole intro-pin sequence (cube +
   // background video-1a scrub + text), consumed by BOTH renderCubeScrub()
@@ -1108,12 +1143,34 @@
     // hold window the whole sentence is legible while still having been
     // continuously, visibly reactive to scroll for its entire duration.
     const WORD_COUNT = words.length;
-    const SWEEP_START = 0.08; // sweep begins shortly after the pin engages
-    const SWEEP_END = 0.82;   // sweep fully complete before tagline exit
+    const SWEEP_START = 0.05; // sweep begins shortly after the pin engages
+    const SWEEP_END = 0.45;   // sweep (reading) fully complete well before exit
     const BAND = 1 / WORD_COUNT; // how much of the sweep each word occupies
+    // ---- Exit phase: added per explicit spec "불을 붙이기 시작할 때...
+    // 이미 섹션2 텍스트는 위로 올라가고" -- the sweep-based reveal above
+    // used to have NO exit logic at all, so every word simply held at its
+    // "already read" opacity all the way through p=1 (the pin's release
+    // point), meaning the tagline was still fully visible over the
+    // torch-igniting footage. Now the whole tagline rises up and fades to
+    // fully invisible (opacity 0) within EXIT_START -> EXIT_END, comfortably
+    // BEFORE video-5 (the torch-igniting payoff clip, which plays across
+    // the pin's final quarter, p: 0.75 -> 1.0 -- see CHAIN/renderVideoChain
+    // in setupFixedBgVideo) is showing "the moment it starts to catch fire".
+    // The client-wall's own pre-rise (see workReelWallPreRiseRenderer
+    // below / setupClientWall) begins at WALL_PRERISE_START, slightly
+    // BEFORE the tagline is fully gone, so the two visually overlap for a
+    // beat ("text already rising away AND logos already starting to rise")
+    // rather than one waiting for the other to fully finish first.
+    const EXIT_START = 0.50;
+    const EXIT_END = 0.68; // fully faded/gone well before video-5 (torch-ignite,
+    // the "flame just starting to catch" payoff) begins at pin progress 0.75
+    // -- see CHAIN.PHASE_V4_END in setupFixedBgVideo.
+    const exitEaseTag = gsap.parseEase('power2.in');
     function renderTagline(p) {
       // sweepP: 0->1 position of the reading spotlight across the sentence
       const sweepP = Math.max(0, Math.min(1, (p - SWEEP_START) / (SWEEP_END - SWEEP_START)));
+      const exitP = Math.max(0, Math.min(1, (p - EXIT_START) / (EXIT_END - EXIT_START)));
+      const exitT = exitEaseTag(exitP);
       words.forEach((word, i) => {
         const wordCenter = (i + 0.5) / WORD_COUNT;
         // distance (in "word slots") between the sweep position and this
@@ -1125,11 +1182,12 @@
         // "unread" state: ahead of the sweep -> faint.
         const active = Math.max(0, 1 - Math.abs(dist));
         const passed = Math.max(0, Math.min(1, -dist + 0.5));
-        const opacity = 0.22 + 0.78 * Math.max(active, passed * 0.62);
+        const readOpacity = 0.22 + 0.78 * Math.max(active, passed * 0.62);
         const scale = 1 + 0.05 * active;
         gsap.set(word, {
-          opacity,
+          opacity: readOpacity * (1 - exitT),
           scale,
+          y: -40 * exitT,
           color: active > 0.5 ? 'var(--accent-gold)' : 'var(--fg)',
         });
       });
@@ -1152,6 +1210,16 @@
       // CHAIN.PHASE_1B_END), producing a wrong-video flash on first paint
       // before the user has scrolled at all. Gating on isActive avoids that.
       if (isActive && workReelScrubRenderer) workReelScrubRenderer(p);
+
+      // ---- WORKED WITH logo-wall pre-rise, driven off this SAME pin
+      // progress (see the long comment inside setupClientWall() next to
+      // workReelWallPreRiseRenderer's assignment for the full rationale:
+      // section-2's own scroll-entry trigger fired too late -- only after
+      // this pin had already released -- so the logos must instead begin
+      // rising from within the pin's own tail end, in lockstep with
+      // video-5's "torch just catching fire" footage). Same isActive gate
+      // as workReelScrubRenderer above, and for the identical reason.
+      if (isActive && workReelWallPreRiseRenderer) workReelWallPreRiseRenderer(p);
     }
     renderTagline(0);
 
