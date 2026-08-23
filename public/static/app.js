@@ -1038,19 +1038,47 @@
     gsap.set(videos, { opacity: 0 });
     gsap.set(v7, { opacity: 1 });
 
-    let dur7 = 6.0;
-    let dur8 = 6.0;
-    v7.addEventListener('loadedmetadata', () => { if (v7.duration) dur7 = v7.duration; });
-    v8.addEventListener('loadedmetadata', () => { if (v8.duration) dur8 = v8.duration; });
-
     // Same root-cause fix as setupFixedBgVideo() above -- see
     // blobifySeekableVideo()'s top-of-file comment. Staggered for the
     // same "avoid simultaneous decoder init" reason (see that function's
     // comment for the torch-in-section-1 bug this fixes).
     videos.forEach((v, i) => blobifySeekableVideo(v, i * 250));
 
-    function seek(video, duration, localP) {
-      const t = Math.max(0, Math.min(1, localP)) * duration;
+    // ---- ROOT CAUSE (this turn's "푸드로 넘어갈때 불투명 레이어" bug) ----
+    // Both source clips have their OWN baked-in cinematic fade at each end
+    // of the raw file -- this is NOT a CSS/z-index/compositing issue (ruled
+    // out via canvas drawImage() readback of the raw decoded frame, which
+    // matched the composited screenshot exactly at every scrollY tested).
+    // Measured via ffmpeg frame extraction + PIL mean-brightness sampling:
+    //   photos-intro-07.mp4 (v7): bright/flat ~15 mean brightness from
+    //     0.0s->~4.0s, then fades hard to near-black by 5.0s-6.0s (mean
+    //     brightness 15.45 @ 4.0s -> 12.4 @ 4.4s -> 7.17 @ 4.8s -> 4.29 @
+    //     5.0s -> ~2.5 @ 5.4s-6.0s, i.e. essentially solid black).
+    //   photos-outro-08.mp4 (v8): OPENS on a near-black frame (mean 0.87-
+    //     0.93 from 0.0s-0.5s), ramps up to full brightness only by
+    //     ~1.3s-1.5s (mean 15.76-18.36), peaks around 3.0s (33.36), then
+    //     ALSO fades out again near its own end (18.64 @ 4.0s -> 12.74 @
+    //     4.4s -> 6.86 @ 5.0s -> ~4.9 @ 5.9s).
+    // The old code scrubbed each clip's `currentTime` linearly across its
+    // FULL 0->6s `duration`, so this baked-in dark footage landed right in
+    // the middle of the scroll-driven PHOTOS transit -- exactly where
+    // section-4's cards are animating in, matching the user's precise
+    // complaint ("푸드로 넘어갈때(카드들이 올라오기 전에)" = right as
+    // section-4/Food's cards are coming up). Fix: instead of scrubbing the
+    // full duration, remap scroll progress onto each clip's own SAFE
+    // (consistently-bright) sub-window, skipping the fade-in/fade-out
+    // footage at the very start/end of each raw file entirely. The safe
+    // windows below were chosen so the v7->v8 hard-cut itself also lands
+    // between two comparably-bright frames (v7 @ ~4.0s: mean 15.45; v8 @
+    // ~1.3s: mean 15.76), so the handoff itself introduces no visible dip.
+    const V7_SAFE_START = 0.0;
+    const V7_SAFE_END = 4.0;
+    const V8_SAFE_START = 1.3;
+    const V8_SAFE_END = 4.0;
+
+    function seek(video, safeStart, safeEnd, localP) {
+      const lp = Math.max(0, Math.min(1, localP));
+      const t = safeStart + lp * (safeEnd - safeStart);
       if (video.readyState > 0 && Number.isFinite(t)) {
         video.currentTime = t;
       }
@@ -1071,11 +1099,11 @@
       if (p <= PHASE_V7_END) {
         setActive(0);
         const localP = PHASE_V7_END > 0 ? p / PHASE_V7_END : 1;
-        seek(v7, dur7, localP);
+        seek(v7, V7_SAFE_START, V7_SAFE_END, localP);
       } else {
         setActive(1);
         const localP = (p - PHASE_V7_END) / (1 - PHASE_V7_END);
-        seek(v8, dur8, localP);
+        seek(v8, V8_SAFE_START, V8_SAFE_END, localP);
       }
     }
 
