@@ -749,20 +749,6 @@
   // lifting it fully out of frame by ~7.5-8s, the clip's own end).
   const V1A_SETTLE_END_SEC = 4.5;
 
-  // Shared pixel width (see the long comment inside renderLayerOpacity()
-  // below, and setupPhotosBgVideo()'s own ScrollTrigger further down, for
-  // the full "double-blackout at the section-2->section-3 LAYER handoff"
-  // root-cause writeup) of the crossfade window that #fixed-bg-video fades
-  // OUT across and #photos-bg-video-layer fades IN across, BOTH anchored
-  // to the exact same absolute scrollY range immediately before
-  // section-3's top. Declared once here (module scope) rather than
-  // separately inside each setup function so both independently-created
-  // ScrollTrigger instances are mathematically guaranteed to use the
-  // IDENTICAL pixel width -- if these two setup functions each had their
-  // own locally-duplicated copy of this number, a future edit to only one
-  // copy would silently reopen the exact gap/overlap bug this fix closes.
-  const HANDOFF_CROSSFADE_PX = 260;
-
   function setupFixedBgVideo() {
     const layer = document.getElementById('fixed-bg-video');
     const v1a = document.getElementById('bg-video-1a');
@@ -901,15 +887,19 @@
       // genuine double-blackout, confirmed visually via screenshot as a
       // solid black frame (only text/UI chrome visible, zero fire/torch
       // imagery). Fix: this function no longer performs any fade-out at
-      // all -- it unconditionally stays at 1. The fade-out (and the OTHER
-      // layer's matching fade-IN) is now driven entirely by ONE shared,
-      // pixel-anchored crossfade ScrollTrigger (see setupBgLayerCrossfade()
-      // further below, called once both this layer and
-      // #photos-bg-video-layer exist) that sets BOTH layers' opacity in
-      // the SAME callback from a SINGLE progress value, so they are
-      // mathematically guaranteed complementary (op1 + op2 === 1) at every
-      // tick -- a double-zero (or double-one) reading is now structurally
-      // impossible, not just empirically rare.
+      // all -- it unconditionally stays at 1. The transition (and the
+      // OTHER layer's matching cut-IN) is now driven entirely by ONE
+      // shared, zero-width hard-cut ScrollTrigger (see
+      // setupBgLayerHandoff() further below, called once both this layer
+      // and #photos-bg-video-layer exist) that sets BOTH layers' opacity
+      // in the SAME callback from a SINGLE progress value, so they are
+      // mathematically guaranteed complementary (op1 + op2 === 1) AND
+      // never simultaneously nonzero at every tick -- a double-blackout
+      // (or, per a later report, a double-EXPOSED overlap from an earlier
+      // gradual-crossfade attempt at this same fix) is now structurally
+      // impossible, not just empirically rare. See the long comment above
+      // setupBgLayerHandoff()'s own declaration for why a gradual
+      // crossfade was tried first and had to be reverted to a hard cut.
       gsap.set(layer, { opacity: 1 });
     }
 
@@ -1028,10 +1018,11 @@
     // computed fade-out here, paired with #photos-bg-video-layer's own
     // independently-computed fade-in, produced a genuine double-blackout
     // gap right at their shared section-3-top boundary. The fade-out is
-    // now driven by setupBgLayerCrossfade() (further below, called once
+    // now driven by setupBgLayerHandoff() (further below, called once
     // BOTH this layer and #photos-bg-video-layer exist) from a single
     // shared progress value that keeps the two layers' opacities
-    // mathematically complementary at every scroll tick.
+    // mathematically complementary AND mutually exclusive (a hard cut,
+    // not a fade) at every scroll tick.
 
     // Expose both render functions so each section's OWN pinned
     // ScrollTrigger (intro-pin below, work-reel-pin in setupWorkReel())
@@ -1239,87 +1230,92 @@
   setupPhotosBgVideo();
 
   /* ============================================================
-     SECTION-2 -> SECTION-3 BACKGROUND-LAYER CROSSFADE
-     (this turn's fix -- see the long comment inside renderLayerOpacity()
-     above for the full root-cause writeup of the "6.mp4/7.mp4 사이
-     페이드아웃 -> 재연결" bug this closes).
+     SECTION-2 -> SECTION-3 BACKGROUND-LAYER HANDOFF (HARD CUT)
+     (see the long comment inside renderLayerOpacity() above for the full
+     root-cause writeup of the "6.mp4/7.mp4 사이 페이드아웃 -> 재연결" bug
+     this closes).
 
      #fixed-bg-video and #photos-bg-video-layer are two entirely separate
-     DOM layers, each previously driven by its OWN independent
-     ScrollTrigger: one computing a gradual progress-based fade-OUT, the
-     other computing a binary self.isActive-gated fade-IN. Even though
-     both were nominally anchored to the same boundary (section-3's top),
-     nothing about two independently-computed ScrollTrigger instances
-     guarantees their outputs are complementary at every scroll tick near
-     a shared boundary -- confirmed via live opacity polling that both
-     layers actually read 0 simultaneously for a real, visible range of
-     scroll positions (a genuine double-blackout, not a mere screenshot
-     artifact).
+     DOM layers that were previously each driven by their OWN independent
+     ScrollTrigger (one a gradual progress-based fade-OUT, the other a
+     binary self.isActive-gated fade-IN). Despite both nominally sharing
+     section-3's top as their boundary, two independently-computed
+     ScrollTrigger instances are not guaranteed to produce complementary
+     opacity at every tick -- live polling proved both layers actually
+     read opacity:0 SIMULTANEOUSLY for a real range of scroll positions, a
+     genuine double-blackout confirmed visually as a solid black frame.
 
-     Fix: ONE ScrollTrigger, scoped to a narrow HANDOFF_CROSSFADE_PX-wide
-     pixel window ending exactly at section-3's top, sets BOTH layers'
-     opacity from a SINGLE progress value in the SAME callback:
-       op(#fixed-bg-video)         = 1 - progress
-       op(#photos-bg-video-layer)  = progress
-     so op1 + op2 === 1 by construction at every tick inside the window --
-     a double-zero (or double-one) reading is now structurally impossible.
-     Guarded by `if (!self.isActive) return` so this trigger only ever
-     writes while scroll position is genuinely inside its own narrow
-     window; outside of it, #fixed-bg-video simply keeps whatever this
-     trigger last left it at (1 before the window, 0 after) and
-     #photos-bg-video-layer's own pre-existing `photos-bg-video` trigger
-     (see setupPhotosBgVideo() above) takes over exactly at section-3's
-     top, right where this crossfade trigger leaves it at op2=1 -- so the
-     handoff between "this trigger owns opacity" and "photos-bg-video
-     trigger owns opacity" is itself seamless (both agree on the value at
-     the exact instant control passes between them).
+     FIRST attempted fix (see git history) replaced the two independent
+     computations with a single shared ~260px-wide GRADUAL crossfade
+     (op1=1-p, op2=p) so the two values were mathematically guaranteed to
+     sum to 1 at every tick -- this DID eliminate the double-blackout, but
+     introduced a NEW, different visible defect the user then reported:
+     for the width of that 260px window, BOTH videos are simultaneously
+     partially opaque and thus visibly DOUBLE-EXPOSED/overlapping on
+     screen at once (two differently-shaped torches ghosted together) --
+     "여전히 두개 영상이 중첩돼. 페이드 전혀 없이 두 영상이 이어지게
+     만들어줄 수 있을까?" Any nonzero-width blend/crossfade between two
+     DIFFERENT pieces of footage (not the same clip fading through black)
+     will always show this double-exposure for as long as both opacities
+     are simultaneously above 0 -- there is no partial-blend window that
+     avoids it. The only way to guarantee neither a black gap NOR a
+     double-exposed overlap is a ZERO-WIDTH instantaneous hard cut: at
+     every scroll tick exactly one of the two layers is opacity:1 and the
+     other is opacity:0, with no intermediate tick where both are
+     simultaneously nonzero.
+
+     FIX: collapse the crossfade window to zero width -- a single
+     ScrollTrigger with `start` and `end` both pinned to the exact same
+     point (section-3's own top) so `self.progress` can only ever be
+     exactly 0 (anywhere before that point) or exactly 1 (anywhere at or
+     after it), never a fractional in-between value, and sets BOTH
+     layers' opacity from that single shared value in the same callback:
+       op(#fixed-bg-video)         = 1 - progress   (1 before, 0 at/after)
+       op(#photos-bg-video-layer)  = progress       (0 before, 1 at/after)
+     Because both are still written from the ONE shared progress value in
+     the SAME callback, op1 + op2 === 1 at every tick exactly as before
+     (no double-blackout) -- but since progress itself is now binary
+     (never fractional), there is no scroll position where both are
+     simultaneously nonzero either (no double-exposure). This is a true
+     instant hard-cut, not a fade: #fixed-bg-video's torch and
+     #photos-bg-video-layer's torch never render on screen at the same
+     time, not even for a single intermediate frame.
 
      Created LAST (after both setupFixedBgVideo() and setupPhotosBgVideo()
      have already registered their own triggers) so GSAP calls this
      trigger's onUpdate/onRefresh AFTER theirs within any single scroll
      tick -- meaning this trigger's gsap.set calls are always the final,
-     winning write for both layers while its own window is active,
-     regardless of what either layer's own trigger also wrote moments
-     earlier in that same tick.
+     winning write for both layers at the exact instant scroll crosses
+     section-3's top, regardless of what either layer's own trigger also
+     wrote moments earlier in that same tick.
      ============================================================ */
-  function setupBgLayerCrossfade() {
+  function setupBgLayerHandoff() {
     const fixedLayer = document.getElementById('fixed-bg-video');
     const photosLayer = document.getElementById('photos-bg-video-layer');
     const s3 = document.getElementById('section-3');
     if (!fixedLayer || !photosLayer || !s3) return;
 
     function render(p) {
-      const lp = Math.max(0, Math.min(1, p));
-      gsap.set(fixedLayer, { opacity: 1 - lp });
-      gsap.set(photosLayer, { opacity: lp });
+      // p is always exactly 0 or exactly 1 here (start === end, so GSAP
+      // can only ever report one of its two clamped endpoints) -- this
+      // Math.round is defensive/documents that intent, not a fudge for
+      // some observed fractional value.
+      const cut = Math.round(Math.max(0, Math.min(1, p)));
+      gsap.set(fixedLayer, { opacity: 1 - cut });
+      gsap.set(photosLayer, { opacity: cut });
     }
 
-    // NOTE: `self.isActive` is false both BEFORE start (progress pinned at
-    // 0) and, critically, AT/AFTER end (progress pinned at 1, isActive
-    // flips false the instant the trigger's own end boundary is crossed --
-    // this is normal ScrollTrigger behavior, not a bug). An earlier draft
-    // of this fix gated onUpdate/onRefresh on `self.isActive` alone and
-    // simply returned early once isActive went false past the end
-    // boundary -- but by then `self.progress` was already pinned at
-    // exactly 1, so returning early left the LAST active-window write (at
-    // whatever progress the final in-window tick happened to land on, not
-    // necessarily 1) as the stuck value forever afterward -- e.g.
-    // #fixed-bg-video staying at a stray opacity 0.0769 instead of
-    // resolving all the way to 0. Always call render(self.progress) --
-    // GSAP already clamps progress to [0,1] outside the window, so this
-    // correctly snaps to the full 0/1 endpoints the instant scroll passes
-    // either boundary, while still tracking smoothly in between.
     ScrollTrigger.create({
-      id: 'bg-layer-crossfade',
+      id: 'bg-layer-handoff',
       trigger: s3,
-      start: `top top+=${HANDOFF_CROSSFADE_PX}`,
+      start: 'top top',
       end: 'top top',
       scrub: true,
       onUpdate: (self) => render(self.progress),
       onRefresh: (self) => render(self.progress),
     });
   }
-  setupBgLayerCrossfade();
+  setupBgLayerHandoff();
 
   /* ============================================================
      SECTION 1 -- Pinned intro (merged former section 1 + 2):
