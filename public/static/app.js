@@ -1215,7 +1215,27 @@
     const V7_SAFE_START = 0.0;
     const V7_SAFE_END = 4.0;
     const V8_SAFE_START = 1.3;
-    const V8_SAFE_END = 4.0;
+    // ROOT-CAUSE FIX ("8번 영상이 끝까지 재생이 안 되고... 9번영상이 틀어질
+    // 때, 엄청 컷이 튀어보여" -- video-8 cut off before completion + jarring
+    // cut into video-9, this turn). V8_SAFE_END was previously 4.0 --
+    // artificially truncating photos-outro-08.mp4 (6.0s native duration)
+    // more than 1.5s before its actual end, at a point where the clip's
+    // own baked-in fade-out is still actively mid-dim (ffmpeg/PIL
+    // mean-brightness sampling: 19.87 @ 4.0s, still dropping). The very
+    // next layer -- videos-bg-9.mp4 -- opens on a much darker frame (mean
+    // 3.95-4.09 across its own 0.0-1.0s) since its composition is a torch
+    // approaching an off-frame woodpile against a mostly-black background.
+    // Cutting from v8@4.0 (mean ~20) straight to v9@0.0 (mean ~4) is a
+    // ~16-point brightness jump -- exactly what reads as a jarring "컷이
+    // 튀어보여". Extending V8_SAFE_END to 5.9s lets v8 keep fading almost
+    // all the way to its own natural end (mean brightness by 5.9s: ~5.18,
+    // nearly identical to v9's opening ~3.95-4.09) so the v8->v9 handoff
+    // now lands between two comparably-dark frames, matching the same
+    // "land the hard cut between comparably-bright frames" strategy
+    // already used for the v7->v8 boundary above. 5.9s (not the full
+    // 6.0s) leaves a hair of margin so a rounding/timing edge case can
+    // never seek past the clip's last decodable frame.
+    const V8_SAFE_END = 5.9;
 
     // ---- SECOND, ACTUAL ROOT CAUSE of the persistent black flash ----
     // (found only after the safe-window fix above still didn't resolve
@@ -1643,21 +1663,45 @@
     // that point, this handoff must do nothing at all and leave
     // photosLayer/videosLayer exactly as setupBgLayerHandoff() /
     // setupPhotosBgVideo() / setupVideosBgVideo() already set them.
+    // SECOND ROOT-CAUSE FIX ("8번 영상... 9번영상이 틀어질 때, 엄청 컷이
+    // 튀어보여" -- jarring v8->v9 cut, this turn). This trigger used to be
+    // zero-width (start===end), so self.progress could only ever be
+    // exactly 0 or exactly 1 -- an instant Math.round() binary flip with
+    // NO blend, the same class of "hard cut" bug already fixed for
+    // v9->v10->v11 inside setupVideosBgVideo() above. Extending the
+    // photos-outro-08 clip's own SAFE_END (see setupPhotosBgVideo's
+    // V8_SAFE_END comment above) closes most of the brightness gap at
+    // this boundary, but an instant opacity swap between two DIFFERENT
+    // video elements is still visually a cut, however well the
+    // brightness matches -- so this trigger is widened into a short,
+    // real scroll span straddling section-5's top edge, and the binary
+    // Math.round() is replaced with a continuous blend driven directly
+    // by scroll progress (same "seek/opacity as a pure function of
+    // self.progress" pattern as renderVideosChain(), so it stays
+    // perfectly in sync on fast scrubbing and reverses cleanly on
+    // scroll-up). The window is kept intentionally SHORT/TIGHT (6% of
+    // viewport height on each side, ~12%vh total) -- same reasoning as
+    // XFADE_V10_V11's tight window above: v8 and v9 are two genuinely
+    // different clips (different composition/framing), so a WIDE
+    // dissolve would show a visible double-exposed blend; a short blend
+    // is long enough to remove the "cut" feeling entirely while staying
+    // too brief for the content mismatch to read as ghosting.
+    const XFADE_PX = Math.round(window.innerHeight * 0.06);
     function render(p, self) {
       if (self) {
         const photosBgTrigger = ScrollTrigger.getById('photos-bg-video');
         if (photosBgTrigger && self.scroll() < photosBgTrigger.start) return;
       }
-      const cut = Math.round(Math.max(0, Math.min(1, p)));
-      gsap.set(photosLayer, { opacity: 1 - cut });
-      gsap.set(videosLayer, { opacity: cut });
+      const blend = Math.max(0, Math.min(1, p));
+      gsap.set(photosLayer, { opacity: 1 - blend });
+      gsap.set(videosLayer, { opacity: blend });
     }
 
     ScrollTrigger.create({
       id: 'photos-videos-layer-handoff',
       trigger: s5,
-      start: 'top top',
-      end: 'top top',
+      start: () => 'top top+=' + XFADE_PX,
+      end: () => 'top top-=' + XFADE_PX,
       scrub: true,
       onUpdate: (self) => render(self.progress, self),
       onRefresh: (self) => render(self.progress, self),
