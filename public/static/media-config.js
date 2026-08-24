@@ -63,12 +63,46 @@ window.SITE_MEDIA = {
     '/static/media/photos/ai/ai-02.jpg'
   ],
 
-  // ── 6. VIDEOS 인트로 썸네일 ─────────────────────────────────
+  // ── 6. VIDEOS 인트로 썸네일 -- 이제 #videos-bg-video-layer(bg-video-9)가
+  //      section-5 배경을 담당하므로 비워둠 (PHOTOS의 photosIntroImage와
+  //      동일한 패턴, see #section-5 .title-bg-media { background:
+  //      transparent } in style.css).
   videosIntroThumb: '',
 
-  // ── 7. VIDEOS 랜드스케이프 (가로, 10개) ──────────────────────
-  landscapeVideos: ['', '', '', '', '', '', '', '', '', ''],
+  // ── 7. VIDEOS 랜드스케이프 (가로, 14개) ──────────────────────
+  // 실제 구글드라이브 자료 개수에 맞춘 불균등 분포:
+  // EVENTS x3, BRAND FILMS x4, DOCUMENTARY x2, COMMERCIALS x4, ART x1
+  // (카테고리 리스트 순서 EVENTS/BRAND FILMS/DOCUMENTARY/COMMERCIALS/ART와
+  // 일치하도록 배치 -- app.js의 categoryForIndex 매핑과 반드시 동기화)
+  landscapeVideos: [
+    '/static/media/videos/landscape/events-01.jpg',
+    '/static/media/videos/landscape/events-02.jpg',
+    '/static/media/videos/landscape/events-03.jpg',
+    '/static/media/videos/landscape/brand-01.jpg',
+    '/static/media/videos/landscape/brand-02.jpg',
+    '/static/media/videos/landscape/brand-03.jpg',
+    '/static/media/videos/landscape/brand-04.jpg',
+    '/static/media/videos/landscape/documentary-01.jpg',
+    '/static/media/videos/landscape/documentary-02.jpg',
+    '/static/media/videos/landscape/commercials-01.jpg',
+    '/static/media/videos/landscape/commercials-02.jpg',
+    '/static/media/videos/landscape/commercials-03.jpg',
+    '/static/media/videos/landscape/commercials-04.jpg',
+    '/static/media/videos/landscape/art-01.jpg'
+  ],
 
-  // ── 8. VIDEOS 릴스 (세로, 6개) ───────────────────────────────
-  reelVideos: ['', '', '', '', '', '']
+  // ── 8. VIDEOS 릴스 (세로, 11개) ───────────────────────────────
+  reelVideos: [
+    '/static/media/videos/reels/reel-01.jpg',
+    '/static/media/videos/reels/reel-02.jpg',
+    '/static/media/videos/reels/reel-03.jpg',
+    '/static/media/videos/reels/reel-04.jpg',
+    '/static/media/videos/reels/reel-05.jpg',
+    '/static/media/videos/reels/reel-06.jpg',
+    '/static/media/videos/reels/reel-07.jpg',
+    '/static/media/videos/reels/reel-08.jpg',
+    '/static/media/videos/reels/reel-09.jpg',
+    '/static/media/videos/reels/reel-10.jpg',
+    '/static/media/videos/reels/reel-11.jpg'
+  ]
 };

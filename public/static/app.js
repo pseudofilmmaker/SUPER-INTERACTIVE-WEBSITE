@@ -252,8 +252,11 @@
   // panel-nav + group-title visibility gating below (the top header nav's
   // own active state no longer depends on this -- it's pinned to HOME,
   // see setActiveSection below).
-  // (8 sections total, DOM order: 0 intro/cube, 1 work-reel, 2 about/logo-wall,
-  // 3-4 photos, 5-7 videos)
+  // (9 sections total, DOM order: 0 intro/cube, 1 work-reel, 2 about/logo-wall,
+  // 3-4 photos, 5-7 videos, 8 videos-outro (bg-video-11 still finishing;
+  // NOT included in VIDEOS_INDICES since its whole purpose is for the
+  // panel-nav/group-title to have ALREADY faded away by the time it's
+  // reached -- see setupVideosGroupExit()).
   const PHOTOS_INDICES = [3, 4];
   const VIDEOS_INDICES = [5, 6, 7];
 
@@ -1341,6 +1344,219 @@
   setupBgLayerHandoff();
 
   /* ============================================================
+     VIDEOS BACKGROUND VIDEO -- third "media player" layer, same
+     scrub-chain pattern as setupPhotosBgVideo() above but scoped to
+     the whole VIDEOS group (section-5 intro through section-7 reels)
+     PLUS the new outro (section-8). Per this turn's spec: "비디오
+     관련 배경영상을 차례대로 로딩에 최적화되게끔 생성해줘" -- three
+     uploaded clips (9/10/11.mp4, each re-encoded from source 4K/24fps
+     down to 1080p H.264 ~1-2MB for web) hard-cut in sequence
+     9 -> 10 -> 11 as the user scrolls through the group.
+     Unlike setupPhotosBgVideo's span (which ends at the NEXT group's
+     own top, since photos-outro-08 must fully finish before VIDEOS
+     begins), this trigger's `endTrigger`/`end` deliberately reaches
+     all the way to section-8's own BOTTOM (not top) -- video-11 must
+     still be mid-playback (not yet finished) at the moment section-8
+     begins, so it keeps scrubbing/finishing DURING the outro's own
+     scroll transit while the foreground VIDEOS content has already
+     risen away (see setupVideosGroupExit() below), exactly matching
+     "11번영상이 끝나기 전에 비디오 관련 컨텐츠는 모두 화면위로
+     올라가면서 사라져야해" (before video 11 finishes, all video
+     content must already have risen off-screen).
+     Phase split is NOT an even 3-way share of progress -- weighted
+     roughly by how much actual scroll distance each sub-section
+     consumes (section-5 is a single unpinned ~100vh panel; section-6's
+     pin runs ~22%*14=308vh; section-7+outro's pin+plain span runs
+     ~30%*11+100=430vh) so no single clip's scrub feels rushed or
+     stretched relative to how long the user is actually looking at
+     its corresponding foreground content.
+     ============================================================ */
+  function setupVideosBgVideo() {
+    const layer = document.getElementById('videos-bg-video-layer');
+    const v9 = document.getElementById('videos-bg-video-9');
+    const v10 = document.getElementById('videos-bg-video-10');
+    const v11 = document.getElementById('videos-bg-video-11');
+    const s5 = document.getElementById('section-5');
+    const s8 = document.getElementById('section-8');
+    if (!layer || !v9 || !v10 || !v11 || !s5 || !s8) return;
+
+    const videos = [v9, v10, v11];
+    gsap.set(videos, { opacity: 0 });
+    gsap.set(v9, { opacity: 1 });
+
+    // Same root-cause fix as the other two bg-video layers -- see
+    // blobifySeekableVideo()'s top-of-file comment. Staggered 250ms
+    // apart per video for the same "avoid simultaneous decoder init"
+    // reason.
+    videos.forEach((v, i) => blobifySeekableVideo(v, i * 250));
+
+    // Pre-warm each clip's decoder at its own t=0 while still hidden,
+    // same "avoid a cold-seek black-flash on first reveal" fix as
+    // setupPhotosBgVideo's prewarmSeek() -- see that function's long
+    // comment for the full root-cause writeup.
+    function prewarmSeek(video, t) {
+      video.addEventListener('loadedmetadata', () => {
+        video.currentTime = t;
+      });
+      if (video.readyState > 0) video.currentTime = t;
+    }
+    prewarmSeek(v9, 0);
+    prewarmSeek(v10, 0);
+    prewarmSeek(v11, 0);
+
+    // All three re-encoded clips are exactly 6.000000s (ffprobe-confirmed);
+    // no baked-in fade-to-black footage was found at either end of any of
+    // the three (brightness sampled every 1s across each clip stayed in a
+    // consistent ~16-51 mean-gray range throughout), so -- unlike
+    // setupPhotosBgVideo's V7/V8_SAFE_START/END -- the full [0, 6] duration
+    // is used directly with no safe-window remapping needed.
+    const CLIP_DURATION = 6.0;
+    function seek(video, localP) {
+      const t = Math.max(0, Math.min(1, localP)) * CLIP_DURATION;
+      if (video.readyState > 0 && Number.isFinite(t)) {
+        video.currentTime = t;
+      }
+    }
+
+    let activeIndex = 0;
+    function setActive(idx) {
+      if (idx === activeIndex) return;
+      activeIndex = idx;
+      videos.forEach((v, i) => gsap.set(v, { opacity: i === idx ? 1 : 0 }));
+    }
+
+    const PHASE_V9_END = 0.15;
+    const PHASE_V10_END = 0.55;
+    function renderVideosChain(p) {
+      if (p <= PHASE_V9_END) {
+        setActive(0);
+        const localP = PHASE_V9_END > 0 ? p / PHASE_V9_END : 1;
+        seek(v9, localP);
+      } else if (p <= PHASE_V10_END) {
+        setActive(1);
+        const localP = (p - PHASE_V9_END) / (PHASE_V10_END - PHASE_V9_END);
+        seek(v10, localP);
+      } else {
+        setActive(2);
+        const localP = (p - PHASE_V10_END) / (1 - PHASE_V10_END);
+        seek(v11, localP);
+      }
+    }
+
+    // Single ScrollTrigger spanning section-5's own top through
+    // section-8's own BOTTOM (see the long comment above for why this
+    // differs from setupPhotosBgVideo's "ends at the NEXT group's top"
+    // span). Transparently covers section-6/7's own pinned conveyor
+    // runs, same as setupPhotosBgVideo covers section-4's pin.
+    ScrollTrigger.create({
+      id: 'videos-bg-video',
+      trigger: s5,
+      endTrigger: s8,
+      start: 'top top',
+      end: 'bottom top',
+      scrub: true,
+      onUpdate: (self) => {
+        gsap.set(layer, { opacity: self.isActive ? 1 : 0 });
+        renderVideosChain(self.progress);
+      },
+      onRefresh: (self) => {
+        gsap.set(layer, { opacity: self.isActive ? 1 : 0 });
+        renderVideosChain(self.progress);
+      },
+      onLeave: () => gsap.set(layer, { opacity: 0 }),
+      onLeaveBack: () => gsap.set(layer, { opacity: 0 }),
+    });
+  }
+  setupVideosBgVideo();
+
+  /* ============================================================
+     SECTION-5 BACKGROUND-LAYER HANDOFF (HARD CUT) -- #photos-bg-video-
+     layer -> #videos-bg-video-layer, at section-5's own top. Exact
+     same "single shared binary progress value written to both layers
+     in one callback" pattern as setupBgLayerHandoff() above (see that
+     function's long comment for the full double-blackout /
+     double-exposure root-cause writeup this class of fix prevents).
+     Created AFTER both setupPhotosBgVideo() and setupVideosBgVideo()
+     so its writes are always the final, winning ones for both layers
+     at the exact instant scroll crosses section-5's top.
+     ============================================================ */
+  function setupPhotosVideosLayerHandoff() {
+    const photosLayer = document.getElementById('photos-bg-video-layer');
+    const videosLayer = document.getElementById('videos-bg-video-layer');
+    const s5 = document.getElementById('section-5');
+    if (!photosLayer || !videosLayer || !s5) return;
+
+    function render(p) {
+      const cut = Math.round(Math.max(0, Math.min(1, p)));
+      gsap.set(photosLayer, { opacity: 1 - cut });
+      gsap.set(videosLayer, { opacity: cut });
+    }
+
+    ScrollTrigger.create({
+      id: 'photos-videos-layer-handoff',
+      trigger: s5,
+      start: 'top top',
+      end: 'top top',
+      scrub: true,
+      onUpdate: (self) => render(self.progress),
+      onRefresh: (self) => render(self.progress),
+    });
+  }
+  setupPhotosVideosLayerHandoff();
+
+  /* ============================================================
+     VIDEOS GROUP EXIT -- "11번영상이 끝나기 전에 비디오 관련 컨텐츠는
+     모두 화면위로 올라가면서 사라져야해" (before video-11 finishes,
+     all video-related content must rise up off-screen and disappear).
+     Same rise+fade treatment as setupClientWall's own wall-exit block
+     above (translateY toward -60% of viewport height, combined with an
+     opacity fade), applied here to the VIDEOS group's two persistent
+     fixed overlays (panel-nav's category list + Details/Videos pills,
+     and the "VIDEOS" group-title) since section-7's reels conveyor
+     itself already fully frames its last thumbnail off-screen before
+     its own pin releases (see edgeMargin/edgeFade in setupConveyor) --
+     these two fixed elements are the only VIDEOS-group content still
+     left on screen by that point.
+     Trigger window: section-7's own 'bottom 85%' -> 'bottom top' --
+     the latter is geometrically identical to section-8's own top, so
+     both targets are fully risen/invisible by the exact moment the
+     outro section begins, well before video-11's own scrub range
+     (which continues through section-8's BOTTOM, see
+     setupVideosBgVideo above) reaches its end.
+     xPercent: -50 is re-asserted alongside y on every frame because
+     GSAP's inline `transform` write takes full ownership of that
+     property once written -- omitting it would silently drop the
+     elements' existing CSS `transform: translateX(-50%)` centering.
+     ============================================================ */
+  function setupVideosGroupExit() {
+    const exitSection = document.getElementById('section-7');
+    if (!exitSection) return;
+    const targets = [
+      document.getElementById('videos-panel-nav'),
+      document.getElementById('videos-title-overlay'),
+    ].filter(Boolean);
+    if (!targets.length) return;
+
+    function render(p) {
+      const lp = Math.max(0, Math.min(1, p));
+      targets.forEach((el) => {
+        gsap.set(el, { xPercent: -50, opacity: 1 - lp, y: -lp * window.innerHeight * 0.6 });
+      });
+    }
+
+    ScrollTrigger.create({
+      id: 'videos-group-exit',
+      trigger: exitSection,
+      start: 'bottom 85%',
+      end: 'bottom top',
+      scrub: true,
+      onUpdate: (self) => render(self.progress),
+      onRefresh: (self) => render(self.progress),
+    });
+  }
+  setupVideosGroupExit();
+
+  /* ============================================================
      SECTION 1 -- Pinned intro (merged former section 1 + 2):
      A single extended pinned sequence, re-architected so the cube fully
      exits BEFORE the hand-grabs-a-match payoff plays, with "Be the ONE"
@@ -1874,17 +2090,29 @@
     pinPercentPerItem: 22, refreshPriority: 3,
   });
 
-  // VIDEOS landscape: 10 items spread across the first 5 (non-Reels)
-  // categories, 2 items per category
+  // VIDEOS landscape: 14 items spread UNEVENLY across the first 5
+  // (non-Reels) categories, matching the real supplied-asset counts:
+  // EVENTS x3 (idx 0-2), BRAND FILMS x4 (idx 3-6), DOCUMENTARY x2
+  // (idx 7-8), COMMERCIALS x4 (idx 9-12), ART x1 (idx 13). This
+  // replaces the old uniform Math.floor(idx/2) mapping (which assumed
+  // a flat 2-per-category split) with an explicit lookup table, since
+  // the category boundaries are no longer evenly spaced.
+  const LANDSCAPE_CATEGORY_BOUNDARIES = [3, 7, 9, 13]; // cumulative counts: EVENTS|BRAND FILMS|DOCUMENTARY|COMMERCIALS|(ART)
+  function landscapeCategoryForIndex(idx) {
+    for (let cat = 0; cat < LANDSCAPE_CATEGORY_BOUNDARIES.length; cat++) {
+      if (idx < LANDSCAPE_CATEGORY_BOUNDARIES[cat]) return cat;
+    }
+    return LANDSCAPE_CATEGORY_BOUNDARIES.length; // ART (last non-Reels category)
+  }
   setupConveyor({
-    sectionId: 'section-6', frameId: 'landscape-frame', count: 10, labelSelector: '.carousel-label', gap: 32,
-    categoryForIndex: (idx) => Math.floor(idx / 2), categoryListId: 'videos-category-list',
+    sectionId: 'section-6', frameId: 'landscape-frame', count: 14, labelSelector: '.carousel-label', gap: 32,
+    categoryForIndex: landscapeCategoryForIndex, categoryListId: 'videos-category-list',
     pinPercentPerItem: 22, refreshPriority: 2,
   });
 
-  // VIDEOS reels: all 6 items belong to the final "Reels" category
+  // VIDEOS reels: all 11 items belong to the final "REELS" category
   setupConveyor({
-    sectionId: 'section-7', frameId: 'reel-frame', count: 6, labelSelector: '.carousel-label', gap: 24,
+    sectionId: 'section-7', frameId: 'reel-frame', count: 11, labelSelector: '.carousel-label', gap: 24,
     categoryForIndex: () => 5, categoryListId: 'videos-category-list',
     pinPercentPerItem: 30, refreshPriority: 1,
   });

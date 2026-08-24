@@ -439,6 +439,49 @@ html, body {
 }
 
 /* ============================================================
+   VIDEOS BACKGROUND VIDEO -- a third persistent "media player"
+   layer, same exact pattern as #photos-bg-video-layer above but
+   scoped to the VIDEOS group (sections 5-7) plus its own new outro
+   section-8. Per this turn's spec: "비디오 관련 배경영상을 차례대로
+   로딩에 최적화되게끔 생성해줘" -- three uploaded clips (9/10/11.mp4,
+   re-encoded from 4K to 1080p/H.264 for web) play in sequence 9->10->11,
+   hard-cut at each handoff, one per VIDEOS sub-section (9: section-5
+   intro, 10: section-6 landscape carousel, 11: section-7 reels
+   carousel through the new section-8 outro). Kept as its own
+   independent fixed layer for the same reason #photos-bg-video-layer
+   is separate from #fixed-bg-video: each group's layer has its own
+   fade contract, and only one of the three layers is ever visible at
+   a time (see setupVideosBgVideo() + setupPhotosVideosLayerHandoff()
+   in app.js).
+   ============================================================ */
+#videos-bg-video-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  will-change: opacity;
+}
+.videos-bg-video-el {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  will-change: opacity;
+}
+#videos-bg-video-9 { opacity: 1; }
+.videos-bg-video-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(5,3,2,0) 0%, rgba(5,3,2,0.32) 82%),
+    linear-gradient(180deg, rgba(5,3,2,0.22) 0%, transparent 22%, transparent 78%, rgba(5,3,2,0.3) 100%);
+}
+
+/* ============================================================
    SECTION 1 — Intro + Cube
    The section's own background is fully transparent -- NO extra
    texture/scrim layers of its own -- so the #fixed-bg-video layer
@@ -822,46 +865,33 @@ html, body {
   will-change: transform;
 }
 
-/* REVISED this turn: the whole logo SET was swapped out (per explicit
-   "현재 있는 로고 파일을 모두 제거하고, 첨부한 로고 파일로 모두
-   대체해서") -- the new files are each client's own real, full-color
-   brand mark (not the old pre-processed flat-white-silhouette set), so
-   the assumption documented in the previous version of this comment
-   ("the logo itself IS the uniform white mark") no longer holds.
-   Concretely broken by this: at least 4 of the 35 new files (amado,
-   cgv-screenx, greentee-golfshop, jess) are solid BLACK wordmarks/marks
-   on a transparent background -- confirmed via PIL alpha+brightness
-   analysis (mean brightness of visible pixels ~0-2 out of 255) and
-   visual on-black renders -- which would be almost entirely invisible
-   directly against this wall's dark torch-flame background, and several
-   more sit in a low-contrast dark-navy/dark-green range. A plain
-   `<img>` with no chip can never guarantee contrast for an arbitrary
-   mix of logo colors. FIX: give every tile a light, slightly translucent
-   rounded "chip" background (this is the same fix the top-of-file
-   comment on .client-wall's history describes REMOVING years ago, now
-   reintroduced for the opposite reason: back then every logo was
-   already a uniform white mark so a chip was redundant; now the source
-   set is uncontrolled full-color art, so a chip is what makes EVERY
-   logo -- light or dark, warm or cool -- read clearly against the dark
-   backdrop, regardless of its own color). The chip also gives each tile
-   real, consistent visual weight/area, which is what genuinely reads as
-   "filling the screen" with a varied full-color logo set (a bare
-   transluscent PNG of hugely differing density does not, no matter how
-   large it's scaled -- confirmed by the old white-silhouette wall still
-   drawing repeated "화면에 꽉 차지 않아 보여서" complaints even after
-   two rounds of sizing-only iteration, see the row-count/height history
-   above). */
+/* REVISED this turn: per explicit "로고 색상 무시하고 백색으로 해줘"
+   (ignore each logo's own color, make them all white), every one of the
+   35 client marks was re-vectorized -- PIL alpha-thresholds each source
+   PNG into a binary foreground/background mask (so full-color art,
+   photos, or gradients inside a logo are collapsed to a single flat
+   silhouette), then potrace traces that mask into a clean, resolution-
+   independent SVG with fill="#ffffff" baked in. This is what the
+   previous version of this comment's "the logo itself IS the uniform
+   white mark" assumption now correctly describes again -- unlike the
+   prior full-color PNG set (which needed the white "chip" background
+   below to guarantee contrast for arbitrary logo colors), a pure-white
+   vector mark is ALWAYS visible against this wall's dark torch-flame
+   background regardless of the source art's original color, so the
+   chip is removed entirely (back to a bare <img>, restoring the
+   pre-chip drop-shadow for the same "float above the background"
+   separation a flat white shape needs). SVG was chosen over a raster
+   format per explicit "로딩에 최적화된 로고파일" -- the full 35-logo set
+   is under 500KB combined (vs. several MB for the old full-res PNGs),
+   scales to any row height with zero quality loss, and needs no
+   responsive srcset/sizing logic. */
 .client-tile {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   white-space: nowrap;
-  margin: 0 14px;
+  margin: 0 26px;
   position: relative;
-  padding: 14px 22px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.94);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
 .client-logo {
   display: block;
@@ -878,30 +908,24 @@ html, body {
      108px->92px) to keep the logo comfortably inside its now-shorter
      row without re-introducing the vertical whitespace the 6-row
      restructure was meant to eliminate -- per explicit "로고는 6줄로
-     작게 들어가야할 거 같고".
-     RE-TUNED AGAIN this turn for the new chip (see .client-tile above):
-     the chip's own 14px/22px padding now accounts for part of each
-     row's flex:1 slice, so the bare logo's own clamp() ceiling is
-     trimmed slightly (124px->104px) to leave room for that padding
-     without the chip overflowing its row -- object-fit:contain still
-     keeps the new set's wildly different source aspect ratios (e.g.
-     dl-encc's ultra-wide wordmark vs. kafa's near-square icon)
-     consistent in height inside the chip. opacity/drop-shadow removed
-     since the white chip itself now provides the "float above the
-     background" visual separation instead of a per-pixel shadow on a
-     transparent PNG. */
-  height: clamp(40px, 9.5vh, 104px);
+     작게 들어가야할 거 같고". opacity/drop-shadow restored now that the
+     chip (which provided that same "float above the background"
+     separation for the previous full-color PNG set) is gone -- a flat
+     white SVG silhouette needs its own subtle lift off the dark backdrop. */
+  height: clamp(48px, 11vh, 108px);
   width: auto;
-  max-width: 210px;
+  max-width: 230px;
   object-fit: contain;
+  opacity: 0.92;
+  filter: drop-shadow(0 4px 18px rgba(0, 0, 0, 0.45));
 }
 
 @media (max-width: 768px) {
   .client-wall { padding: 56px 0 28px; }
   .client-wall-eyebrow { font-size: 10px; letter-spacing: 0.26em; top: 4%; }
   .client-row { left: -10vw; width: 120vw; }
-  .client-tile { margin: 0 8px; padding: 8px 12px; border-radius: 10px; }
-  .client-logo { height: clamp(22px, 5.5vh, 44px); max-width: 110px; }
+  .client-tile { margin: 0 12px; }
+  .client-logo { height: clamp(24px, 6.5vh, 48px); max-width: 130px; }
 }
 
 /* ============================================================
@@ -931,6 +955,11 @@ html, body {
    through for the whole PHOTOS group, same pattern, scoped ONLY to
    section-3 so section-5's own videosIntroThumb gradient is untouched. */
 #section-3 .title-bg-media { background: transparent; }
+/* section-5 (VIDEOS intro) gets the same treatment as section-3 above,
+   now that #videos-bg-video-layer sits behind the whole VIDEOS group --
+   its own videosIntroThumb gradient/image would otherwise paint on top
+   of bg-video-9. */
+#section-5 .title-bg-media { background: transparent; }
 .title-overlay {
   position: absolute;
   inset: 0;
@@ -1203,6 +1232,24 @@ html, body {
   background: var(--accent-flame);
   box-shadow: 0 0 8px var(--accent-flame);
   transform: scale(1.4);
+}
+
+/* ============================================================
+   SECTION 8 -- VIDEOS outro/cleanup. Per this turn's explicit spec
+   ("11번영상이 끝나기 전에 비디오 관련 컨텐츠는 모두 화면위로
+   올라가면서 사라져야해") this panel deliberately hosts NO foreground
+   content of its own -- it exists purely as extra scroll distance so
+   background video-11 (see setupVideosBgVideo() in app.js, whose scrub
+   range extends through this section's own BOTTOM) can keep playing
+   and finish naturally AFTER every other VIDEOS-group element
+   (panel-nav, group-title -- see setupVideosGroupExit()) has already
+   risen off-screen and faded to nothing during section-7's own exit.
+   Fully transparent so bg-video-11 shows through unobstructed, same
+   "later DOM element must not repaint over the fixed video layer"
+   pattern as #section-1/#section-3/#section-5 above.
+   ============================================================ */
+.videos-outro {
+  background: transparent;
 }
 
 /* ============================================================
