@@ -800,7 +800,19 @@ html, body {
      guaranteeing zero background bleed-through regardless of any
      gap between tiles, rows, or the row-5-has-5-logos-not-6 content
      asymmetry, without depending on precise geometry at all. */
-  background: radial-gradient(ellipse at 50% 45%, #0e0e10 0%, #08080a 62%, #050506 100%);
+  /* REVISED (Bug 8, this turn -- "로고 뒤에 영상이 안 보여"): the fully
+     OPAQUE version above (added for Bug 2) does exactly what its own
+     comment says -- once the wall reaches opacity:1 it is 100% opaque,
+     which structurally guarantees zero bleed-through... including the
+     torch-blaze video the user now explicitly wants visible behind the
+     logos. Switching every stop to a semi-transparent rgba (~0.82 alpha)
+     keeps the SAME purpose (a dark, even backdrop that unifies whatever
+     irregular gaps sit between/around logo silhouettes so no gap ever
+     reads as a jarring bright "hole") while letting the still-playing
+     bg-video-6 clearly show through everywhere as a dim, moody glow --
+     reconciling Bug 2's "no gaps" requirement with Bug 8's "video must
+     be visible" requirement instead of trading one for the other. */
+  background: radial-gradient(ellipse at 50% 45%, rgba(14,14,16,0.82) 0%, rgba(8,8,10,0.86) 62%, rgba(5,5,6,0.9) 100%);
   /* CHANGED absolute -> fixed this turn. Root-cause of the "logos never
      visibly rise during the still-pinned ignition footage" bug: while
      work-reel-pin is engaged, #section-2 (this element's absolute

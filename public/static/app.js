@@ -175,9 +175,35 @@
   injectMedia();
 
   /* ---------- reveal animations per panel ---------- */
+  // BUG FIX (Bug 7, this turn -- "왜 성냥이 프레임인된채로 멈춰있다 영상이
+  // 시작되는 거지?"): section-1 is the page's own LANDING panel -- the user
+  // is already looking straight at it on first paint, scrollY=0, with NO
+  // scroll gesture having happened yet. The old code wired EVERY panel's
+  // [data-reveal] items (.eyebrow/.hero-title here) through a ScrollTrigger
+  // gated on 'top 65%' onEnter -- which, for a panel already sitting at the
+  // very top of the viewport before any scroll, never reliably fires its
+  // onEnter on the very first render pass (ScrollTrigger's initial state
+  // check races page layout/font/video-metadata loading), OR fires it and
+  // then a later refresh (triggered by any late-loading resource shifting
+  // document height, the same class of desync fixed for Bug 6) replays
+  // onLeaveBack and hides the text again. Either way the effect is exactly
+  // the user's report: the background video (bg-video-1a, which has no
+  // such CSS/JS gating and is simply always-visible) plays normally, but
+  // the hero text/eyebrow -- and by extension the sense that the whole
+  // scene is "live" -- stays hidden/frozen until some later, unrelated
+  // event finally fires the reveal. FIX: section-1's own [data-reveal]
+  // items are shown immediately (no ScrollTrigger dependency at all) since
+  // they must already be visible on cold load; only panels the user
+  // actually has to SCROLL TO ('top 65%' meaningfully describes scrolling
+  // the panel up from below) keep the onEnter/onEnterBack/onLeaveBack
+  // scroll-gated reveal.
   document.querySelectorAll('.panel').forEach((panel) => {
     const items = panel.querySelectorAll('[data-reveal]');
     if (!items.length) return;
+    if (panel.id === 'section-1') {
+      gsap.set(items, { opacity: 1, y: 0 });
+      return;
+    }
     ScrollTrigger.create({
       trigger: panel,
       start: 'top 65%',
