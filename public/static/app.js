@@ -214,14 +214,33 @@
     if (panels[i]) panels[i].scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  panels.forEach((panel, i) => {
-    ScrollTrigger.create({
-      trigger: panel,
-      start: 'top center',
-      end: 'bottom center',
-      onEnter: () => setActiveSection(i),
-      onEnterBack: () => setActiveSection(i),
-    });
+  const panelActiveTriggers = panels.map((panel, i) => ScrollTrigger.create({
+    trigger: panel,
+    start: 'top center',
+    end: 'bottom center',
+    onEnter: () => setActiveSection(i),
+    onEnterBack: () => setActiveSection(i),
+  }));
+
+  // onEnter/onEnterBack above are edge-triggered on scroll-direction CROSSINGS
+  // only. A window resize (DevTools toggle, orientation change, restoring a
+  // maximized window, mobile browser chrome show/hide) makes ScrollTrigger
+  // recompute every trigger's pixel start/end (pin distances are viewport-
+  // height-relative) WITHOUT scrollY itself changing -- so a boundary can
+  // shift right across the frozen scrollY with no scroll event ever firing to
+  // trigger onEnter/onEnterBack. Result: the panel-nav/group-title visibility
+  // classes stay stuck on the stale section while the actually-visible
+  // section changes underneath (e.g. VIDEOS nav still showing while section-1
+  // is back on screen). Fix: after every refresh, explicitly resync to
+  // whichever panel trigger is actually active for the current scroll
+  // position.
+  ScrollTrigger.addEventListener('refresh', () => {
+    for (let i = panelActiveTriggers.length - 1; i >= 0; i--) {
+      if (panelActiveTriggers[i].isActive) {
+        setActiveSection(i);
+        break;
+      }
+    }
   });
   function setActiveDot(i) {
     dots.forEach((d, idx) => d.classList.toggle('active', idx === i));
