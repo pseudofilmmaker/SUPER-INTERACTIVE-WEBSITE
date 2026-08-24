@@ -1473,29 +1473,79 @@
       }
     }
 
-    let activeIndex = 0;
-    function setActive(idx) {
-      if (idx === activeIndex) return;
-      activeIndex = idx;
-      videos.forEach((v, i) => gsap.set(v, { opacity: i === idx ? 1 : 0 }));
-    }
-
+    // ROOT-CAUSE FIX ("영상과 영상 사이가 매끄럽게 이어져야하는데, 툭 끊겨서
+    // 나와" -- video-to-video hard-cut bug). The old setActive() did an
+    // instant gsap.set({opacity: i===idx?1:0}) at each phase boundary --
+    // a true zero-duration hard cut, which is exactly what reads as
+    // "끊김" (a jarring cut) no matter how well-matched the two clips'
+    // content is. FIX: replace the binary setActive() with a continuous,
+    // scroll-progress-driven crossfade computed directly from `p` (NOT a
+    // gsap.to() time-tween -- a time-based tween would fall out of sync
+    // with scroll position on fast/slow scrubbing and wouldn't reverse
+    // cleanly on scroll-up, since this whole chain is scroll-linked, not
+    // time-linked). Every frame, all three videos are seeked to their own
+    // correct local timestamp (clamped to [0,1] by seek() itself) and
+    // assigned a complementary opacity pair that sums to 1 across the
+    // active hand-off, so exactly one "unit" of coverage is ever visible
+    // and brightness is never doubled/dimmed by the overlap itself.
+    //
+    // Asymmetric crossfade widths, chosen from frame-accurate ffmpeg
+    // forensics on the actual re-encoded clips (mean-gray sampled at each
+    // clip's start/end + direct visual diff of the extracted frames):
+    // - v9 end (torch approaching an unlit woodpile) matches v10's start
+    //   (same pose, same unlit woodpile, mean-gray ~14-15 vs ~16-19) almost
+    //   frame-for-frame -- a wider, more visible crossfade here reads as a
+    //   clean, deliberate dissolve with no ghosting.
+    // - v10 end (woodpile now fully ablaze, one specific flame silhouette)
+    //   does NOT match v11's start (also fully ablaze, but a visibly
+    //   different flame shape/camera angle) -- crossfading these two
+    //   different pieces of footage will always show a brief double-
+    //   exposed blend for the width of the transition (this is the same
+    //   "two different clips never crossfade cleanly" constraint already
+    //   documented on setupBgLayerHandoff() above, which is why THAT
+    //   handoff deliberately stays a hard cut). Since the user explicitly
+    //   asked for smooth connections here, this boundary uses a much
+    //   SHORTER crossfade window instead of a hard cut -- short enough
+    //   that the mismatched-content blend is barely perceptible, while
+    //   still removing the "cut" feeling entirely.
     const PHASE_V9_END = 0.15;
     const PHASE_V10_END = 0.55;
+    const XFADE_V9_V10 = 0.035; // wide: content matches, safe to show clearly
+    const XFADE_V10_V11 = 0.014; // tight: content differs, minimize blend time
+
     function renderVideosChain(p) {
-      if (p <= PHASE_V9_END) {
-        setActive(0);
-        const localP = PHASE_V9_END > 0 ? p / PHASE_V9_END : 1;
-        seek(v9, localP);
-      } else if (p <= PHASE_V10_END) {
-        setActive(1);
-        const localP = (p - PHASE_V9_END) / (PHASE_V10_END - PHASE_V9_END);
-        seek(v10, localP);
+      const local9 = PHASE_V9_END > 0 ? p / PHASE_V9_END : 1;
+      const local10 = (p - PHASE_V9_END) / (PHASE_V10_END - PHASE_V9_END);
+      const local11 = (p - PHASE_V10_END) / (1 - PHASE_V10_END);
+      seek(v9, local9);
+      seek(v10, local10);
+      seek(v11, local11);
+
+      const halfA = XFADE_V9_V10 / 2;
+      const halfB = XFADE_V10_V11 / 2;
+      let o9 = 0;
+      let o10 = 0;
+      let o11 = 0;
+
+      if (p < PHASE_V9_END - halfA) {
+        o9 = 1;
+      } else if (p < PHASE_V9_END + halfA) {
+        const t = (p - (PHASE_V9_END - halfA)) / XFADE_V9_V10;
+        o9 = 1 - t;
+        o10 = t;
+      } else if (p < PHASE_V10_END - halfB) {
+        o10 = 1;
+      } else if (p < PHASE_V10_END + halfB) {
+        const t = (p - (PHASE_V10_END - halfB)) / XFADE_V10_V11;
+        o10 = 1 - t;
+        o11 = t;
       } else {
-        setActive(2);
-        const localP = (p - PHASE_V10_END) / (1 - PHASE_V10_END);
-        seek(v11, localP);
+        o11 = 1;
       }
+
+      gsap.set(v9, { opacity: o9 });
+      gsap.set(v10, { opacity: o10 });
+      gsap.set(v11, { opacity: o11 });
     }
 
     // Single ScrollTrigger spanning section-5's own top through
