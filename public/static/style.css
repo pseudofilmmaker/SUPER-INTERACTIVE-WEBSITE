@@ -947,31 +947,32 @@ html, body {
   align-items: center;
   justify-content: center;
   white-space: nowrap;
-  margin: 0 26px;
+  /* NEW THIS TURN -- 6->20 logos per row density change, per explicit
+     "로고는 애초에 한줄에 20개씩 넣고... 절대 지금처럼 비어있다 차는
+     느낌이거나 이상한 느낌이 들지 않게 해줘" + "밝기 조절을 절대 하지
+     말고" (no dimming, so gaps must be closed via sheer logo density
+     instead -- see .client-wall's `background: none` above). Margin
+     shrunk from 26px to 10px (each row now carries ~3.3x as many
+     tiles as before, so the per-tile horizontal footprint has to
+     shrink proportionally to keep the same total row width). */
+  margin: 0 10px;
   position: relative;
 }
 .client-logo {
   display: block;
-  /* Viewport-relative (vh) instead of a fixed px height, clamped between
-     a floor and ceiling -- so on a tall/fullscreen viewport the logos
-     scale UP to genuinely fill each row's own flex:1 slot (previously a
-     fixed 58px logo inside a >150px-tall row left huge bare margins
-     above/below it, which is what read as "not filling the screen").
-     clamp() keeps it from ever growing absurdly large on very
-     tall/narrow viewports either.
-     RE-TUNED for 6 rows (was 5): each row's flex:1 slice of the wall's
-     height is now ~1/6 instead of ~1/5, so the vh-based mid value and
-     ceiling are both scaled down proportionally (11vh->9vh,
-     108px->92px) to keep the logo comfortably inside its now-shorter
-     row without re-introducing the vertical whitespace the 6-row
-     restructure was meant to eliminate -- per explicit "로고는 6줄로
-     작게 들어가야할 거 같고". opacity/drop-shadow restored now that the
-     chip (which provided that same "float above the background"
-     separation for the previous full-color PNG set) is gone -- a flat
-     white SVG silhouette needs its own subtle lift off the dark backdrop. */
-  height: clamp(48px, 11vh, 108px);
+  /* RE-TUNED for 20 logos/row (was 6): with more than 3x as many tiles
+     packed into the same row width, each logo's own footprint must
+     shrink to match, so height/max-width are both reduced roughly in
+     proportion (108px ceiling -> 46px, 230px max-width -> 100px) to
+     keep 20 logos comfortably filling one row without overlapping or
+     overflowing/wrapping. Still vh-based + clamp()'d for the same
+     reason as before (logos scale with viewport height, never grow
+     absurdly large on tall/narrow viewports). opacity/drop-shadow
+     unchanged -- still needed for the flat white SVG silhouette to
+     lift visibly off the now fully-un-tinted, brighter video backdrop. */
+  height: clamp(22px, 4.6vh, 46px);
   width: auto;
-  max-width: 230px;
+  max-width: 100px;
   object-fit: contain;
   opacity: 0.92;
   filter: drop-shadow(0 4px 18px rgba(0, 0, 0, 0.45));
@@ -981,8 +982,8 @@ html, body {
   .client-wall { padding: 56px 0 28px; }
   .client-wall-eyebrow { font-size: 10px; letter-spacing: 0.26em; top: 4%; }
   .client-row { left: -10vw; width: 120vw; }
-  .client-tile { margin: 0 12px; }
-  .client-logo { height: clamp(24px, 6.5vh, 48px); max-width: 130px; }
+  .client-tile { margin: 0 5px; }
+  .client-logo { height: clamp(14px, 3.2vh, 26px); max-width: 62px; }
 }
 
 /* ============================================================

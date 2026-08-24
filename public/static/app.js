@@ -549,10 +549,20 @@
     // Empirically verified via Playwright (transform readout + before/
     // after screenshots) -- do not flip this without re-testing.
     // Row 0 (topmost) MUST be dir -1 per explicit spec.
-    // 5 -> 6 this turn per explicit "로고는 6줄로 작게 들어가야할 거
-    // 같고... 절대적으로 이걸 채워줘야할 거 같아" -- see home.html's
-    // client-track-0..5 (6 tracks now) and .client-logo's re-tuned
-    // clamp() bounds in style.css for the matching smaller-logo sizing.
+    // 5 -> 6 rows (prior turn) per explicit "로고는 6줄로 작게 들어가야할
+    // 거 같고... 절대적으로 이걸 채워줘야할 거 같아" -- see home.html's
+    // client-track-0..5 (6 tracks) and .client-logo's re-tuned clamp()
+    // bounds in style.css for the matching smaller-logo sizing.
+    // THIS TURN: row COUNT stays at 6, but each row's LOGO COUNT went
+    // 6 -> 20 (see home.html's client-track-0..5, now 20 unique logos
+    // doubled to 40 tiles each) per explicit "로고는 애초에 한줄에
+    // 20개씩 넣고" -- cycling through the 35-logo set with a per-row
+    // offset so no two rows show the identical sequence. Combined with
+    // Bug 8's now-fully-transparent .client-wall background (no more
+    // dimming tint), this density increase is what keeps the video
+    // bleed-through reading as "bright video behind a dense wall"
+    // rather than "gappy holes" -- see .client-tile/.client-logo's
+    // re-tuned (much smaller) sizing in style.css.
     const ROW_COUNT = 6;
     const rows = Array.from({ length: ROW_COUNT }, (_, i) => ({
       track: document.getElementById(`client-track-${i}`),
