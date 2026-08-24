@@ -604,10 +604,33 @@
       // translateY (to a full -100% of the wall's own height by the end
       // of the window) alongside the existing opacity fade makes every
       // row visibly exit UP and off-screen before PHOTOS appears.
+      //
+      // REVISED (this turn, "사진은 로고가 다 올라가고 사라지면 바로
+      // 나왔으면 좋겠어" -- photos must appear IMMEDIATELY once the logos
+      // finish rising off-screen, no gap). ROOT CAUSE (confirmed via
+      // Playwright: scrolled through the exact scrollY range and read
+      // computed opacity/screenshots at each step): the old `end: 'bottom
+      // 45%'` made this fade fully reach opacity 0 at section-2's bottom
+      // edge sitting 45% down the viewport -- which, on a full-height
+      // panel, lands ~400-500px of scroll distance BEFORE section-3's own
+      // top (the exact boundary where setupBgLayerHandoff()/
+      // setupPhotosBgVideo() hard-cut the PHOTOS background video layer
+      // in). That left a real ~400px "dead" scroll zone where the wall had
+      // already faded to nothing but PHOTOS hadn't appeared yet --
+      // confirmed visually as several consecutive fully BLACK screenshots
+      // in that range. Changing `end` to `'bottom top'` makes the fade
+      // finish (opacity 0, fully risen off-screen) at EXACTLY the scrollY
+      // where section-2's bottom edge reaches the viewport top -- which,
+      // since section-2/section-3 are directly adjacent full-height
+      // panels, is the identical scrollY as section-3's own 'top top'
+      // hard-cut boundary. The two are now driven by geometrically
+      // coincident trigger points, so the last logo pixel disappears on
+      // the exact same tick the PHOTOS background/title/cards begin
+      // appearing -- no gap, no overlap.
       ScrollTrigger.create({
         trigger: section,
         start: 'bottom 85%',
-        end: 'bottom 45%',
+        end: 'bottom top',
         scrub: true,
         onUpdate: (self) => {
           const p = self.progress;

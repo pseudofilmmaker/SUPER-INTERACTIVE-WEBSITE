@@ -822,20 +822,46 @@ html, body {
   will-change: transform;
 }
 
-/* Every logo asset has already been pre-processed into a flat WHITE
-   vector-style silhouette with a transparent background (see
-   public/static/logos/white/{ca,kr}/), so tiles no longer need a
-   background "chip" to unify mismatched source colors -- the logo
-   itself IS the uniform white mark. object-fit:contain inside a
-   fixed-height box keeps wildly different source aspect ratios
-   (126x80 icon vs 2560x1775 wordmark) visually consistent in height. */
+/* REVISED this turn: the whole logo SET was swapped out (per explicit
+   "현재 있는 로고 파일을 모두 제거하고, 첨부한 로고 파일로 모두
+   대체해서") -- the new files are each client's own real, full-color
+   brand mark (not the old pre-processed flat-white-silhouette set), so
+   the assumption documented in the previous version of this comment
+   ("the logo itself IS the uniform white mark") no longer holds.
+   Concretely broken by this: at least 4 of the 35 new files (amado,
+   cgv-screenx, greentee-golfshop, jess) are solid BLACK wordmarks/marks
+   on a transparent background -- confirmed via PIL alpha+brightness
+   analysis (mean brightness of visible pixels ~0-2 out of 255) and
+   visual on-black renders -- which would be almost entirely invisible
+   directly against this wall's dark torch-flame background, and several
+   more sit in a low-contrast dark-navy/dark-green range. A plain
+   `<img>` with no chip can never guarantee contrast for an arbitrary
+   mix of logo colors. FIX: give every tile a light, slightly translucent
+   rounded "chip" background (this is the same fix the top-of-file
+   comment on .client-wall's history describes REMOVING years ago, now
+   reintroduced for the opposite reason: back then every logo was
+   already a uniform white mark so a chip was redundant; now the source
+   set is uncontrolled full-color art, so a chip is what makes EVERY
+   logo -- light or dark, warm or cool -- read clearly against the dark
+   backdrop, regardless of its own color). The chip also gives each tile
+   real, consistent visual weight/area, which is what genuinely reads as
+   "filling the screen" with a varied full-color logo set (a bare
+   transluscent PNG of hugely differing density does not, no matter how
+   large it's scaled -- confirmed by the old white-silhouette wall still
+   drawing repeated "화면에 꽉 차지 않아 보여서" complaints even after
+   two rounds of sizing-only iteration, see the row-count/height history
+   above). */
 .client-tile {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   white-space: nowrap;
-  margin: 0 26px;
+  margin: 0 14px;
   position: relative;
+  padding: 14px 22px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
 .client-logo {
   display: block;
@@ -852,37 +878,30 @@ html, body {
      108px->92px) to keep the logo comfortably inside its now-shorter
      row without re-introducing the vertical whitespace the 6-row
      restructure was meant to eliminate -- per explicit "로고는 6줄로
-     작게 들어가야할 거 같고". */
-  /* RAISED this turn: measured via Playwright that each row's actual
-     flex:1 slice was ~132px tall on a common 900px-viewport, but the old
-     92px ceiling left the logo filling only ~61% of that band -- the
-     dark/video background showed through as a clearly visible empty
-     strip above AND below every single logo, row after row (confirmed
-     via screenshot analysis: "significant amount of visible empty
-     vertical space... allows the dark background to visibly show
-     through as distinct, continuous empty horizontal gaps"). This is a
-     PER-ROW vertical gap, not a "not enough logos" problem -- each row's
-     track already loops its own content infinitely (doubled DOM +
-     -50% xPercent wrap), so more logos would just make the horizontal
-     loop longer without touching the vertical whitespace at all. Raising
-     the ceiling to ~94% of a typical row's own height (92px -> 124px)
-     and the vh-mid value proportionally closes that gap so each logo
-     genuinely fills its row band edge-to-edge instead of floating in
-     the middle of it. */
-  height: clamp(48px, 12vh, 124px);
+     작게 들어가야할 거 같고".
+     RE-TUNED AGAIN this turn for the new chip (see .client-tile above):
+     the chip's own 14px/22px padding now accounts for part of each
+     row's flex:1 slice, so the bare logo's own clamp() ceiling is
+     trimmed slightly (124px->104px) to leave room for that padding
+     without the chip overflowing its row -- object-fit:contain still
+     keeps the new set's wildly different source aspect ratios (e.g.
+     dl-encc's ultra-wide wordmark vs. kafa's near-square icon)
+     consistent in height inside the chip. opacity/drop-shadow removed
+     since the white chip itself now provides the "float above the
+     background" visual separation instead of a per-pixel shadow on a
+     transparent PNG. */
+  height: clamp(40px, 9.5vh, 104px);
   width: auto;
-  max-width: 230px;
+  max-width: 210px;
   object-fit: contain;
-  opacity: 0.92;
-  filter: drop-shadow(0 4px 18px rgba(0,0,0,0.45));
 }
 
 @media (max-width: 768px) {
   .client-wall { padding: 56px 0 28px; }
   .client-wall-eyebrow { font-size: 10px; letter-spacing: 0.26em; top: 4%; }
   .client-row { left: -10vw; width: 120vw; }
-  .client-tile { margin: 0 12px; }
-  .client-logo { height: clamp(24px, 6.5vh, 48px); max-width: 130px; }
+  .client-tile { margin: 0 8px; padding: 8px 12px; border-radius: 10px; }
+  .client-logo { height: clamp(22px, 5.5vh, 44px); max-width: 110px; }
 }
 
 /* ============================================================
