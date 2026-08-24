@@ -444,7 +444,7 @@
      viewport height (not a fixed px value) so the element always
      starts genuinely off-screen below the fold on any device.
      ============================================================ */
-  function setupGroupTitleFrameIn(introSectionId, titleOverlayId) {
+  function setupGroupTitleFrameIn(introSectionId, titleOverlayId, startPoint) {
     const introSection = document.getElementById(introSectionId);
     const overlay = document.getElementById(titleOverlayId);
     if (!introSection || !overlay) return;
@@ -460,10 +460,35 @@
 
     gsap.set(titleText, { opacity: 0, y: travelDistance(), filter: 'blur(6px)' });
 
+    // start: defaults to 'top bottom' (VIDEOS -- no logo wall precedes it,
+    // so it's fine to begin rising as soon as section-5 enters view).
+    //
+    // PHOTOS override (complaint a -- "photos 텍스트는 로고월이 끝나고
+    // 나타나야돼"): ROOT CAUSE (confirmed via Playwright opacity/scrollY
+    // scan) was that this trigger's old fixed 'top bottom' -> 'top 35%'
+    // window fully resolved the title to opacity 1 by scrollY ~3930,
+    // while the logo wall's own exit-fade (setupClientWall's "bottom 85%"
+    // -> "bottom top" block, tuned to finish EXACTLY at section-3's own
+    // 'top top' per its adjacent long comment) doesn't reach opacity 0
+    // until scrollY ~4140 -- a ~210px window where the fully-visible
+    // PHOTOS text was overlapping the still-fading logo wall. FIX: pass
+    // 'top top' as the start point for PHOTOS specifically, which is the
+    // geometrically IDENTICAL scrollY as section-2's 'bottom top' (the two
+    // are adjacent full-height panels), i.e. the exact tick the wall
+    // finishes disappearing -- so the title's rise now only ever begins
+    // once the wall is fully gone, with zero overlap.
+    const start = startPoint || 'top bottom';
+
     ScrollTrigger.create({
       trigger: introSection,
-      start: 'top bottom',
-      end: 'top 35%',
+      start,
+      // Relative to `start` (not a fixed 'top 35%') so overriding `start`
+      // above (PHOTOS's 'top top') keeps the exact same reveal DURATION
+      // (0.65 * viewport height of scroll distance -- identical to the
+      // original 'top bottom' -> 'top 35%' span) instead of inheriting
+      // whatever gap happens to fall between the new start and a fixed
+      // 'top 35%' point.
+      end: () => '+=' + window.innerHeight * 0.65,
       scrub: 0.5,
       onUpdate: (self) => {
         const p = self.progress;
@@ -488,7 +513,7 @@
       }
     });
   }
-  setupGroupTitleFrameIn('section-3', 'photos-title-overlay');
+  setupGroupTitleFrameIn('section-3', 'photos-title-overlay', 'top top');
   setupGroupTitleFrameIn('section-5', 'videos-title-overlay');
 
   function setupPanelNavFrameIn(introSectionId, panelNavId) {
