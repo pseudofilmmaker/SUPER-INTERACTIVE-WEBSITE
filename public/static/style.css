@@ -770,6 +770,37 @@ html, body {
    the intentional "슬쩍 넘치는" (slightly overflowing) edges.
    ------------------------------------------------------------ */
 .client-wall {
+  /* NEW THIS TURN -- root cause of Bug 2 ("로고와 열과열마다 꽉차지
+     않아... 아예 구조 자체를 바꿔서"), found via a fraction-by-fraction
+     Playwright scroll-through (frac 0.0/0.15/0.3/0.5/0.7/0.85/1.0) of
+     section-2's full scroll range: at EVERY fraction where the wall is
+     risen and settled (0.3/0.5/0.7/0.85 -- i.e. NOT just a transient
+     mid-rise moment), the still-playing torch-blaze background video
+     was clearly visible bleeding through in the gaps between/around
+     logo tiles and rows. Three prior fix attempts (space-evenly ->
+     flex:1, then 5 rows -> 6 rows with smaller clamp() bounds) all
+     tuned the ROW/LOGO geometry to shrink those gaps, but never
+     addressed the actual cause: .client-wall itself had NO background
+     of its own (fully `transparent`, by original design, so the
+     torch/flame texture would "show through" as an intentional dark
+     backdrop) -- occlusion depended entirely on individual logo
+     silhouettes covering every pixel, which no row/flex tuning can
+     ever fully guarantee (logos are irregular shapes; there will
+     always be some background-colored space between/around them).
+     Per explicit "구조 자체를 바꿔서" (change the structure itself),
+     the wall now owns a genuinely OPAQUE backdrop -- since app.js's
+     entrance/exit ScrollTriggers already animate THIS element's own
+     `opacity` (see wallEntrance/wall in setupClientWall()), a
+     background painted directly on it fades in/out in perfect sync
+     automatically, with zero JS changes required: during the pin-tail
+     pre-rise the backdrop is proportionally translucent (so the "logos
+     rising up over the still-burning torch" transition is preserved
+     exactly as before), but the INSTANT it reaches opacity:1 (pin
+     release / settled scroll), the panel is 100% opaque -- structurally
+     guaranteeing zero background bleed-through regardless of any
+     gap between tiles, rows, or the row-5-has-5-logos-not-6 content
+     asymmetry, without depending on precise geometry at all. */
+  background: radial-gradient(ellipse at 50% 45%, #0e0e10 0%, #08080a 62%, #050506 100%);
   /* CHANGED absolute -> fixed this turn. Root-cause of the "logos never
      visibly rise during the still-pinned ignition footage" bug: while
      work-reel-pin is engaged, #section-2 (this element's absolute
