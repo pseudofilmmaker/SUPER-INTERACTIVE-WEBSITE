@@ -15,7 +15,9 @@
 ## URLs
 - **Local/Sandbox Preview**: (GetServiceUrl로 발급되는 프리뷰 URL)
 - **원본 참고 사이트**: https://3000-ibx6mk155c0w82u8lcaqf-3844e1b6.sandbox.novita.ai/
-- **GitHub**: (미연동)
+- **GitHub 저장소**: https://github.com/pseudofilmmaker/SUPER-INTERACTIVE-WEBSITE (branch: `main` — Hono/Cloudflare 소스 전체)
+- **GitHub Pages 임시 미리보기**: https://pseudofilmmaker.github.io/SUPER-INTERACTIVE-WEBSITE/ (branch: `gh-pages` — 정적 HTML/CSS/JS/미디어로 재빌드한 데모. Hono 서버 라우팅 없이 순수 정적 파일로 서빙되므로, Cloudflare Pages 배포판과 100% 동일하지 않을 수 있음 — 실제 배포는 Cloudflare Pages 기준)
+- **전체 소스 다운로드**: https://www.genspark.ai/api/files/s/YYx21kBf (`webapp-source.tar.gz`, node_modules/dist 제외 약 31MB)
 
 ## Data Architecture
 - **Data Models**: 정적 콘텐츠(사진/영상 카테고리, 클라이언트 로고 목록)는 `public/static/media-config.js`(window.SITE_MEDIA)와 각 페이지 HTML(`src/pages/*.html`)에 하드코딩
