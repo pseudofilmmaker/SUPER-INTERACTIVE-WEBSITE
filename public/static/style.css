@@ -1018,10 +1018,33 @@ html, body {
    its own videosIntroThumb gradient/image would otherwise paint on top
    of bg-video-9. */
 #section-5 .title-bg-media { background: transparent; }
+/* ROOT-CAUSE FIX ("검은 레이어가 계속 올라오는 현상을 절대적으로 없애줘" --
+   VIDEOS-intro black-seam bug). This overlay is position:absolute inset:0
+   INSIDE #section-5, a plain (non-fixed, non-pinned) panel that scrolls
+   normally -- so during the section-4->section-5 scroll transit, the
+   viewport only ever shows a PARTIAL slice of this box, starting right at
+   its own top edge (y=0 local). The radial-gradient's default
+   "farthest-corner" ellipse sizing makes its vertical radius reach past
+   the box's own half-height (for a 1024x600 box: ry≈424px vs a 300px
+   half-height), which puts the box's own top/bottom edges at roughly 70%
+   of the way through the 0%->80% alpha ramp -- i.e. the overlay is
+   already ~0.68 alpha (68% black) exactly at the DOM boundary where
+   section-4 (which has NO overlay at all) ends. The result: a hard,
+   ~0-to-0.68 alpha jump appears right at that boundary and visibly
+   "rises" up the screen as the user scrolls -- exactly this bug. FIX:
+   mask the overlay's own top/bottom edges down to fully transparent
+   (same mask-image technique already used by .client-row's left/right
+   fade and #scroll-feather's bottom fade elsewhere in this file) so the
+   vignette only ever ramps up gradually well inside the box, and reads
+   as 0 right at the edge no matter where that edge happens to sit in the
+   viewport mid-scroll. Purely a compositing-layer change -- does not
+   touch the underlying video element's brightness/color at all. */
 .title-overlay {
   position: absolute;
   inset: 0;
   background: radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0.15), rgba(0,0,0,0.75) 80%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%);
   z-index: 1;
 }
 
