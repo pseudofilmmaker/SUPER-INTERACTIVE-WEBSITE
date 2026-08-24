@@ -130,10 +130,23 @@ html, body {
    sections (PHOTOS: 3-4, VIDEOS: 5-7) are in view, i.e. until every
    thumbnail in the group has fully conveyor-belted past. ---------------- */
 .panel-nav {
+  /* Bug 3 fix: centering here used to be `left:50%; transform:translateX(-50%)`,
+     which requires the browser to resolve the transform's `-50%` against this
+     element's OWN rendered width every frame. Because .panel-nav-list li.active
+     applies `transform: scale(1.06)` and the whole nav is continuously
+     opacity/y-scrubbed by setupPanelNavFrameIn() during scroll, its width is
+     never perfectly stable -- and at certain viewport widths (768/834/1000px
+     measured) and on real mobile viewports (iPhone 13 emulation) Chromium was
+     observed resolving that self-referential percentage against a stale
+     width, silently shifting the whole block left of true center (confirmed
+     via getBoundingClientRect() + screenshots). Spanning the full width with
+     left:0/right:0 and centering children via flexbox instead removes the
+     dependency on the element's own width entirely -- true, robust centering
+     regardless of content width or animation state. */
   position: fixed;
-  left: 50%;
+  left: 0;
+  right: 0;
   bottom: 68px;
-  transform: translateX(-50%);
   z-index: 210;
   display: flex;
   flex-direction: column;
@@ -800,19 +813,20 @@ html, body {
      guaranteeing zero background bleed-through regardless of any
      gap between tiles, rows, or the row-5-has-5-logos-not-6 content
      asymmetry, without depending on precise geometry at all. */
-  /* REVISED (Bug 8, this turn -- "로고 뒤에 영상이 안 보여"): the fully
-     OPAQUE version above (added for Bug 2) does exactly what its own
-     comment says -- once the wall reaches opacity:1 it is 100% opaque,
-     which structurally guarantees zero bleed-through... including the
-     torch-blaze video the user now explicitly wants visible behind the
-     logos. Switching every stop to a semi-transparent rgba (~0.82 alpha)
-     keeps the SAME purpose (a dark, even backdrop that unifies whatever
-     irregular gaps sit between/around logo silhouettes so no gap ever
-     reads as a jarring bright "hole") while letting the still-playing
-     bg-video-6 clearly show through everywhere as a dim, moody glow --
-     reconciling Bug 2's "no gaps" requirement with Bug 8's "video must
-     be visible" requirement instead of trading one for the other. */
-  background: radial-gradient(ellipse at 50% 45%, rgba(14,14,16,0.82) 0%, rgba(8,8,10,0.86) 62%, rgba(5,5,6,0.9) 100%);
+  /* REVISED AGAIN (Bug 8, this turn -- user explicitly rejected the
+     semi-transparent dimmed version above: "로고 뒤 영상이 은은할
+     필요가 없다고 제발, 밝기 조절을 절대 하지 말고" -- the video must
+     be FULLY BRIGHT behind the logos, zero dimming, matching a reference
+     screenshot of a vividly bright, fully-saturated flame clearly visible
+     through a DENSE logo grid (dense enough that some logos overlapping
+     the brightest area are hard to read). So the backdrop tint is removed
+     entirely -- `background: none` -- and Bug 2's original "no gaps /
+     bleed-through" concern is now addressed structurally via LOGO DENSITY
+     instead of an opacity trick: a much denser grid (target ~20 logos per
+     row, see .client-row/.client-logo below) leaves far less visible
+     background between tiles, so what bleeds through reads as intentional
+     bright video behind a dense wall rather than a gappy hole. */
+  background: none;
   /* CHANGED absolute -> fixed this turn. Root-cause of the "logos never
      visibly rise during the still-pinned ignition footage" bug: while
      work-reel-pin is engaged, #section-2 (this element's absolute
@@ -1030,10 +1044,13 @@ html, body {
    scroll-linked "frame-in" entrance instead of a flat fade.
    ============================================================ */
 .group-title {
+  /* Same self-referential-percentage-transform centering hazard as
+     .panel-nav above (see Bug 3 fix comment there) -- left:0/right:0 +
+     text-align:center avoids depending on this element's own width. */
   position: fixed;
   top: 92px; /* just under the 76px header + a small gap */
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
+  right: 0;
   z-index: 4;
   text-align: center;
   opacity: 0;

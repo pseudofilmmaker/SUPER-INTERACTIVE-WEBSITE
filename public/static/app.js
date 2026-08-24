@@ -1599,10 +1599,17 @@
      outro section begins, well before video-11's own scrub range
      (which continues through section-8's BOTTOM, see
      setupVideosBgVideo above) reaches its end.
-     xPercent: -50 is re-asserted alongside y on every frame because
-     GSAP's inline `transform` write takes full ownership of that
-     property once written -- omitting it would silently drop the
-     elements' existing CSS `transform: translateX(-50%)` centering.
+     NOTE (Bug 3 fix): this used to re-assert `xPercent: -50` alongside y on
+     every frame, because GSAP's inline `transform` write takes full
+     ownership of that property once written, and .panel-nav / .group-title
+     used to center themselves via CSS `left:50%; transform:translateX(-50%)`
+     (a self-referential-width transform). That centering approach was the
+     root cause of Bug 3 (category list randomly off-center at certain
+     viewport widths / on mobile) and has been replaced with
+     `left:0; right:0` + flexbox/text-align centering, which needs NO
+     x-transform at all -- so `xPercent: -50` must NOT be re-added here, or
+     it would re-introduce an unwanted extra leftward shift on top of the
+     now-correct centering.
      ============================================================ */
   function setupVideosGroupExit() {
     const exitSection = document.getElementById('section-7');
@@ -1616,7 +1623,7 @@
     function render(p) {
       const lp = Math.max(0, Math.min(1, p));
       targets.forEach((el) => {
-        gsap.set(el, { xPercent: -50, opacity: 1 - lp, y: -lp * window.innerHeight * 0.6 });
+        gsap.set(el, { opacity: 1 - lp, y: -lp * window.innerHeight * 0.6 });
       });
     }
 
