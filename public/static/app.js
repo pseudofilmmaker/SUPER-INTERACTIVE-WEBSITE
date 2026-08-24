@@ -1486,7 +1486,38 @@
     const s5 = document.getElementById('section-5');
     if (!photosLayer || !videosLayer || !s5) return;
 
-    function render(p) {
+    // ROOT-CAUSE FIX ("첫번째 섹션이 다시 토치가 나와" -- section-1 torch
+    // regression, this turn). This is a zero-width (start===end) trigger
+    // anchored at section-5's top, so GSAP can only ever report its
+    // progress as exactly 0 or exactly 1 -- 0 meaning "anywhere at or
+    // before section-5's top" and 1 meaning "at or after it". The bug:
+    // "anywhere at or before section-5's top" ALSO includes scrollY=0
+    // (section-1, the very first paint) and the whole section-1/2 span
+    // that #fixed-bg-video owns -- yet this trigger's onRefresh fires
+    // once unconditionally on page load (GSAP's standard behavior for
+    // every registered trigger) and unconditionally writes
+    // photosLayer's opacity to 1 (progress=0 -> cut=0 -> 1-cut=1),
+    // stomping over #photos-bg-video-layer's correct opacity:0 already
+    // set by setupBgLayerHandoff() moments earlier in the same tick --
+    // since this trigger is created LAST, its write always wins. The
+    // visible result: photos-bg-video-7 (a torch/flame frame) sits at
+    // opacity:1 directly behind section-1's hero on first load, exactly
+    // the same class of bug the "self.isActive vs. tautological
+    // progress check" fix elsewhere in this file (see the long comment
+    // inside setupPhotosBgVideo's ScrollTrigger.create) already solved
+    // once for a near-identical case -- this second, newer trigger
+    // reintroduced it. FIX: this handoff's hard-cut logic is only
+    // meaningful once scroll has actually reached the PHOTOS group
+    // (section-3's own top, where 'photos-bg-video' -- the trigger that
+    // owns photosLayer for its entire active span -- begins). Before
+    // that point, this handoff must do nothing at all and leave
+    // photosLayer/videosLayer exactly as setupBgLayerHandoff() /
+    // setupPhotosBgVideo() / setupVideosBgVideo() already set them.
+    function render(p, self) {
+      if (self) {
+        const photosBgTrigger = ScrollTrigger.getById('photos-bg-video');
+        if (photosBgTrigger && self.scroll() < photosBgTrigger.start) return;
+      }
       const cut = Math.round(Math.max(0, Math.min(1, p)));
       gsap.set(photosLayer, { opacity: 1 - cut });
       gsap.set(videosLayer, { opacity: cut });
@@ -1498,8 +1529,8 @@
       start: 'top top',
       end: 'top top',
       scrub: true,
-      onUpdate: (self) => render(self.progress),
-      onRefresh: (self) => render(self.progress),
+      onUpdate: (self) => render(self.progress, self),
+      onRefresh: (self) => render(self.progress, self),
     });
   }
   setupPhotosVideosLayerHandoff();
