@@ -1215,13 +1215,24 @@ html, body {
   margin-right: -24px;
   height: min(320px, calc(100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 92px));
 }
+/* `aspect-ratio` (not a fixed `width`) drives the card's width from its
+   height: previously width was pinned at a flat 220px while height alone
+   shrank via the min(300px, calc(100vh - ...)) clamp above, so on a short/
+   wide viewport the card became a squashed near-landscape box -- and since
+   the photo inside uses `object-fit: cover`, cover cropped it down to a
+   thin cross-section of the original image (reported by the user: photos
+   look "잘려서"/cropped when the window is shortened). Deriving width from
+   height at a constant ratio means the box -- and therefore the visible
+   crop window -- always keeps the same proportions no matter how much the
+   viewport shrinks; it can get smaller overall, but never gets distorted. */
 .thumb-frame--card .thumb-item {
-  width: 220px;
   height: min(300px, calc(100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 92px));
+  aspect-ratio: 220 / 300;
+  width: auto;
 }
 @media (max-width: 768px) {
   .thumb-frame--card { height: min(230px, calc(100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 80px)); }
-  .thumb-frame--card .thumb-item { width: 150px; height: min(210px, calc(100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 80px)); }
+  .thumb-frame--card .thumb-item { height: min(210px, calc(100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 80px)); aspect-ratio: 150 / 210; width: auto; }
 }
 
 /* ------------------------------------------------------------
