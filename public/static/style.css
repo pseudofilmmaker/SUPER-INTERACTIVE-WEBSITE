@@ -1302,27 +1302,35 @@ html, body {
 /* label (~14px) + dots (~14px) + 2x gap (18px) + panel's own vertical
    padding (60px) = ~124px of non-frame content inside the safe area.
    FULL-BLEED WIDTH, same treatment as .thumb-frame--card (PHOTOS,
-   see that rule's long comment above): per user request, the video
-   carousels move from a single ~70vw-inset item (one video filling
-   the whole frame, feeling like a fixed slideshow) to the SAME
-   full-viewport-width "filmstrip" the PHOTOS conveyor already uses --
-   several video thumbnails visible on screen at once, sliding freely
-   past each other edge-to-edge, rather than one large item swapped at
-   a time. `calc(100% + 48px)` + matching negative margins cancels out
-   .panel's own `padding: 60px 24px` exactly like the photo cards. */
+   see that rule's long comment above): the video carousels span the
+   full viewport width edge-to-edge exactly like PHOTOS.
+   `calc(100% + 48px)` + matching negative margins cancels out
+   .panel's own `padding: 60px 24px` exactly like the photo cards.
+
+   UNLIKE PHOTOS, the frame here is made deliberately TALLER than the
+   items it holds (frame ~380px vs. item ~190px/210px) -- per user
+   request ("횃불과 모닥불이 더 보이게, 뒷배경이 더 보이게"), this
+   leaves a large, permanent vertical gap above/below every thumbnail
+   through which the fixed torch/bonfire background video
+   (#videos-bg-video-layer) reads clearly, rather than the thumbnails
+   filling almost the entire frame height as before. That same spare
+   vertical room is also what setupConveyor()'s `float` mode (see
+   app.js) uses at runtime to bob each item up/down within the frame --
+   the frame must stay tall enough that a floating item's max vertical
+   excursion never clips against `overflow: hidden`. */
 .thumb-frame--landscape {
   width: calc(100% + 48px);
   margin-left: -24px;
   margin-right: -24px;
-  height: min(320px, calc(100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 124px));
+  height: min(400px, calc(100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 124px));
 }
-/* Individual item size is now fixed via `aspect-ratio` (16:9, matching
-   real landscape video footage) instead of stretching to 100% of the
-   now much-wider frame -- exactly the same "derive width from height"
-   approach used for the photo cards, so the frame can hold several
-   video thumbnails side by side instead of just one. */
+/* Individual item size is fixed via `aspect-ratio` (16:9, matching real
+   landscape video footage) and made noticeably SMALLER than the frame
+   (see comment above) -- deriving width from height exactly like the
+   photo cards, so the frame can hold several smaller video thumbnails
+   side by side, each surrounded by visible firelight background. */
 .thumb-frame--landscape .thumb-item {
-  height: min(280px, calc(100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 124px));
+  height: min(190px, calc((100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 124px) * 0.6));
   aspect-ratio: 16 / 9;
   width: auto;
 }
@@ -1330,19 +1338,19 @@ html, body {
   width: calc(100% + 48px);
   margin-left: -24px;
   margin-right: -24px;
-  height: min(320px, calc(100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 124px));
+  height: min(400px, calc(100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 124px));
 }
 .thumb-frame--reel .thumb-item {
-  height: min(300px, calc(100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 124px));
+  height: min(210px, calc((100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 124px) * 0.65));
   aspect-ratio: 9 / 16;
   width: auto;
 }
 @media (max-width: 768px) {
   .video-carousel-panel { gap: 12px; }
-  .thumb-frame--landscape { height: min(220px, calc(100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 100px)); }
-  .thumb-frame--landscape .thumb-item { height: min(190px, calc(100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 100px)); aspect-ratio: 16 / 9; }
-  .thumb-frame--reel { height: min(230px, calc(100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 100px)); }
-  .thumb-frame--reel .thumb-item { height: min(210px, calc(100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 100px)); aspect-ratio: 9 / 16; }
+  .thumb-frame--landscape { height: min(300px, calc(100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 100px)); }
+  .thumb-frame--landscape .thumb-item { height: min(140px, calc((100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 100px) * 0.55)); aspect-ratio: 16 / 9; }
+  .thumb-frame--reel { height: min(310px, calc(100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 100px)); }
+  .thumb-frame--reel .thumb-item { height: min(155px, calc((100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 100px) * 0.58)); aspect-ratio: 9 / 16; }
 }
 
 .carousel-dots {
