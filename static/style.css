@@ -1047,6 +1047,19 @@ html, body {
   mask-image: linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%);
   z-index: 1;
 }
+/* ROOT-CAUSE FIX (explicit user spec, this turn -- "비디오 텍스트가 올라가면서
+   완전 투명 백그라운드가 아니고, 그라디언트 레이어가 올라가는 게 보여").
+   #section-5's .title-overlay above is a plain (non-fixed) box that scrolls
+   normally with the document, so as the pinned "VIDEOS" group-title text
+   sits fixed on screen, this element's own radial-gradient vignette visibly
+   travels/rises up behind it during the section-4->section-5 scroll transit
+   -- a second, redundant dark layer on top of #videos-bg-video-layer's own
+   fixed .videos-bg-video-scrim (which already provides the exact same
+   vignette treatment, but from a layer that never itself moves on scroll).
+   FIX: make it fully transparent for section-5 specifically (same pattern
+   as #section-5 .title-bg-media above) so only the one, non-scrolling
+   videos-bg-video-scrim vignette remains. */
+#section-5 .title-overlay { background: transparent; }
 
 /* ============================================================
    FIXED GROUP TITLES -- "PHOTOS" / "VIDEOS"
@@ -1202,13 +1215,24 @@ html, body {
   margin-right: -24px;
   height: min(320px, calc(100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 92px));
 }
+/* `aspect-ratio` (not a fixed `width`) drives the card's width from its
+   height: previously width was pinned at a flat 220px while height alone
+   shrank via the min(300px, calc(100vh - ...)) clamp above, so on a short/
+   wide viewport the card became a squashed near-landscape box -- and since
+   the photo inside uses `object-fit: cover`, cover cropped it down to a
+   thin cross-section of the original image (reported by the user: photos
+   look "잘려서"/cropped when the window is shortened). Deriving width from
+   height at a constant ratio means the box -- and therefore the visible
+   crop window -- always keeps the same proportions no matter how much the
+   viewport shrinks; it can get smaller overall, but never gets distorted. */
 .thumb-frame--card .thumb-item {
-  width: 220px;
   height: min(300px, calc(100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 92px));
+  aspect-ratio: 220 / 300;
+  width: auto;
 }
 @media (max-width: 768px) {
   .thumb-frame--card { height: min(230px, calc(100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 80px)); }
-  .thumb-frame--card .thumb-item { width: 150px; height: min(210px, calc(100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 80px)); }
+  .thumb-frame--card .thumb-item { height: min(210px, calc(100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 80px)); aspect-ratio: 150 / 210; width: auto; }
 }
 
 /* ------------------------------------------------------------
@@ -1221,10 +1245,11 @@ html, body {
    (box-sizing: border-box is global) -- so insetting via padding
    automatically reveals the cream background as an even frame
    without any HTML/JS changes. Video/landscape/reel carousels
-   (.thumb-frame--landscape / --reel) are untouched. GSAP drives this
-   item's position via an inline `transform: translate()`, so no
-   `transform`/`rotate` is added here -- it would be clobbered by
-   that inline style every frame.
+   (.thumb-frame--landscape / --reel) are untouched. GSAP drives both
+   this item's position AND its scattered-photo tilt via one inline
+   `transform` (translate + rotate, see setupConveyor's `tilt` option
+   in app.js), so no `transform`/`rotate` is added here -- it would be
+   clobbered by that inline style every frame.
    All 10 cards (2 per category) sit in a single flat conveyor row --
    same left/right frame-in/frame-out mechanism as the VIDEOS
    carousels below -- rather than a stacked/flippable pair, so every
@@ -1275,27 +1300,57 @@ html, body {
 .carousel-label span { color: var(--fg-dim); margin-left: 8px; }
 
 /* label (~14px) + dots (~14px) + 2x gap (18px) + panel's own vertical
-   padding (60px) = ~124px of non-frame content inside the safe area */
+   padding (60px) = ~124px of non-frame content inside the safe area.
+   FULL-BLEED WIDTH, same treatment as .thumb-frame--card (PHOTOS,
+   see that rule's long comment above): the video carousels span the
+   full viewport width edge-to-edge exactly like PHOTOS.
+   `calc(100% + 48px)` + matching negative margins cancels out
+   .panel's own `padding: 60px 24px` exactly like the photo cards.
+
+   UNLIKE PHOTOS, the frame here is made deliberately TALLER than the
+   items it holds (frame ~380px vs. item ~190px/210px) -- per user
+   request ("횃불과 모닥불이 더 보이게, 뒷배경이 더 보이게"), this
+   leaves a large, permanent vertical gap above/below every thumbnail
+   through which the fixed torch/bonfire background video
+   (#videos-bg-video-layer) reads clearly, rather than the thumbnails
+   filling almost the entire frame height as before. That same spare
+   vertical room is also what setupConveyor()'s `float` mode (see
+   app.js) uses at runtime to bob each item up/down within the frame --
+   the frame must stay tall enough that a floating item's max vertical
+   excursion never clips against `overflow: hidden`. */
 .thumb-frame--landscape {
-  width: min(70vw, 860px);
-  height: min(39vw, 480px, calc(100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 124px));
+  width: calc(100% + 48px);
+  margin-left: -24px;
+  margin-right: -24px;
+  height: min(400px, calc(100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 124px));
 }
+/* Individual item size is fixed via `aspect-ratio` (16:9, matching real
+   landscape video footage) and made noticeably SMALLER than the frame
+   (see comment above) -- deriving width from height exactly like the
+   photo cards, so the frame can hold several smaller video thumbnails
+   side by side, each surrounded by visible firelight background. */
 .thumb-frame--landscape .thumb-item {
-  width: 100%;
-  height: 100%;
+  height: min(182px, calc((100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 124px) * 0.546));
+  aspect-ratio: 16 / 9;
+  width: auto;
 }
 .thumb-frame--reel {
-  width: min(30vw, 300px);
-  height: min(60vw, 530px, calc(100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 124px));
+  width: calc(100% + 48px);
+  margin-left: -24px;
+  margin-right: -24px;
+  height: min(400px, calc(100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 124px));
 }
 .thumb-frame--reel .thumb-item {
-  width: 100%;
-  height: 100%;
+  height: min(208px, calc((100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 124px) * 0.624));
+  aspect-ratio: 9 / 16;
+  width: auto;
 }
 @media (max-width: 768px) {
   .video-carousel-panel { gap: 12px; }
-  .thumb-frame--landscape { width: 88vw; height: min(50vw, calc(100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 100px)); }
-  .thumb-frame--reel { width: 62vw; height: min(100vw, 420px, calc(100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 100px)); }
+  .thumb-frame--landscape { height: min(300px, calc(100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 100px)); }
+  .thumb-frame--landscape .thumb-item { height: min(143px, calc((100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 100px) * 0.52)); aspect-ratio: 16 / 9; }
+  .thumb-frame--reel { height: min(310px, calc(100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 100px)); }
+  .thumb-frame--reel .thumb-item { height: min(162.5px, calc((100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 100px) * 0.559)); aspect-ratio: 9 / 16; }
 }
 
 .carousel-dots {

@@ -1553,10 +1553,19 @@
     //   SHORTER crossfade window instead of a hard cut -- short enough
     //   that the mismatched-content blend is barely perceptible, while
     //   still removing the "cut" feeling entirely.
+    // ROOT-CAUSE FIX (explicit user spec, this turn -- "여전히 두 구간에서
+    // 컷대컷으로 붙는 하드 컷이 아니야. 살짝씩 디졸브가 껴있는 느낌"): the
+    // XFADE_V9_V10 / XFADE_V10_V11 windows above deliberately blended two
+    // videos' opacity across a nonzero-width scroll range, which reads as
+    // exactly the soft dissolve the user is now explicitly asking to
+    // remove. Same "zero-width hard cut" fix already applied elsewhere in
+    // this file (see setupBgLayerHandoff()'s long comment) -- collapse
+    // both transition windows to zero width so at every scroll tick
+    // exactly ONE of v9/v10/v11 is opacity:1 and the other two are
+    // opacity:0, with no intermediate tick where two are simultaneously
+    // nonzero (i.e. no dissolve, ever).
     const PHASE_V9_END = 0.15;
     const PHASE_V10_END = 0.55;
-    const XFADE_V9_V10 = 0.035; // wide: content matches, safe to show clearly
-    const XFADE_V10_V11 = 0.014; // tight: content differs, minimize blend time
 
     function renderVideosChain(p) {
       const local9 = PHASE_V9_END > 0 ? p / PHASE_V9_END : 1;
@@ -1566,24 +1575,14 @@
       seek(v10, local10);
       seek(v11, local11);
 
-      const halfA = XFADE_V9_V10 / 2;
-      const halfB = XFADE_V10_V11 / 2;
       let o9 = 0;
       let o10 = 0;
       let o11 = 0;
 
-      if (p < PHASE_V9_END - halfA) {
+      if (p < PHASE_V9_END) {
         o9 = 1;
-      } else if (p < PHASE_V9_END + halfA) {
-        const t = (p - (PHASE_V9_END - halfA)) / XFADE_V9_V10;
-        o9 = 1 - t;
-        o10 = t;
-      } else if (p < PHASE_V10_END - halfB) {
+      } else if (p < PHASE_V10_END) {
         o10 = 1;
-      } else if (p < PHASE_V10_END + halfB) {
-        const t = (p - (PHASE_V10_END - halfB)) / XFADE_V10_V11;
-        o10 = 1 - t;
-        o11 = t;
       } else {
         o11 = 1;
       }
@@ -1663,45 +1662,30 @@
     // that point, this handoff must do nothing at all and leave
     // photosLayer/videosLayer exactly as setupBgLayerHandoff() /
     // setupPhotosBgVideo() / setupVideosBgVideo() already set them.
-    // SECOND ROOT-CAUSE FIX ("8번 영상... 9번영상이 틀어질 때, 엄청 컷이
-    // 튀어보여" -- jarring v8->v9 cut, this turn). This trigger used to be
-    // zero-width (start===end), so self.progress could only ever be
-    // exactly 0 or exactly 1 -- an instant Math.round() binary flip with
-    // NO blend, the same class of "hard cut" bug already fixed for
-    // v9->v10->v11 inside setupVideosBgVideo() above. Extending the
-    // photos-outro-08 clip's own SAFE_END (see setupPhotosBgVideo's
-    // V8_SAFE_END comment above) closes most of the brightness gap at
-    // this boundary, but an instant opacity swap between two DIFFERENT
-    // video elements is still visually a cut, however well the
-    // brightness matches -- so this trigger is widened into a short,
-    // real scroll span straddling section-5's top edge, and the binary
-    // Math.round() is replaced with a continuous blend driven directly
-    // by scroll progress (same "seek/opacity as a pure function of
-    // self.progress" pattern as renderVideosChain(), so it stays
-    // perfectly in sync on fast scrubbing and reverses cleanly on
-    // scroll-up). The window is kept intentionally SHORT/TIGHT (6% of
-    // viewport height on each side, ~12%vh total) -- same reasoning as
-    // XFADE_V10_V11's tight window above: v8 and v9 are two genuinely
-    // different clips (different composition/framing), so a WIDE
-    // dissolve would show a visible double-exposed blend; a short blend
-    // is long enough to remove the "cut" feeling entirely while staying
-    // too brief for the content mismatch to read as ghosting.
-    const XFADE_PX = Math.round(window.innerHeight * 0.06);
+    // THIRD ROOT-CAUSE FIX (explicit user spec, this turn -- "여전히 두
+    // 구간에서 컷대컷으로 붙는 하드 컷이 아니야. 살짝씩 디졸브가 껴있는
+    // 느낌"): the short scroll-span blend introduced by the SECOND fix
+    // above (a ~12%vh-wide continuous opacity blend) is itself exactly
+    // the soft dissolve the user is now explicitly asking to remove.
+    // Reverted back to a true zero-width hard cut -- start and end are
+    // both pinned to the exact same point (section-5's own top), so
+    // self.progress can only ever be exactly 0 or exactly 1, never a
+    // fractional in-between value that would blend the two layers.
     function render(p, self) {
       if (self) {
         const photosBgTrigger = ScrollTrigger.getById('photos-bg-video');
         if (photosBgTrigger && self.scroll() < photosBgTrigger.start) return;
       }
-      const blend = Math.max(0, Math.min(1, p));
-      gsap.set(photosLayer, { opacity: 1 - blend });
-      gsap.set(videosLayer, { opacity: blend });
+      const cut = Math.round(Math.max(0, Math.min(1, p)));
+      gsap.set(photosLayer, { opacity: 1 - cut });
+      gsap.set(videosLayer, { opacity: cut });
     }
 
     ScrollTrigger.create({
       id: 'photos-videos-layer-handoff',
       trigger: s5,
-      start: () => 'top top+=' + XFADE_PX,
-      end: () => 'top top-=' + XFADE_PX,
+      start: 'top top',
+      end: 'top top',
       scrub: true,
       onUpdate: (self) => render(self.progress, self),
       onRefresh: (self) => render(self.progress, self),
@@ -2153,7 +2137,52 @@
      ============================================================ */
   const conveyors = [];
 
-  function setupConveyor({ sectionId, frameId, count, labelSelector, dotSelector, categoryForIndex, categoryListId, gap, pinPercentPerItem, refreshPriority }) {
+  // Deterministic per-index "jitter" added on top of the distance-based
+  // tilt below, purely so neighboring cards don't all rotate by the exact
+  // same formula (which would look mechanical/wavelike) -- small fixed
+  // offsets per index, cycling every 10 items, give each card its own
+  // slightly distinct signature angle, closer to the organic/scattered
+  // feel of a handful of real polaroids tossed on a table (per the user's
+  // reference image: Food/Fashion/Product/Venue all sit at visibly
+  // different, non-uniform angles).
+  const TILT_JITTER_DEG = [0, 2, -2, 3, -1, -3, 1, 2, -2, 0];
+  // How many degrees of rotation to add per "slot" of distance from the
+  // active/center position, and the hard cap on that so far-off cards
+  // (still mostly off-screen) don't spin past a believable scattered-
+  // photo angle. Combined with TILT_JITTER_DEG above, this means: a card
+  // near dead-center sits close to upright (small jitter only), and the
+  // further it slides toward either edge the more it leans into its tilt
+  // -- so the angle is continuously changing as the card moves, per the
+  // user's request, rather than a fixed static rotation.
+  const TILT_SLOPE_DEG = 4;
+  const TILT_MAX_DEG = 14;
+
+  // Deterministic per-index vertical offset + phase for the VIDEOS
+  // carousels' "float" mode (see `float` option below) -- gives each
+  // item its own fixed up/down resting bias and bob timing, cycling
+  // every 8 items, so neighbors don't bob in perfect unison (which
+  // would look like a single rigid row bouncing, not scattered embers
+  // drifting independently). Purely decorative, same role as
+  // TILT_JITTER_DEG above but for vertical position instead of angle.
+  const FLOAT_Y_BIAS = [-26, 16, -10, 24, -20, 8, -16, 30];
+  const FLOAT_PHASE = [0, 0.35, 0.7, 0.15, 0.5, 0.85, 0.25, 0.6];
+  // How far (px) an item drifts up/down as it crosses the frame, on
+  // top of its own fixed bias above -- keeps the whole row from ever
+  // reading as a static, perfectly level filmstrip.
+  const FLOAT_BOB_PX = 30;
+  // Distance (in "item slots" from center) at which an item reaches
+  // its minimum scale/opacity -- beyond this it stays clamped, so far
+  // off-screen items don't shrink to nothing or vanish while still
+  // technically visible. Range widened and minimums lowered vs. the
+  // first pass so items further from center recede more noticeably
+  // into the fire background instead of staying near full size/opacity
+  // most of the way across the frame (user: "장작이나 횃불이 더 많이
+  // 보일 수 있는 방법으로 흐르게 해줘").
+  const FLOAT_DEPTH_RANGE = 1.8;
+  const FLOAT_MIN_SCALE = 0.6;
+  const FLOAT_MIN_OPACITY = 0.32;
+
+  function setupConveyor({ sectionId, frameId, count, labelSelector, dotSelector, categoryForIndex, categoryListId, gap, pinPercentPerItem, refreshPriority, tilt, float }) {
     const section = document.getElementById(sectionId);
     const frame = document.getElementById(frameId);
     if (!section || !frame) return;
@@ -2237,7 +2266,44 @@
       items.forEach((item, i) => {
         // negated vs. the old left-to-right version: items with a HIGHER
         // index start further to the right and travel toward/past the left.
-        gsap.set(item, { x: (i - curIdx) * spacing });
+        const dist = i - curIdx;
+        if (tilt) {
+          // Angle = a fixed per-card signature (jitter, so cards don't all
+          // share one formula) plus a component that grows with how far
+          // the card currently sits from the centered/active slot -- so
+          // the SAME card continuously changes angle as it slides through
+          // center (near 0deg at dist=0) out toward either edge (leaning
+          // further into its tilt), exactly the "angle changes as it
+          // moves" behavior the user asked for, rather than a static
+          // per-card rotation that never changes.
+          const jitter = TILT_JITTER_DEG[((i % TILT_JITTER_DEG.length) + TILT_JITTER_DEG.length) % TILT_JITTER_DEG.length];
+          const slope = Math.max(-TILT_MAX_DEG, Math.min(TILT_MAX_DEG, dist * TILT_SLOPE_DEG));
+          gsap.set(item, { x: dist * spacing, rotation: jitter + slope });
+        } else if (float) {
+          // VIDEOS' own distinct flow (deliberately NOT the PHOTOS tilt
+          // look, per user request for "a different kind of flow"):
+          // items drift up/down like embers/lanterns rising off the
+          // fixed torch/bonfire background instead of rotating, AND
+          // scale+fade down with distance from center so the frame
+          // reads as having real depth -- both together also mean each
+          // item now occupies less of the frame's own vertical/visual
+          // space, letting much more of the fire background show
+          // through around and behind the row (the user's core ask:
+          // "뒤에 횃불과 모닥불이 더 보이게").
+          const bias = FLOAT_Y_BIAS[((i % FLOAT_Y_BIAS.length) + FLOAT_Y_BIAS.length) % FLOAT_Y_BIAS.length];
+          const phase = FLOAT_PHASE[((i % FLOAT_PHASE.length) + FLOAT_PHASE.length) % FLOAT_PHASE.length];
+          // `dist * 0.6` keeps the bob's own period from lining up 1:1
+          // with the item spacing (which would look like a rigid,
+          // repeating wave) -- combined with the per-item phase offset,
+          // neighboring items drift out of sync with each other.
+          const bob = Math.sin((dist * 0.6 + phase) * Math.PI) * FLOAT_BOB_PX;
+          const depth = Math.min(1, Math.abs(dist) / FLOAT_DEPTH_RANGE);
+          const scale = 1 - depth * (1 - FLOAT_MIN_SCALE);
+          const opacity = 1 - depth * (1 - FLOAT_MIN_OPACITY);
+          gsap.set(item, { x: dist * spacing, y: bias + bob, scale, opacity });
+        } else {
+          gsap.set(item, { x: dist * spacing });
+        }
       });
 
       const fadeOpacity = edgeFade(Math.max(0, Math.min(1, t)));
@@ -2299,7 +2365,7 @@
   setupConveyor({
     sectionId: 'section-4', frameId: 'photo-stack', count: 10, gap: 46,
     categoryForIndex: (idx) => Math.floor(idx / 2), categoryListId: 'photos-category-list',
-    pinPercentPerItem: 22, refreshPriority: 3,
+    pinPercentPerItem: 22, refreshPriority: 3, tilt: true,
   });
 
   // VIDEOS landscape: 14 items spread UNEVENLY across the first 5
@@ -2317,16 +2383,16 @@
     return LANDSCAPE_CATEGORY_BOUNDARIES.length; // ART (last non-Reels category)
   }
   setupConveyor({
-    sectionId: 'section-6', frameId: 'landscape-frame', count: 14, labelSelector: '.carousel-label', gap: 32,
+    sectionId: 'section-6', frameId: 'landscape-frame', count: 14, labelSelector: '.carousel-label', gap: 64,
     categoryForIndex: landscapeCategoryForIndex, categoryListId: 'videos-category-list',
-    pinPercentPerItem: 22, refreshPriority: 2,
+    pinPercentPerItem: 22, refreshPriority: 2, float: true,
   });
 
   // VIDEOS reels: all 11 items belong to the final "REELS" category
   setupConveyor({
-    sectionId: 'section-7', frameId: 'reel-frame', count: 11, labelSelector: '.carousel-label', gap: 24,
+    sectionId: 'section-7', frameId: 'reel-frame', count: 11, labelSelector: '.carousel-label', gap: 46,
     categoryForIndex: () => 5, categoryListId: 'videos-category-list',
-    pinPercentPerItem: 30, refreshPriority: 1,
+    pinPercentPerItem: 30, refreshPriority: 1, float: true,
   });
 
   window.addEventListener('resize', () => {
