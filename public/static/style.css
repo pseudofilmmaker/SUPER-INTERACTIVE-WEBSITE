@@ -1047,6 +1047,19 @@ html, body {
   mask-image: linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%);
   z-index: 1;
 }
+/* ROOT-CAUSE FIX (explicit user spec, this turn -- "비디오 텍스트가 올라가면서
+   완전 투명 백그라운드가 아니고, 그라디언트 레이어가 올라가는 게 보여").
+   #section-5's .title-overlay above is a plain (non-fixed) box that scrolls
+   normally with the document, so as the pinned "VIDEOS" group-title text
+   sits fixed on screen, this element's own radial-gradient vignette visibly
+   travels/rises up behind it during the section-4->section-5 scroll transit
+   -- a second, redundant dark layer on top of #videos-bg-video-layer's own
+   fixed .videos-bg-video-scrim (which already provides the exact same
+   vignette treatment, but from a layer that never itself moves on scroll).
+   FIX: make it fully transparent for section-5 specifically (same pattern
+   as #section-5 .title-bg-media above) so only the one, non-scrolling
+   videos-bg-video-scrim vignette remains. */
+#section-5 .title-overlay { background: transparent; }
 
 /* ============================================================
    FIXED GROUP TITLES -- "PHOTOS" / "VIDEOS"

@@ -1553,10 +1553,19 @@
     //   SHORTER crossfade window instead of a hard cut -- short enough
     //   that the mismatched-content blend is barely perceptible, while
     //   still removing the "cut" feeling entirely.
+    // ROOT-CAUSE FIX (explicit user spec, this turn -- "여전히 두 구간에서
+    // 컷대컷으로 붙는 하드 컷이 아니야. 살짝씩 디졸브가 껴있는 느낌"): the
+    // XFADE_V9_V10 / XFADE_V10_V11 windows above deliberately blended two
+    // videos' opacity across a nonzero-width scroll range, which reads as
+    // exactly the soft dissolve the user is now explicitly asking to
+    // remove. Same "zero-width hard cut" fix already applied elsewhere in
+    // this file (see setupBgLayerHandoff()'s long comment) -- collapse
+    // both transition windows to zero width so at every scroll tick
+    // exactly ONE of v9/v10/v11 is opacity:1 and the other two are
+    // opacity:0, with no intermediate tick where two are simultaneously
+    // nonzero (i.e. no dissolve, ever).
     const PHASE_V9_END = 0.15;
     const PHASE_V10_END = 0.55;
-    const XFADE_V9_V10 = 0.035; // wide: content matches, safe to show clearly
-    const XFADE_V10_V11 = 0.014; // tight: content differs, minimize blend time
 
     function renderVideosChain(p) {
       const local9 = PHASE_V9_END > 0 ? p / PHASE_V9_END : 1;
@@ -1566,24 +1575,14 @@
       seek(v10, local10);
       seek(v11, local11);
 
-      const halfA = XFADE_V9_V10 / 2;
-      const halfB = XFADE_V10_V11 / 2;
       let o9 = 0;
       let o10 = 0;
       let o11 = 0;
 
-      if (p < PHASE_V9_END - halfA) {
+      if (p < PHASE_V9_END) {
         o9 = 1;
-      } else if (p < PHASE_V9_END + halfA) {
-        const t = (p - (PHASE_V9_END - halfA)) / XFADE_V9_V10;
-        o9 = 1 - t;
-        o10 = t;
-      } else if (p < PHASE_V10_END - halfB) {
+      } else if (p < PHASE_V10_END) {
         o10 = 1;
-      } else if (p < PHASE_V10_END + halfB) {
-        const t = (p - (PHASE_V10_END - halfB)) / XFADE_V10_V11;
-        o10 = 1 - t;
-        o11 = t;
       } else {
         o11 = 1;
       }
@@ -1663,45 +1662,30 @@
     // that point, this handoff must do nothing at all and leave
     // photosLayer/videosLayer exactly as setupBgLayerHandoff() /
     // setupPhotosBgVideo() / setupVideosBgVideo() already set them.
-    // SECOND ROOT-CAUSE FIX ("8번 영상... 9번영상이 틀어질 때, 엄청 컷이
-    // 튀어보여" -- jarring v8->v9 cut, this turn). This trigger used to be
-    // zero-width (start===end), so self.progress could only ever be
-    // exactly 0 or exactly 1 -- an instant Math.round() binary flip with
-    // NO blend, the same class of "hard cut" bug already fixed for
-    // v9->v10->v11 inside setupVideosBgVideo() above. Extending the
-    // photos-outro-08 clip's own SAFE_END (see setupPhotosBgVideo's
-    // V8_SAFE_END comment above) closes most of the brightness gap at
-    // this boundary, but an instant opacity swap between two DIFFERENT
-    // video elements is still visually a cut, however well the
-    // brightness matches -- so this trigger is widened into a short,
-    // real scroll span straddling section-5's top edge, and the binary
-    // Math.round() is replaced with a continuous blend driven directly
-    // by scroll progress (same "seek/opacity as a pure function of
-    // self.progress" pattern as renderVideosChain(), so it stays
-    // perfectly in sync on fast scrubbing and reverses cleanly on
-    // scroll-up). The window is kept intentionally SHORT/TIGHT (6% of
-    // viewport height on each side, ~12%vh total) -- same reasoning as
-    // XFADE_V10_V11's tight window above: v8 and v9 are two genuinely
-    // different clips (different composition/framing), so a WIDE
-    // dissolve would show a visible double-exposed blend; a short blend
-    // is long enough to remove the "cut" feeling entirely while staying
-    // too brief for the content mismatch to read as ghosting.
-    const XFADE_PX = Math.round(window.innerHeight * 0.06);
+    // THIRD ROOT-CAUSE FIX (explicit user spec, this turn -- "여전히 두
+    // 구간에서 컷대컷으로 붙는 하드 컷이 아니야. 살짝씩 디졸브가 껴있는
+    // 느낌"): the short scroll-span blend introduced by the SECOND fix
+    // above (a ~12%vh-wide continuous opacity blend) is itself exactly
+    // the soft dissolve the user is now explicitly asking to remove.
+    // Reverted back to a true zero-width hard cut -- start and end are
+    // both pinned to the exact same point (section-5's own top), so
+    // self.progress can only ever be exactly 0 or exactly 1, never a
+    // fractional in-between value that would blend the two layers.
     function render(p, self) {
       if (self) {
         const photosBgTrigger = ScrollTrigger.getById('photos-bg-video');
         if (photosBgTrigger && self.scroll() < photosBgTrigger.start) return;
       }
-      const blend = Math.max(0, Math.min(1, p));
-      gsap.set(photosLayer, { opacity: 1 - blend });
-      gsap.set(videosLayer, { opacity: blend });
+      const cut = Math.round(Math.max(0, Math.min(1, p)));
+      gsap.set(photosLayer, { opacity: 1 - cut });
+      gsap.set(videosLayer, { opacity: cut });
     }
 
     ScrollTrigger.create({
       id: 'photos-videos-layer-handoff',
       trigger: s5,
-      start: () => 'top top+=' + XFADE_PX,
-      end: () => 'top top-=' + XFADE_PX,
+      start: 'top top',
+      end: 'top top',
       scrub: true,
       onUpdate: (self) => render(self.progress, self),
       onRefresh: (self) => render(self.progress, self),
