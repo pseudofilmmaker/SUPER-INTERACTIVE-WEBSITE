@@ -2164,19 +2164,23 @@
   // would look like a single rigid row bouncing, not scattered embers
   // drifting independently). Purely decorative, same role as
   // TILT_JITTER_DEG above but for vertical position instead of angle.
-  const FLOAT_Y_BIAS = [-18, 10, -6, 16, -14, 4, -10, 20];
+  const FLOAT_Y_BIAS = [-26, 16, -10, 24, -20, 8, -16, 30];
   const FLOAT_PHASE = [0, 0.35, 0.7, 0.15, 0.5, 0.85, 0.25, 0.6];
   // How far (px) an item drifts up/down as it crosses the frame, on
   // top of its own fixed bias above -- keeps the whole row from ever
   // reading as a static, perfectly level filmstrip.
-  const FLOAT_BOB_PX = 22;
+  const FLOAT_BOB_PX = 30;
   // Distance (in "item slots" from center) at which an item reaches
   // its minimum scale/opacity -- beyond this it stays clamped, so far
   // off-screen items don't shrink to nothing or vanish while still
-  // technically visible.
-  const FLOAT_DEPTH_RANGE = 2.4;
-  const FLOAT_MIN_SCALE = 0.78;
-  const FLOAT_MIN_OPACITY = 0.55;
+  // technically visible. Range widened and minimums lowered vs. the
+  // first pass so items further from center recede more noticeably
+  // into the fire background instead of staying near full size/opacity
+  // most of the way across the frame (user: "장작이나 횃불이 더 많이
+  // 보일 수 있는 방법으로 흐르게 해줘").
+  const FLOAT_DEPTH_RANGE = 1.8;
+  const FLOAT_MIN_SCALE = 0.6;
+  const FLOAT_MIN_OPACITY = 0.32;
 
   function setupConveyor({ sectionId, frameId, count, labelSelector, dotSelector, categoryForIndex, categoryListId, gap, pinPercentPerItem, refreshPriority, tilt, float }) {
     const section = document.getElementById(sectionId);
@@ -2379,14 +2383,14 @@
     return LANDSCAPE_CATEGORY_BOUNDARIES.length; // ART (last non-Reels category)
   }
   setupConveyor({
-    sectionId: 'section-6', frameId: 'landscape-frame', count: 14, labelSelector: '.carousel-label', gap: 26,
+    sectionId: 'section-6', frameId: 'landscape-frame', count: 14, labelSelector: '.carousel-label', gap: 64,
     categoryForIndex: landscapeCategoryForIndex, categoryListId: 'videos-category-list',
     pinPercentPerItem: 22, refreshPriority: 2, float: true,
   });
 
   // VIDEOS reels: all 11 items belong to the final "REELS" category
   setupConveyor({
-    sectionId: 'section-7', frameId: 'reel-frame', count: 11, labelSelector: '.carousel-label', gap: 20,
+    sectionId: 'section-7', frameId: 'reel-frame', count: 11, labelSelector: '.carousel-label', gap: 46,
     categoryForIndex: () => 5, categoryListId: 'videos-category-list',
     pinPercentPerItem: 30, refreshPriority: 1, float: true,
   });
