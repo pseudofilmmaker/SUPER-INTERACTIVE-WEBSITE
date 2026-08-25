@@ -2137,7 +2137,27 @@
      ============================================================ */
   const conveyors = [];
 
-  function setupConveyor({ sectionId, frameId, count, labelSelector, dotSelector, categoryForIndex, categoryListId, gap, pinPercentPerItem, refreshPriority }) {
+  // Deterministic per-index "jitter" added on top of the distance-based
+  // tilt below, purely so neighboring cards don't all rotate by the exact
+  // same formula (which would look mechanical/wavelike) -- small fixed
+  // offsets per index, cycling every 10 items, give each card its own
+  // slightly distinct signature angle, closer to the organic/scattered
+  // feel of a handful of real polaroids tossed on a table (per the user's
+  // reference image: Food/Fashion/Product/Venue all sit at visibly
+  // different, non-uniform angles).
+  const TILT_JITTER_DEG = [0, 2, -2, 3, -1, -3, 1, 2, -2, 0];
+  // How many degrees of rotation to add per "slot" of distance from the
+  // active/center position, and the hard cap on that so far-off cards
+  // (still mostly off-screen) don't spin past a believable scattered-
+  // photo angle. Combined with TILT_JITTER_DEG above, this means: a card
+  // near dead-center sits close to upright (small jitter only), and the
+  // further it slides toward either edge the more it leans into its tilt
+  // -- so the angle is continuously changing as the card moves, per the
+  // user's request, rather than a fixed static rotation.
+  const TILT_SLOPE_DEG = 4;
+  const TILT_MAX_DEG = 14;
+
+  function setupConveyor({ sectionId, frameId, count, labelSelector, dotSelector, categoryForIndex, categoryListId, gap, pinPercentPerItem, refreshPriority, tilt }) {
     const section = document.getElementById(sectionId);
     const frame = document.getElementById(frameId);
     if (!section || !frame) return;
@@ -2221,7 +2241,22 @@
       items.forEach((item, i) => {
         // negated vs. the old left-to-right version: items with a HIGHER
         // index start further to the right and travel toward/past the left.
-        gsap.set(item, { x: (i - curIdx) * spacing });
+        const dist = i - curIdx;
+        if (tilt) {
+          // Angle = a fixed per-card signature (jitter, so cards don't all
+          // share one formula) plus a component that grows with how far
+          // the card currently sits from the centered/active slot -- so
+          // the SAME card continuously changes angle as it slides through
+          // center (near 0deg at dist=0) out toward either edge (leaning
+          // further into its tilt), exactly the "angle changes as it
+          // moves" behavior the user asked for, rather than a static
+          // per-card rotation that never changes.
+          const jitter = TILT_JITTER_DEG[((i % TILT_JITTER_DEG.length) + TILT_JITTER_DEG.length) % TILT_JITTER_DEG.length];
+          const slope = Math.max(-TILT_MAX_DEG, Math.min(TILT_MAX_DEG, dist * TILT_SLOPE_DEG));
+          gsap.set(item, { x: dist * spacing, rotation: jitter + slope });
+        } else {
+          gsap.set(item, { x: dist * spacing });
+        }
       });
 
       const fadeOpacity = edgeFade(Math.max(0, Math.min(1, t)));
@@ -2283,7 +2318,7 @@
   setupConveyor({
     sectionId: 'section-4', frameId: 'photo-stack', count: 10, gap: 46,
     categoryForIndex: (idx) => Math.floor(idx / 2), categoryListId: 'photos-category-list',
-    pinPercentPerItem: 22, refreshPriority: 3,
+    pinPercentPerItem: 22, refreshPriority: 3, tilt: true,
   });
 
   // VIDEOS landscape: 14 items spread UNEVENLY across the first 5

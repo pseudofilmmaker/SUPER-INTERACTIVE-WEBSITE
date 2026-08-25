@@ -1234,10 +1234,11 @@ html, body {
    (box-sizing: border-box is global) -- so insetting via padding
    automatically reveals the cream background as an even frame
    without any HTML/JS changes. Video/landscape/reel carousels
-   (.thumb-frame--landscape / --reel) are untouched. GSAP drives this
-   item's position via an inline `transform: translate()`, so no
-   `transform`/`rotate` is added here -- it would be clobbered by
-   that inline style every frame.
+   (.thumb-frame--landscape / --reel) are untouched. GSAP drives both
+   this item's position AND its scattered-photo tilt via one inline
+   `transform` (translate + rotate, see setupConveyor's `tilt` option
+   in app.js), so no `transform`/`rotate` is added here -- it would be
+   clobbered by that inline style every frame.
    All 10 cards (2 per category) sit in a single flat conveyor row --
    same left/right frame-in/frame-out mechanism as the VIDEOS
    carousels below -- rather than a stacked/flippable pair, so every
