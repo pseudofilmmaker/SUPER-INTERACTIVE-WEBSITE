@@ -1330,7 +1330,7 @@ html, body {
    photo cards, so the frame can hold several smaller video thumbnails
    side by side, each surrounded by visible firelight background. */
 .thumb-frame--landscape .thumb-item {
-  height: min(140px, calc((100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 124px) * 0.42));
+  height: min(182px, calc((100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 124px) * 0.546));
   aspect-ratio: 16 / 9;
   width: auto;
 }
@@ -1341,16 +1341,16 @@ html, body {
   height: min(400px, calc(100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 124px));
 }
 .thumb-frame--reel .thumb-item {
-  height: min(160px, calc((100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 124px) * 0.48));
+  height: min(208px, calc((100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 124px) * 0.624));
   aspect-ratio: 9 / 16;
   width: auto;
 }
 @media (max-width: 768px) {
   .video-carousel-panel { gap: 12px; }
   .thumb-frame--landscape { height: min(300px, calc(100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 100px)); }
-  .thumb-frame--landscape .thumb-item { height: min(110px, calc((100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 100px) * 0.4)); aspect-ratio: 16 / 9; }
+  .thumb-frame--landscape .thumb-item { height: min(143px, calc((100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 100px) * 0.52)); aspect-ratio: 16 / 9; }
   .thumb-frame--reel { height: min(310px, calc(100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 100px)); }
-  .thumb-frame--reel .thumb-item { height: min(125px, calc((100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 100px) * 0.43)); aspect-ratio: 9 / 16; }
+  .thumb-frame--reel .thumb-item { height: min(162.5px, calc((100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 100px) * 0.559)); aspect-ratio: 9 / 16; }
 }
 
 .carousel-dots {
