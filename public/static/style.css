@@ -495,6 +495,154 @@ html, body {
 }
 
 /* ============================================================
+   IGNITE GATE — "횃불에 불이 붙기 전에 재생을 스크롤다운에도 반응없이,
+   고정된 화면에서 첨부한 이미지의 원처럼 점멸하는 원 옆에 불을
+   붙여주세요를 영어로 점멸하게끔". Reference image (torch, unlit,
+   white glow orb + thin outer ring centered on the torch head) was
+   analyzed via understand_images: circle center sits at 49.6%/30.6%
+   of that 1024x576 reference frame, inner-circle radius ~32px (6.25%
+   of frame width), outer ring radius ~60px (11.7% of frame width).
+   The ACTUAL on-screen torch head in videos-bg-12.mp4 (1920x1080,
+   object-fit:cover) was independently pinpointed via pixel-brightness
+   blob detection (PIL + scipy.ndimage, threshold>30, largest connected
+   component, top 22% of its bbox = the head): centered at x=49.74%,
+   y=18.94% of the frame -- stable across t=0..1s (the fully-unlit
+   pre-ignition hold window). Positioned here at that same x/y via
+   left/top percentages of the fixed full-viewport video layer so it
+   visually sits right on the torch head regardless of viewport size
+   (object-fit:cover keeps the horizontal center fixed; vertical crop
+   only trims top/bottom edges on unusual aspect ratios, which this
+   upper-third placement comfortably tolerates).
+   Shown/hidden entirely by JS (setupIgniteGate() in app.js) -- opacity
+   here starts at 0 so nothing is visible until the gate is actually
+   armed (i.e. scroll has reached video-12's phase for the first time).
+   ============================================================ */
+#ignite-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 15;
+  pointer-events: none;
+  opacity: 0;
+  will-change: opacity;
+}
+#ignite-gate-circle {
+  position: absolute;
+  left: 49.74%;
+  top: 18.94%;
+  transform: translate(-50%, -50%);
+  width: 120px;
+  height: 120px;
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#ignite-gate.is-armed #ignite-gate-circle {
+  pointer-events: auto;
+}
+.ignite-gate-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.75);
+  animation: igniteGateFlicker 1.6s ease-in-out infinite;
+}
+.ignite-gate-orb {
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 42% 38%, #ffffff 0%, #f2ede2 38%, #cfc6b3 70%, rgba(207,198,179,0) 100%);
+  box-shadow: 0 0 24px 6px rgba(255, 255, 255, 0.55);
+  animation: igniteGateFlicker 1.6s ease-in-out infinite;
+  animation-delay: 0.15s;
+}
+#ignite-gate-circle:hover .ignite-gate-orb,
+#ignite-gate-circle:focus-visible .ignite-gate-orb {
+  box-shadow: 0 0 32px 10px rgba(255, 255, 255, 0.75);
+}
+@keyframes igniteGateFlicker {
+  0%, 100% { opacity: 1; }
+  38% { opacity: 0.45; }
+  50% { opacity: 0.9; }
+  62% { opacity: 0.35; }
+  78% { opacity: 1; }
+}
+#ignite-gate-cta {
+  position: absolute;
+  left: 49.74%;
+  top: calc(18.94% + 78px);
+  transform: translateX(-50%);
+  margin: 0;
+  white-space: nowrap;
+  font-family: var(--font-clean);
+  font-size: 13px;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: var(--fg);
+  text-shadow: 0 0 12px rgba(0,0,0,0.8), 0 1px 3px rgba(0,0,0,0.9);
+  animation: igniteGateFlicker 1.6s ease-in-out infinite;
+  animation-delay: 0.3s;
+}
+#ignite-gate.is-igniting #ignite-gate-circle,
+#ignite-gate.is-igniting #ignite-gate-cta {
+  animation: none;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+@media (max-width: 768px) {
+  #ignite-gate-circle { width: 90px; height: 90px; }
+  .ignite-gate-orb { width: 46px; height: 46px; }
+  #ignite-gate-cta { top: calc(18.94% + 62px); font-size: 11px; letter-spacing: 0.26em; }
+}
+
+/* ============================================================
+   VIDEOS-CONNECTED TEXT — "두번째 첨부이미지가 나오는 시점에서,
+   '당신은 나의 작업물과 연결되었습니다.'를 영어로 인터랙티브하게".
+   The reference screenshot (JUNE HONG header, photographer smiling
+   holding a lit torch + camera) matches videos-bg-13.mp4's own
+   "photographer reveal" moment -- pinpointed via mean-gray brightness
+   sampling (flat ~16 from t=0-1s while only the blazing torch fills
+   frame, rising to a peak of 24.16 at t=2.0s as the photographer comes
+   fully into focus). Shown/animated by GSAP scroll-tied logic in
+   setupVideosBgVideo() (videosConnectedTextTween), not pure CSS --
+   opacity/transform starting state below is just the "hidden, ready to
+   reveal" baseline JS animates from.
+   ============================================================ */
+#videos-connected-text {
+  position: fixed;
+  inset: 0;
+  z-index: 16;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0;
+  will-change: opacity;
+}
+#videos-connected-text p {
+  margin: 0;
+  text-align: center;
+  font-family: 'Fraunces', var(--font-serif);
+  font-weight: 500;
+  font-variation-settings: 'wght' 480, 'opsz' 60, 'SOFT' 0;
+  font-size: clamp(28px, 4.4vw, 58px);
+  line-height: 1.28;
+  color: var(--fg);
+  letter-spacing: 0.01em;
+  text-shadow: 0 2px 22px rgba(0,0,0,0.75);
+  opacity: 0;
+  transform: translateY(26px);
+  will-change: transform, opacity;
+}
+@media (max-width: 768px) {
+  #videos-connected-text p { font-size: clamp(22px, 6vw, 34px); padding: 0 8vw; }
+}
+
+/* ============================================================
    SECTION 1 — Intro + Cube
    The section's own background is fully transparent -- NO extra
    texture/scrim layers of its own -- so the #fixed-bg-video layer

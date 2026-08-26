@@ -1509,6 +1509,18 @@
     const s8 = document.getElementById('section-8');
     if (!layer || !v9 || !v10 || !v11 || !v12 || !v13 || !v14 || !v15 || !v16 || !s5 || !s8) return;
 
+    // NEW (this turn -- "횃불에 불이 붙기 전에 재생을 스크롤다운에도 반응없이,
+    // 고정된 화면에서 ... 점멸하는 원 옆에 불을 붙여주세요를 영어로 점멸하게끔
+    // ... 원을 클릭하는 순간 불이 붙은 장면에서 다시 멈춤. 거기서 다시
+    // 스크롤다운에 반응하는 영상으로 전환"): the "IGNITE GATE" -- a
+    // click-to-advance interaction spliced into the middle of v12's
+    // otherwise pure scroll-scrub. Optional lookups (feature degrades
+    // gracefully to the old pure-scroll chain if this markup is absent).
+    const gateEl = document.getElementById('ignite-gate');
+    const gateCircle = document.getElementById('ignite-gate-circle');
+    const connectedEl = document.getElementById('videos-connected-text');
+    const connectedP = connectedEl ? connectedEl.querySelector('p') : null;
+
     const videos = [v9, v10, v11, v12, v13, v14, v15, v16];
     gsap.set(videos, { opacity: 0 });
     gsap.set(v9, { opacity: 1 });
@@ -1663,6 +1675,151 @@
       gsap.set(v14, { opacity: o14 });
       gsap.set(v15, { opacity: o15 });
       gsap.set(v16, { opacity: o16 });
+
+      // NEW (this turn -- "두번째 첨부이미지가 나오는 시점에서 ...
+      // 인터랙티브하게 나오게끔"): "You are now connected with my work."
+      // fades/slides in continuously as the user scrubs through v13's own
+      // "photographer reveal" window -- frame-accurate ffmpeg/PIL mean-
+      // gray forensics on videos-bg-13.mp4 found the torch-only shot flat
+      // at brightness~16 for t=0-1s, then rising as the camera pulls back
+      // to reveal the photographer, peaking at t=2.0s (brightness 24.16,
+      // the closest match to the user's second attached screenshot) --
+      // so the reveal is keyed to local13 (v13's own 0..1 local progress,
+      // already computed above), NOT a fixed fade-in/out timer, making it
+      // directly scroll-position-driven (scrubs forward AND reverses
+      // cleanly on scroll-up, same "interactive" contract as every other
+      // scroll-tied effect on this page) rather than a static one-shot
+      // reveal. Fades in across t=1.5s->2.5s (local13 0.25->0.4167,
+      // matching the photographer becoming visible through fully in
+      // focus), holds through the rest of the reveal shot, then fades
+      // out again just before v13 hands off to v14.
+      if (connectedEl) {
+        const CONNECTED_IN_START = 0.25;
+        const CONNECTED_IN_END = 0.4167;
+        const CONNECTED_OUT_START = 0.82;
+        const CONNECTED_OUT_END = 0.96;
+        let co = 0;
+        if (local13 >= CONNECTED_IN_START && local13 <= CONNECTED_OUT_END) {
+          if (local13 < CONNECTED_IN_END) {
+            co = (local13 - CONNECTED_IN_START) / (CONNECTED_IN_END - CONNECTED_IN_START);
+          } else if (local13 < CONNECTED_OUT_START) {
+            co = 1;
+          } else {
+            co = 1 - (local13 - CONNECTED_OUT_START) / (CONNECTED_OUT_END - CONNECTED_OUT_START);
+          }
+        }
+        co = Math.max(0, Math.min(1, co));
+        gsap.set(connectedEl, { opacity: co > 0.01 ? 1 : 0 });
+        if (connectedP) gsap.set(connectedP, { opacity: co, y: (1 - co) * 26 });
+      }
+    }
+
+    /* ==========================================================
+       IGNITE GATE state machine -- see the long comment above the
+       gateEl/gateCircle/connectedEl lookups near the top of this
+       function for the full user-spec quote. Splices a click-to-advance
+       interaction into v12's otherwise pure scroll-scrub: right as v12
+       begins (t=0, confirmed via forensics as a stable fully-unlit torch
+       silhouette held flat through t~1.3s -- see v12_t0.jpg), scroll is
+       physically locked (wheel/touchmove/keys prevented + actual scroll
+       position pinned via ScrollTrigger's own self.scroll() setter, NOT
+       just a visual freeze -- matches "고정된 화면" / "a fixed screen")
+       and a flickering circular hotspot + "Light the torch" CTA fade in
+       (see #ignite-gate CSS). Clicking the circle plays a TIME-based
+       (not scroll-based) GSAP tween of the shared progress value from
+       the hold point through the ignition burst to a steady, settled
+       burn (t=2.35s -- chosen deliberately AFTER the brightest t~1.9s
+       ignition-flash peak, confirmed via fine-grained brightness
+       forensics: t=1.9 -> 33.25, t=2.3 -> 24.70, t=2.4 -> 21.41 -- so the
+       freeze lands on "torch is now lit" rather than "mid-flash burst").
+       Once that tween completes, actual scroll position is advanced to
+       match (so the frozen frame doesn't jump when scroll unlocks) and
+       normal scroll-scrub resumes for the remainder of the chain.
+       ========================================================== */
+    const V12_PHASE_WIDTH = PHASE_V12_END - PHASE_V11_END;
+    const GATE_PROGRESS = PHASE_V11_END; // t=0 of v12 -- fully unlit hold frame
+    const LIT_PROGRESS = PHASE_V11_END + V12_PHASE_WIDTH * (2.35 / CLIP_DURATION); // t=2.35s -- steady lit burn
+    const GATE_RESET_MARGIN = 0.004;
+    let gateState = 'idle'; // idle | armed | igniting | released
+    let mainST = null;
+
+    function blockScrollEvent(e) { e.preventDefault(); }
+    function blockScrollKeys(e) {
+      if (e.target === gateCircle) return;
+      const blocked = ['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', ' ', 'Spacebar', 'End', 'Home'];
+      if (blocked.indexOf(e.key) !== -1) e.preventDefault();
+    }
+    function lockScroll() {
+      window.addEventListener('wheel', blockScrollEvent, { passive: false });
+      window.addEventListener('touchmove', blockScrollEvent, { passive: false });
+      window.addEventListener('keydown', blockScrollKeys, { passive: false });
+    }
+    function unlockScroll() {
+      window.removeEventListener('wheel', blockScrollEvent, { passive: false });
+      window.removeEventListener('touchmove', blockScrollEvent, { passive: false });
+      window.removeEventListener('keydown', blockScrollKeys, { passive: false });
+    }
+    function scrollToProgress(p) {
+      if (!mainST) return;
+      mainST.scroll(mainST.start + p * (mainST.end - mainST.start));
+    }
+    function armGate() {
+      gateState = 'armed';
+      scrollToProgress(GATE_PROGRESS);
+      renderVideosChain(GATE_PROGRESS);
+      if (gateEl) {
+        gateEl.classList.remove('is-igniting');
+        gateEl.classList.add('is-armed');
+        gsap.to(gateEl, { opacity: 1, duration: 0.5 });
+      }
+      lockScroll();
+    }
+    function igniteTorch() {
+      if (gateState !== 'armed') return;
+      gateState = 'igniting';
+      if (gateEl) {
+        gateEl.classList.add('is-igniting');
+        gateEl.classList.remove('is-armed');
+      }
+      const proxy = { p: GATE_PROGRESS };
+      gsap.to(proxy, {
+        p: LIT_PROGRESS,
+        duration: 1.3,
+        ease: 'power2.out',
+        onUpdate: () => renderVideosChain(proxy.p),
+        onComplete: () => {
+          gateState = 'released';
+          if (gateEl) gsap.set(gateEl, { opacity: 0 });
+          scrollToProgress(LIT_PROGRESS);
+          unlockScroll();
+        },
+      });
+    }
+    if (gateCircle) gateCircle.addEventListener('click', igniteTorch);
+
+    function handleVideosProgress(p) {
+      if (gateEl && gateCircle) {
+        if (gateState === 'idle' && p >= GATE_PROGRESS) {
+          armGate();
+          return;
+        }
+        if (gateState === 'armed') {
+          renderVideosChain(GATE_PROGRESS);
+          return;
+        }
+        if (gateState === 'igniting') {
+          // The click-triggered tween above owns rendering exclusively
+          // while it runs -- ignore scroll-driven updates entirely so the
+          // two never fight over the shared video elements' currentTime.
+          return;
+        }
+        if (gateState === 'released' && p < GATE_PROGRESS - GATE_RESET_MARGIN) {
+          // Scrolled back up above the gate zone -- reset so scrolling
+          // back down re-triggers the click-to-ignite gate again.
+          gateState = 'idle';
+        }
+      }
+      renderVideosChain(p);
     }
 
     // Single ScrollTrigger spanning section-5's own top through
@@ -1670,7 +1827,7 @@
     // differs from setupPhotosBgVideo's "ends at the NEXT group's top"
     // span). Transparently covers section-6/7's own pinned conveyor
     // runs, same as setupPhotosBgVideo covers section-4's pin.
-    ScrollTrigger.create({
+    mainST = ScrollTrigger.create({
       id: 'videos-bg-video',
       trigger: s5,
       endTrigger: s8,
@@ -1679,14 +1836,24 @@
       scrub: true,
       onUpdate: (self) => {
         gsap.set(layer, { opacity: self.isActive ? 1 : 0 });
-        renderVideosChain(self.progress);
+        handleVideosProgress(self.progress);
       },
       onRefresh: (self) => {
         gsap.set(layer, { opacity: self.isActive ? 1 : 0 });
-        renderVideosChain(self.progress);
+        handleVideosProgress(self.progress);
       },
       onLeave: () => gsap.set(layer, { opacity: 0 }),
-      onLeaveBack: () => gsap.set(layer, { opacity: 0 }),
+      onLeaveBack: () => {
+        gsap.set(layer, { opacity: 0 });
+        // Safety net: if the user jumps away entirely (dot-nav click,
+        // header nav link, etc.) while the gate had scroll locked, make
+        // sure the lock/UI don't stay stuck engaged off-section.
+        if (gateState === 'armed' || gateState === 'igniting') {
+          gateState = 'idle';
+          unlockScroll();
+          if (gateEl) gsap.set(gateEl, { opacity: 0 });
+        }
+      },
     });
   }
   setupVideosBgVideo();

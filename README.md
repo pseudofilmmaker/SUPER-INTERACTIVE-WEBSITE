@@ -95,6 +95,26 @@
 - 구간 경계(`PHASE_V*_END`)는 8개 클립 균등분할이 아니라 실제 스크롤 거리 가중치로 계산: section-5(v9)=100vh, section-6 핀(v10)=308vh, section-7 핀(v11)=330vh(기존 3편 합계 838vh, 변경 없음) + 신규 5편은 각각 100vh씩(section-8 확장분) — 새 전체 합계 1338vh 기준으로 각 클립이 균일한 스크럽 속도를 유지하도록 비율 계산
 - `#section-8`(`.videos-outro`)의 `min-height`를 기존 100vh(기본 `.panel` 높이)에서 600vh로 확장 — 신규 5클립(각 100vh)이 뭉개지지 않고 기존 클립들과 동일한 페이스로 스크럽될 수 있도록 스크롤 공간 확보. 여전히 완전 투명(`background: transparent`)이며 전경 콘텐츠는 없음(section-7에서 이미 모든 VIDEOS UI가 화면 위로 사라진 이후 구간)
 
+## 점화 게이트(IGNITE GATE) + "You are now connected with my work." 인터랙션
+사용자 요청("횃불에 불이 붙기 전에 재생을 스크롤다운에도 반응없이, 고정된 화면에서 ... 점멸하는 원 옆에 불을 붙여주세요를 영어로 점멸하게끔 ... 원을 클릭하는 순간 불이 붙은 장면에서 다시 멈춤. 거기서 다시 스크롤다운에 반응하는 영상으로 전환 ... 두번째 첨부이미지가 나오는 시점에서, '당신은 나의 작업물과 연결되었습니다.'를 영어로 인터랙티브하게")에 따라, VIDEOS 배경 체인(`videos-bg-12`~`13`) 구간에 두 가지 신규 인터랙션을 추가했습니다.
+
+**1) 점화 게이트 (클릭-투-이그나이트)** — `videos-bg-12.mp4` 시작 지점(t=0, 완전히 꺼진 횃불)에서:
+- 사용자가 첨부한 참고 이미지(횃불 머리 위 흰색 발광 원 + 얇은 외곽 링)를 `understand_images`로 분석해 정확한 좌표 비율(원 중심 49.6%/30.6%, 내부 원 반지름 ~32px, 외곽 링 반지름 ~60px)을 확보
+- 실제 `videos-bg-12.mp4`(1920x1080) 프레임에서 PIL+scipy 블롭 분석으로 횃불 머리의 실제 화면 좌표(x=49.74%, y=18.94%, t=0~1.3s 구간 고정)를 별도로 확인해 오버레이 위치에 반영
+- 스크롤이 이 지점(`PHASE_V11_END`=0.626308)에 처음 도달하면: (a) wheel/touchmove/방향키를 가로채 스크롤을 물리적으로 잠그고, (b) 실제 스크롤 위치도 정확히 이 지점으로 스냅해 "고정된 화면"을 만들고, (c) 점멸하는 흰색 원 + 얇은 링 + "LIGHT THE TORCH" 텍스트(둘 다 CSS `@keyframes` 점멸 애니메이션)를 페이드인
+- 원을 클릭하면 GSAP 타임 기반 트윈(스크롤 기반이 아님)으로 영상이 t=0→2.35s까지 재생되어 점화 후 안정적으로 타오르는 프레임에서 다시 정지 — 밝기 포렌식(ffmpeg/PIL mean-gray 0.1초 단위 샘플링: t=1.9s에서 피크 33.25 확인)으로 가장 밝은 "점화 섬광" 프레임이 아니라 그 이후 안정적으로 타오르는 프레임(t=2.3~2.5s, 밝기 ~20-25)을 목표 지점으로 선정
+- 트윈 완료 시 스크롤 잠금 해제 + 실제 스크롤 위치를 목표 지점으로 동기화 → 이후 남은 체인(v12 나머지→v13→...→v16)은 다시 완전히 스크롤 스크럽 방식으로 재생됨
+- 스크롤을 다시 게이트 지점 위로 올리면 상태가 초기화되어, 다시 내려오면 게이트가 재작동함(무한 반복 가능)
+
+**2) "You are now connected with my work." 인터랙티브 리빌** — `videos-bg-13.mp4`(사진작가 리빌 장면, 사용자의 두번째 첨부 스크린샷과 일치)의 로컬 진행률(`local13`)에 직접 연동:
+- 밝기 포렌식(t=0-1s 평탄 ~16 → t=1.5s부터 상승 → t=2.0s에서 피크 24.16, 사진작가가 완전히 선명하게 드러나는 지점)을 바탕으로 `local13` 0.25→0.4167(t=1.5s→2.5s) 구간에서 텍스트가 아래에서 위로 슬라이드하며 페이드인, 0.82→0.96 구간에서 다시 페이드아웃
+- 고정 타이머가 아니라 **스크롤 진행률(p)의 연속 함수**로 opacity/transform을 계산하므로, 스크롤을 위아래로 오가면 텍스트도 실시간으로 나타났다 사라졌다 반응함(진짜 "인터랙티브" 리빌 — 다른 모든 스크롤 연동 효과와 동일한 원칙)
+
+**코드 변경**:
+- `src/pages/home.html`: `#ignite-gate`(원+링+CTA 텍스트) 및 `#videos-connected-text` 오버레이 마크업 추가 (`#videos-bg-video-layer` 바로 뒤, `<main>` 앞)
+- `public/static/style.css`: `#ignite-gate`/`.ignite-gate-ring`/`.ignite-gate-orb`/`#ignite-gate-cta`(+ `igniteGateFlicker` keyframes) 및 `#videos-connected-text` 스타일 추가
+- `public/static/app.js`: `setupVideosBgVideo()` 내부에 게이트 상태 머신(`armGate`/`igniteTorch`/`handleVideosProgress`, `idle→armed→igniting→released` 상태) 및 `renderVideosChain()`에 "connected" 텍스트 스크롤 연동 opacity 계산 로직 추가. 기존 하드컷 렌더링 로직(`seek()`, opacity 바이너리 전환)은 전혀 변경하지 않음 — 게이트는 어디까지나 v12 구간 진입 시점에만 개입하는 오버레이 상태 머신
+
 ## 다음 단계 (Not Yet Implemented)
 - 실제 Cloudflare Pages 프로덕션 배포
 - `photoCards`, `landscapeVideos`, `reelVideos`, `videosIntroThumb`, `splitPhoto` 등 media-config.js의 빈 슬롯에 실제 콘텐츠 채우기 (현재는 placeholder만 표시됨 — 원본 사이트도 동일 상태)
