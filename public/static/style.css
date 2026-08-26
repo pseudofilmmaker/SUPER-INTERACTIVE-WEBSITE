@@ -56,6 +56,18 @@ html, body {
 }
 
 /* ---------------- Fixed site header (JUNE HONG / HOME·PHOTOS·VIDEOS·ABOUT ME) ---------------- */
+/* ROOT-CAUSE FIX (explicit user spec, this turn -- first pass added a
+   dedicated #header-feather gradient layer beneath the header, but over
+   bright/high-contrast content (fire, starry sky) its own fade-out edge
+   itself read as an awkward visible band/seam: "차라리 그냥 투명하게
+   처리하는 게 나을 거 같은데?" i.e. "wouldn't it be better to just make it
+   fully transparent instead?"). FIX: removed both #site-header's own
+   background gradient AND the separate #header-feather layer entirely --
+   the header is now fully transparent, with legibility over any
+   background (bright or dark) provided purely by a text-shadow on the
+   brand/nav labels (same technique already used elsewhere on this page,
+   e.g. #ignite-gate-cta), so there is no overlay band of any kind to
+   look awkward against. */
 #site-header {
   position: fixed;
   top: 0; left: 0;
@@ -66,8 +78,7 @@ html, body {
   justify-content: space-between;
   padding: 0 32px;
   z-index: 300;
-  background: linear-gradient(to bottom, rgba(5,5,6,0.85) 0%, rgba(5,5,6,0.55) 60%, transparent 100%);
-  backdrop-filter: blur(6px);
+  background: transparent;
   pointer-events: none;
 }
 #site-header .brand,
@@ -83,6 +94,7 @@ html, body {
   color: var(--fg);
   text-decoration: none;
   text-transform: uppercase;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.85), 0 0 16px rgba(0,0,0,0.6);
 }
 #site-header .main-nav {
   display: flex;
@@ -98,6 +110,7 @@ html, body {
   position: relative;
   padding-bottom: 4px;
   transition: color 0.3s ease;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.85), 0 0 16px rgba(0,0,0,0.6);
 }
 #site-header .main-nav a::after {
   content: '';
@@ -122,35 +135,6 @@ html, body {
 }
 @media (max-width: 420px) {
   #site-header .main-nav { gap: 10px; }
-}
-
-/* ROOT-CAUSE FIX (explicit user spec, this turn -- "상단 고정 메뉴바에
-   feather가 없어서, 너무 어색해"): #site-header's own background gradient
-   was doing double duty as both the header's opaque backdrop AND the
-   fade into the content below, compressed entirely inside the header's
-   own short 76px height -- confirmed via understand_images + pixel
-   sampling that over bright/high-contrast content (the starry Milky Way
-   finale) this reads as an abrupt hard-edged cutoff, not a soft feather.
-   FIX: add a SEPARATE, taller fade layer directly beneath the header
-   (same idiom as the existing #scroll-feather at the bottom of the
-   screen), so the header itself can stay a normal opaque nav bar while
-   this dedicated layer provides a proper wide gradient dissolve into
-   whatever's scrolling underneath. Purely decorative -- aria-hidden,
-   no pointer-events, sits just below the header's own z-index so it
-   never intercepts nav clicks. */
-#header-feather {
-  position: fixed;
-  top: 76px;
-  left: 0;
-  width: 100%;
-  height: 18vh;
-  min-height: 130px;
-  z-index: 290;
-  pointer-events: none;
-  background: linear-gradient(to bottom, rgba(5,5,6,0.55) 0%, rgba(5,5,6,0.28) 40%, transparent 100%);
-}
-@media (max-width: 768px) {
-  #header-feather { top: 60px; height: 14vh; min-height: 90px; }
 }
 
 /* ---------------- PHOTOS / VIDEOS fixed panel-nav: vertical category
