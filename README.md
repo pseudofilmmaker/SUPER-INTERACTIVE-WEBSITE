@@ -187,6 +187,14 @@
   - `public/static/app.js`: `renderVideosChain()`의 `local16` 계산에서 `SCENE_HOLD_START`(0.40→0.5)/`SCENE_HOLD_END`(0.62→0.7) 값과 설명 주석을 "좌측 팬 직전 지점" 기준으로 수정 (클램프 메커니즘 자체는 변경 없음)
   - `src/pages/home.html`: `#videos-footer-text`의 `data-line="3"` 텍스트를 `About June Hong, VIDEO and PHOTO, Vancouver, CANADA` → `Vancouver, CANADA`로 축약 (이전 세그먼트에서 완료, 변경 없음)
 
+## 은하수 피날레 영구 홀드 + Footer 스크롤 반응형 재작업 (완료)
+사용자가 은하수 참고 이미지(bare-tree-left / diagonal Milky Way / centered glow 구도)를 첨부하며 "현재 첨부한 이미지를 마지막 프레임으로 두고, 푸터 작업을 다시 해줘"라고 요청. 확인 과정에서 진단용 스크린샷(강제 opacity 테스트 스크립트의 부산물)이 인트로 섹션 내용과 겹쳐 보여 오해가 있었으나, 실제 구현 변경은 전혀 없었음을 설명하고 최종적으로 아래 두 가지로 범위를 확정("a가 맞어. b도 맞고"):
+
+1. **영구 마지막 프레임 홀드**: 기존 `SCENE_HOLD_START`/`SCENE_HOLD_END` 방식은 잠시 멈췄다가 다시 재생을 **재개**해 결국 좌측 팬 구간까지 도달하는 "임시 홀드"였음 — 참고 이미지 구도(잎이 없는 나무가 좌측에, 대각선 은하수, 중앙 발광)와 정확히 일치하는 `videos-bg-16.mp4`의 `t=3.5s`(`local16Raw≈0.5833`) 프레임에서 **영구적으로** 멈추도록 재작성. `local16Raw`(0→1까지 계속 증가하는 원본 스크롤 진행률)를 `SCENE_HOLD_POINT=3.5/6.0`으로 `Math.min()` 클램프만 적용 — 재개(remap) 분기를 완전히 제거해 이후 스크롤이 얼마나 계속되든 화면은 이 프레임에 고정되고, 카메라의 좌측 팬은 절대 노출되지 않음.
+2. **Footer를 계속 스크롤에 반응하도록 재작업**: 위 변경으로 `local16` 자체가 영구히 멈추므로, 기존처럼 `local16`을 기준으로 footer를 리빌하면 footer도 함께 멈춰버림(한 번 나타나고 끝나는 정적 동작으로 퇴화). 이를 막기 위해 footer의 `fo`(라인별 스태거 진행률) 계산을 멈추지 않는 `local16Raw`로 재-연결(`FOOTER_IN_START=0.6 → FOOTER_IN_END=0.92`, `local16Raw` 값 기준으로 재조정) — 화면의 은하수 장면은 고정된 채로, 사용자가 계속 스크롤하는 동안 footer 4줄이 계속 순차적으로 리빌/스태거되는 "화면은 멈췄지만 UI는 계속 반응한다"는 의도된 동작을 구현.
+- **코드 변경**: `public/static/app.js`의 `renderVideosChain()` 내 (a) `SCENE_HOLD_START/END` 3분기 클램프-리매핑 로직을 `SCENE_HOLD_POINT` 단일 `Math.min()` 클램프로 교체(재개 분기 제거), (b) footer 리빌 블록의 조건/보간 변수를 `local16` → `local16Raw`로 전환하고 `FOOTER_IN_START/END`를 `local16Raw`의 값 범위에 맞게 재조정(0.72/0.88 → 0.6/0.92).
+- **검증**: 순수 JS로 `p`(전체 진행률) 샘플을 여러 지점에서 계산해 (i) `local16Raw`가 `SCENE_HOLD_POINT`를 넘어서도 `local16`(및 `seek()`에 전달되는 시간)은 항상 `t=3.5s`에 고정됨, (ii) `local16Raw`가 계속 증가함에 따라 footer `fo`가 0→1까지 끊김 없이 진행됨을 수치로 확인. **주의**: 이번에도 Playwright의 프로그래매틱 스크롤이 `ignite-gate`의 스크롤 락(실제 클릭 인터랙션 없이는 게이트를 통과하지 못하는 기존 알려진 한계, 이전 세그먼트에서도 동일하게 발견됨)에 걸려 헤드리스 환경에서 최종 시각 스크린샷 검증을 완료하지 못했습니다. 실제 브라우저에서 직접 스크롤해 (1) 최하단에서 화면이 참고 이미지 구도로 영구히 고정되어 있는지, (2) 그 지점을 지나 계속 스크롤할 때 footer 4줄이 계속 순차적으로 나타나는지 확인이 필요합니다.
+
 ## 다음 단계 (Not Yet Implemented)
 - 실제 Cloudflare Pages 프로덕션 배포
 - `photoCards`, `landscapeVideos`, `reelVideos`, `videosIntroThumb`, `splitPhoto` 등 media-config.js의 빈 슬롯에 실제 콘텐츠 채우기 (현재는 placeholder만 표시됨 — 원본 사이트도 동일 상태)

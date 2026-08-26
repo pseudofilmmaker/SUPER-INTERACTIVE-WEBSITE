@@ -1723,28 +1723,21 @@
       // LOCKED/static from t~=1.75s to t~=3.29s (glow x holds flat at
       // ~53.7-54.5% of frame width), after which it sweeps rapidly
       // rightward (56%->62%->72%->96% by t=5.5s) -- that rightward glow
-      // drift IS the visual signature of the camera panning LEFT. So the
-      // correct freeze point is t=3.0s (local16 = 3.0/6.0 = 0.5), safely
-      // inside the stable plateau with margin before the t~=3.33s pan
-      // onset, matching the reference image's composition. Freeze
-      // local16's effective value across [SCENE_HOLD_START, SCENE_HOLD_END]
-      // at SCENE_HOLD_START itself (the same value the raw progress already
-      // has on entry, so there's no visible jump when the hold engages),
-      // then remap the remaining raw range back onto [SCENE_HOLD_START, 1]
-      // so v16 resumes advancing smoothly into the footer reveal with no
-      // discontinuity on exit either -- same "clamp, don't truncate"
-      // contract as GATE_HOLD_LOCAL12 above.
-      const SCENE_HOLD_START = 0.5;
-      const SCENE_HOLD_END = 0.7;
+      // drift IS the visual signature of the camera panning LEFT.
+      //
+      // PERMANENT last-frame hold (per user-confirmed reference image):
+      // the reference composition (bare tree left / diagonal Milky Way /
+      // centered glow) matches t=3.5s (frame_085 @ 24fps) inside the
+      // stable plateau. Unlike the old temporary hold, this is a TRUE
+      // clamp with no "resume" branch -- once local16Raw reaches
+      // SCENE_HOLD_POINT, local16 stays pinned there for the rest of the
+      // scroll chain, so the leftward pan is never shown. local16Raw
+      // itself keeps advancing all the way to 1.0 and is used (instead of
+      // the now-frozen local16) to drive anything that must keep
+      // reacting to continued scroll past this point (e.g. the footer).
+      const SCENE_HOLD_POINT = 3.5 / CLIP_DURATION; // ~0.5833
       const local16Raw = (p - PHASE_V15_END) / (1 - PHASE_V15_END);
-      let local16;
-      if (local16Raw < SCENE_HOLD_START) {
-        local16 = local16Raw;
-      } else if (local16Raw < SCENE_HOLD_END) {
-        local16 = SCENE_HOLD_START;
-      } else {
-        local16 = SCENE_HOLD_START + (local16Raw - SCENE_HOLD_END) * (1 - SCENE_HOLD_START) / (1 - SCENE_HOLD_END);
-      }
+      const local16 = Math.min(local16Raw, SCENE_HOLD_POINT);
       seek(v9, local9);
       seek(v10, local10);
       seek(v11, local11);
@@ -1983,31 +1976,34 @@
         }
       }
 
-      // NEW (this turn -- closing footer). Reveals continuously as the
-      // user scrubs through v16's own final stretch -- keyed to local16
-      // (v16's own 0..1 local progress, already computed above), same
-      // "scroll-position-driven, never a fixed timer" contract as every
-      // other reveal in this chain. IN window (0.72 -> 0.88) sits inside
-      // v16's stable full Milky Way finale (frame-forensics: the
-      // forest/tree-silhouette motion settles into the static wide sky
-      // vista by roughly local16 0.55-0.6 and holds unchanged through
-      // 1.0 -- see videos-bg-16.mp4 grid samples), and critically
-      // FINISHES (reaches full opacity) well BEFORE local16=1 so the
-      // footer is already fully readable by the time scrolling bottoms
-      // out. UNLIKE the three ephemeral "moment" overlays above
+      // Closing footer. UPDATED (this turn): v16's visual is now
+      // PERMANENTLY frozen at SCENE_HOLD_POINT (see local16 above), so
+      // the footer can no longer be keyed to local16 -- once local16
+      // clamps, a local16-driven reveal would freeze too and the footer
+      // would never keep responding to further scrolling. Per explicit
+      // user confirmation ("b도 맞고" -- keep the footer continuously
+      // reactive to scroll-down), this is now keyed to local16Raw
+      // instead: local16Raw keeps advancing 0->1 across v16's whole
+      // scroll segment even though the on-screen frame no longer moves,
+      // so the footer still reveals/staggers progressively as the user
+      // keeps scrolling past the frozen scene. IN window (0.6 -> 0.92)
+      // starts shortly after the freeze engages (SCENE_HOLD_POINT
+      // ~=0.583) and finishes with margin before local16Raw=1 so the
+      // footer is fully readable by the time scrolling bottoms out.
+      // UNLIKE the three ephemeral "moment" overlays above
       // (connectedEl/catchfireEl/junehongEl), this is real footer
       // content -- once revealed it should stay put rather than fade
       // back out, so there is deliberately no OUT window: fo simply
-      // holds at 1 for the remainder of local16 (including exactly at
+      // holds at 1 for the remainder of local16Raw (including exactly at
       // and "past" 1.0, since seek()/mainST below now clamp there
       // instead of blacking out).
       if (footerEl) {
-        const FOOTER_IN_START = 0.72;
-        const FOOTER_IN_END = 0.88;
+        const FOOTER_IN_START = 0.6;
+        const FOOTER_IN_END = 0.92;
         let fo = 0;
-        if (local16 >= FOOTER_IN_START) {
-          fo = local16 < FOOTER_IN_END
-            ? (local16 - FOOTER_IN_START) / (FOOTER_IN_END - FOOTER_IN_START)
+        if (local16Raw >= FOOTER_IN_START) {
+          fo = local16Raw < FOOTER_IN_END
+            ? (local16Raw - FOOTER_IN_START) / (FOOTER_IN_END - FOOTER_IN_START)
             : 1;
         }
         fo = Math.max(0, Math.min(1, fo));
