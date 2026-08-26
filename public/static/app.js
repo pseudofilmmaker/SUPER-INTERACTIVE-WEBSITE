@@ -1712,13 +1712,21 @@
       const local14 = (p - PHASE_V13_END) / (PHASE_V14_END - PHASE_V13_END);
       const local15 = (p - PHASE_V14_END) / (PHASE_V15_END - PHASE_V14_END);
       // USER REQUEST THIS TURN ("첫번째 첨부한 이미지에서 홀드를 걸어줘" --
-      // add a scroll hold at the plain, text-free Milky Way vista shown in
-      // the user's screenshot): ffmpeg frame-forensics on the raw
-      // videos-bg-16.mp4 footage plus a fine-grained (0.005-step) post-
-      // ignite Playwright sweep pinpointed the exact matching frame at
-      // local16 ~= 0.4648 (absolute progress p ~= 0.96), sitting in the
-      // existing "empty gap" window after junehongEl's fade-out finishes
-      // (~p 0.921) and before footerEl's fade-in begins (~p 0.979). Freeze
+      // add a scroll hold at the Milky Way vista shown in the user's
+      // screenshot). CORRECTED after user feedback: the user's intent was
+      // never a "text-free gap" -- it's to freeze the shot right BEFORE
+      // videos-bg-16.mp4's camera visibly turns/pans LEFT, per the
+      // reference image (thin/low treeline, diagonal Milky Way, horizon
+      // glow centered). Pixel-level ffmpeg frame forensics on the raw clip
+      // (horizon-glow x-position tracked frame-by-frame, corroborated by
+      // an independent AI video-motion read) show the framing is fully
+      // LOCKED/static from t~=1.75s to t~=3.29s (glow x holds flat at
+      // ~53.7-54.5% of frame width), after which it sweeps rapidly
+      // rightward (56%->62%->72%->96% by t=5.5s) -- that rightward glow
+      // drift IS the visual signature of the camera panning LEFT. So the
+      // correct freeze point is t=3.0s (local16 = 3.0/6.0 = 0.5), safely
+      // inside the stable plateau with margin before the t~=3.33s pan
+      // onset, matching the reference image's composition. Freeze
       // local16's effective value across [SCENE_HOLD_START, SCENE_HOLD_END]
       // at SCENE_HOLD_START itself (the same value the raw progress already
       // has on entry, so there's no visible jump when the hold engages),
@@ -1726,8 +1734,8 @@
       // so v16 resumes advancing smoothly into the footer reveal with no
       // discontinuity on exit either -- same "clamp, don't truncate"
       // contract as GATE_HOLD_LOCAL12 above.
-      const SCENE_HOLD_START = 0.40;
-      const SCENE_HOLD_END = 0.62;
+      const SCENE_HOLD_START = 0.5;
+      const SCENE_HOLD_END = 0.7;
       const local16Raw = (p - PHASE_V15_END) / (1 - PHASE_V15_END);
       let local16;
       if (local16Raw < SCENE_HOLD_START) {

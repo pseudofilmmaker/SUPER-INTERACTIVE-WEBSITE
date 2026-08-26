@@ -175,17 +175,17 @@
 - **코드 변경**: `public/static/style.css`의 `.wr-word` 규칙에 `text-shadow` 한 줄 추가 (app.js/home.html 변경 없음).
 - **검증**: Playwright로 work-reel 핀 구간의 3개 지점(진행률 0.15/0.3/0.45)에서 스크린샷 확인 — 밝은 매치 나무, 불꽃 한가운데, 어두운 배경 등 모든 배경 밝기에서 텍스트가 또렷이 읽힘을 시각적으로 확인.
 
-## 은하수 피날레 스크롤 홀드 + Footer 마지막 줄 텍스트 축약 (완료)
+## 은하수 피날레 스크롤 홀드 + Footer 마지막 줄 텍스트 축약 (완료, 홀드 지점 1차 수정 반영)
 사용자가 스크린샷 2장과 함께 요청: "첫번째 첨부한 이미지에서 홀드를 걸어줘. 두번째 이미지, 푸터에서 About June. Hong, VIDEO and PHOTO,를 제거해줘."
 
-1. **스크롤 홀드**: 첫번째 첨부 이미지(모닥불 없이 순수 은하수만 가득한 야경, JUNE HONG 헤더/내비 표시, 텍스트 오버레이 없음)의 정확한 장면을 특정하기 위해, `understand_images`로 이미지를 분석(치조 실루엣, 대각선 은하수, 우측 dot-nav 점등)하고, `ffmpeg`로 `videos-bg-16.mp4` 원본 6초 클립을 1fps로 프레임 추출해 실제 콘텐츠 타임라인을 대조(t=1-2s 모닥불 클로즈업 → t=3-6s 순수 은하수 계열)한 뒤, Playwright로 실제 휠 스크롤(게이트 arm) + 클릭(점화) + 점화 트윈 대기 후 `window.scrollTo()` 직접 진행률 점프(게이트가 `released` 상태가 된 이후에만 안정적으로 동작함을 확인)로 0.005 단위 정밀 스윕을 실행해, 사용자 이미지와 정확히 일치하는 지점(`local16≈0.4648`, 절대 진행률 p≈0.96, `v16.currentTime`≈2.4s)을 확정했습니다. 이 지점은 기존에 이미 존재하던 "빈 구간"(JUNE HONG 레터 리빌이 사라진 뒤(`local15` 0.94 종료 ≈ p 0.921) footer가 나타나기 전(`local16` 0.72 시작 ≈ p 0.979) 사이) 안에 위치합니다.
-   - **구현**: `renderVideosChain()`에서 `local16`(v16의 로컬 진행률) 계산에 `GATE_HOLD_LOCAL12`와 동일한 "clamp, don't truncate" 패턴을 적용 — `SCENE_HOLD_START`(0.40)~`SCENE_HOLD_END`(0.62) 구간 동안은 `local16` 값을 진입 시점 값(`SCENE_HOLD_START`)에 고정해 `seek(v16, ...)`이 항상 동일한 프레임(t≈2.4s)을 가리키도록 하고, 이 구간을 벗어나면 나머지 진행률(0.62→1.0)을 다시 (`SCENE_HOLD_START`→1.0) 범위로 매끄럽게 리매핑해 footer 리빌까지 자연스럽게 이어지도록 함 — 홀드 진입/탈출 시점 모두 값이 연속(점프 없음)이라 스크롤을 위아래로 오가도 완전히 가역적으로 동작함.
-   - **검증**: Playwright 정밀 스윕으로 진행률 p=0.96/0.965/0.97 세 지점에서 `v16.currentTime`이 정확히 2.4초로 동일(홀드 확인)하고, p=0.975부터 다시 증가하기 시작해 p=1.0에서 6.0초(피날레 끝)로 정상 도달함을 확인. 스크린샷으로 홀드 구간(순수 은하수, 텍스트 오버레이 없음, 사용자 이미지와 시각적으로 일치)과 완전 리빌 지점(footer 전체 표시) 모두 재확인.
-2. **Footer 마지막 줄 텍스트 축약**: 두번째 첨부 이미지에서 지적된 대로, `#videos-footer-text`의 4번째 줄(`data-line="3"`)에서 "About June Hong, VIDEO and PHOTO," 부분을 제거하고 "Vancouver, CANADA"만 남기도록 `src/pages/home.html` 마크업을 수정.
+1. **스크롤 홀드 (수정됨 — 최종 기준: "카메라가 좌측으로 꺾이기 직전")**: 최초 구현은 "JUNE HONG 레터 리빌과 footer 사이의 텍스트-없는 빈 구간"을 기준으로 `t≈2.4s`(`local16≈0.4648`)에 홀드를 걸었으나, 사용자가 "카메라 앵글이 좌측으로 꺾여서, 꺾이기 전에 끝내자는 말이었다"고 정정 — 실제 의도는 `videos-bg-16.mp4`에서 카메라가 좌측으로 팬(pan)하기 **직전**의 프레임에서 멈추는 것이었습니다.
+   - **재분석**: `ffmpeg`로 원본 6초 클립을 24fps 전체(144프레임) 추출한 뒤, (a) 지평선 발광점(orange glow)의 프레임별 x좌표 추적 — `t≈1.75s~3.29s` 구간은 화면 폭의 약 53.7~54.5%에서 완전히 고정되어 있다가 `t≈3.33s`부터 급격히 우측으로 이동(56%→62%→72%→96%, `t=5.5s`까지) — 발광점이 화면 안에서 우측으로 흐르는 것은 카메라가 좌측으로 팬할 때 나타나는 전형적 시각 신호, (b) 은하수 코어를 템플릿 매칭으로 추적한 결과도 `t≈3.0s` 부근부터 좌측 드리프트 시작으로 일치, (c) `analyze_media_content`(AI 영상 분석)에도 독립적으로 "좌측 팬 시작 시점 ≈00:03.1"이라는 결과를 받아 교차검증. 세 방법 모두 카메라가 `t≈1.75s~3.29s` 동안 완전히 고정되어 있다가 `t≈3.3s` 전후로 좌측 팬이 시작됨을 일관되게 가리켜, 안정 구간 안쪽이면서 팬 시작 직전인 **`t=3.0s`(`local16=0.5`)**를 최종 홀드 지점으로 확정했습니다.
+   - **구현**: `renderVideosChain()`의 `local16` 클램프 로직(`GATE_HOLD_LOCAL12`와 동일한 "clamp, don't truncate" 패턴) 자체는 그대로 두고, 경계값만 수정 — `SCENE_HOLD_START`를 `0.40`→`0.5`(`t=2.4s`→`t=3.0s`), `SCENE_HOLD_END`를 `0.62`→`0.7`(`t=3.72s`→`t=4.2s`)로 변경. 홀드 구간 동안 `local16`을 진입 시점 값(`SCENE_HOLD_START`)에 고정하고, 이후 나머지 진행률을 (`SCENE_HOLD_START`→1.0) 범위로 리매핑해 footer 리빌까지 끊김 없이 이어지는 동작은 이전과 동일합니다.
+   - **빌드 상태**: 코드 수정 및 `npm run build`/PM2 재시작까지 완료, 로컬 개발 서버에 반영됨. **주의**: 이번 세그먼트에서 Playwright 자동 검증(게이트 점화 → 스크롤 진행률별 프레임 확인)을 재시도했으나, headless 환경에서 점화 인터랙션이 안정적으로 완료되지 않아 자동화 스크립트로는 최종 시각 확인을 마치지 못했습니다. 실제 브라우저에서 직접 스크롤해 홀드 지점의 화면이 첨부 이미지(치조 낮고 얇은 실루엣, 대각선 은하수, 중앙 부근 발광)와 일치하는지 확인이 필요합니다.
+2. **Footer 마지막 줄 텍스트 축약**: 두번째 첨부 이미지에서 지적된 대로, `#videos-footer-text`의 4번째 줄(`data-line="3"`)에서 "About June Hong, VIDEO and PHOTO," 부분을 제거하고 "Vancouver, CANADA"만 남기도록 `src/pages/home.html` 마크업을 수정 — 이 부분은 이번 수정과 무관하게 그대로 유지됩니다.
 - **코드 변경**:
-  - `public/static/app.js`: `renderVideosChain()`의 `local16` 계산에 `SCENE_HOLD_START`/`SCENE_HOLD_END` 클램프 로직 추가 (v9-v15 및 footer/junehong 리빌 로직은 변경 없음)
-  - `src/pages/home.html`: `#videos-footer-text`의 `data-line="3"` 텍스트를 `About June Hong, VIDEO and PHOTO, Vancouver, CANADA` → `Vancouver, CANADA`로 축약
-- **검증**: Playwright로 실제 휠 스크롤+클릭 점화 후 진행률 0.90~1.0 사이 14개 지점을 400ms 간격으로 스윕, `v16.currentTime`이 0.96~0.97 구간에서 정확히 고정(홀드)됨과 그 전후 구간의 정상 진행을 확인. 서빙된 HTML에서 footer 4번째 줄이 `Vancouver, CANADA`로 정확히 반영됨을 curl로 재확인.
+  - `public/static/app.js`: `renderVideosChain()`의 `local16` 계산에서 `SCENE_HOLD_START`(0.40→0.5)/`SCENE_HOLD_END`(0.62→0.7) 값과 설명 주석을 "좌측 팬 직전 지점" 기준으로 수정 (클램프 메커니즘 자체는 변경 없음)
+  - `src/pages/home.html`: `#videos-footer-text`의 `data-line="3"` 텍스트를 `About June Hong, VIDEO and PHOTO, Vancouver, CANADA` → `Vancouver, CANADA`로 축약 (이전 세그먼트에서 완료, 변경 없음)
 
 ## 다음 단계 (Not Yet Implemented)
 - 실제 Cloudflare Pages 프로덕션 배포
