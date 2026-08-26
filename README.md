@@ -195,6 +195,14 @@
 - **코드 변경**: `public/static/app.js`의 `renderVideosChain()` 내 (a) `SCENE_HOLD_START/END` 3분기 클램프-리매핑 로직을 `SCENE_HOLD_POINT` 단일 `Math.min()` 클램프로 교체(재개 분기 제거), (b) footer 리빌 블록의 조건/보간 변수를 `local16` → `local16Raw`로 전환하고 `FOOTER_IN_START/END`를 `local16Raw`의 값 범위에 맞게 재조정(0.72/0.88 → 0.6/0.92).
 - **검증**: 순수 JS로 `p`(전체 진행률) 샘플을 여러 지점에서 계산해 (i) `local16Raw`가 `SCENE_HOLD_POINT`를 넘어서도 `local16`(및 `seek()`에 전달되는 시간)은 항상 `t=3.5s`에 고정됨, (ii) `local16Raw`가 계속 증가함에 따라 footer `fo`가 0→1까지 끊김 없이 진행됨을 수치로 확인. **주의**: 이번에도 Playwright의 프로그래매틱 스크롤이 `ignite-gate`의 스크롤 락(실제 클릭 인터랙션 없이는 게이트를 통과하지 못하는 기존 알려진 한계, 이전 세그먼트에서도 동일하게 발견됨)에 걸려 헤드리스 환경에서 최종 시각 스크린샷 검증을 완료하지 못했습니다. 실제 브라우저에서 직접 스크롤해 (1) 최하단에서 화면이 참고 이미지 구도로 영구히 고정되어 있는지, (2) 그 지점을 지나 계속 스크롤할 때 footer 4줄이 계속 순차적으로 나타나는지 확인이 필요합니다.
 
+## Footer 텍스트 가독성 개선 (완료)
+위 영구 홀드 작업 결과물을 확인한 사용자가 스크린샷(은하수 배경 위 footer)과 함께 "좋구, 글자가 더 명확하게 보이기만 하면 될 거 같아 이제"라고 피드백 — 홀드/footer 반응형 동작 자체는 승인되었고, 남은 요청은 오직 footer 텍스트(`.vf-line` 4줄: 저작권/이메일/전화/Vancouver CANADA)의 가독성 개선.
+
+- **원인**: `.vf-line`이 `color: var(--fg-dim)`(60% 투명도)에 `text-shadow` 없이 렌더링되어, 은하수 프레임의 밝고 텍스처가 많은 영역(별 밀집 지역/중심 발광부)과 겹치는 부분에서 글자가 배경에 묻힘. 페이지의 다른 텍스트 오버레이(`.wr-word`, `.vc-word`, `.cf-word`)는 이미 동일한 "예측 불가능한 비디오 밝기 위의 텍스트" 문제를 `text-shadow`(타이트한 어두운 컨택트 섀도우 + 넓은 소프트 글로우)로 해결하고 있었음.
+- **코드 변경**: `public/static/style.css`의 `.vf-line`에 `text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 0 14px rgba(0,0,0,0.7);` 추가, 강조 줄인 `.vf-line[data-line="0"]`(저작권 줄)에는 살짝 더 강한 `text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 0 16px rgba(0,0,0,0.75);` 추가.
+- **검증**: Playwright로 `videos-bg-16.mp4`의 실제 `t=3.5s` 프레임을 `canvas.drawImage()` + `toDataURL()`로 디코더 직접 픽셀 읽기(브라우저 합성기 우회, 알려진 Chromium 비디오 디코더 크로스와이어 버그를 회피)한 뒤, 이를 순수 CSS `background-image`로 사용하는 격리된 `page.setContent()` 페이지(실제 `/static/style.css` + 실제 footer 마크업 로드)에서 스크린샷을 찍어 4줄 모두 은하수 배경 대비 가독성이 눈에 띄게 개선됨을 확인.
+- **빌드/배포**: `npm run build` 성공 후 `pm2 restart webapp`으로 반영, 동일 프리뷰 URL에서 확인 가능.
+
 ## 다음 단계 (Not Yet Implemented)
 - 실제 Cloudflare Pages 프로덕션 배포
 - `photoCards`, `landscapeVideos`, `reelVideos`, `videosIntroThumb`, `splitPhoto` 등 media-config.js의 빈 슬롯에 실제 콘텐츠 채우기 (현재는 placeholder만 표시됨 — 원본 사이트도 동일 상태)

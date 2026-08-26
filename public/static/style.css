@@ -873,6 +873,16 @@ html, body {
   color: var(--fg-dim);
   letter-spacing: 0.08em;
   font-size: 15px;
+  /* Legibility fix: the Milky Way finale frame this footer sits over
+     has bright, high-texture sky (dense star clusters + glowing core)
+     right where these lines land -- with no shadow the --fg-dim
+     (60% opacity) text was blending into the busy background (same
+     "text on unpredictable video brightness" problem already solved
+     for .wr-word/.vc-word/.cf-word elsewhere on this page via
+     text-shadow). Same fix here: a tight dark contact shadow plus a
+     soft wider glow to punch the glyphs off the sky regardless of
+     which part of the frame sits behind them. */
+  text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 0 14px rgba(0,0,0,0.7);
   will-change: opacity, transform, filter;
 }
 .vf-line[data-line="0"] {
@@ -882,6 +892,7 @@ html, body {
   text-transform: uppercase;
   font-size: 16px;
   margin-bottom: 4px;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 0 16px rgba(0,0,0,0.75);
 }
 .vf-line a {
   color: inherit;
