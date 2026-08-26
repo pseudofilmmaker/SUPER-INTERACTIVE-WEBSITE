@@ -483,7 +483,7 @@ html, body {
   height: 100%;
   object-fit: cover;
   opacity: 0;
-  will-change: opacity;
+  will-change: opacity, transform;
 }
 #videos-bg-video-9 { opacity: 1; }
 .videos-bg-video-scrim {
@@ -517,6 +517,19 @@ html, body {
    here starts at 0 so nothing is visible until the gate is actually
    armed (i.e. scroll has reached video-12's phase for the first time).
    ============================================================ */
+/* ROOT-CAUSE FIX (explicit user spec -- "첫번째 이미지, 컷 투로 바로 붙는
+   게 아니고, 토치도 화면 아래서부터 스크롤다운에 반응하면서 올라와야지"):
+   v11->v12's handoff used to be a pure opacity hard-cut (v12 simply
+   appears at opacity:1 in its resting position the instant v11 ends),
+   which reads as exactly the "컷 투로 바로 붙는" instant-cut the user is
+   now asking to remove. The torch (v12) itself must physically enter
+   the frame by rising up from below, continuously tied to scroll-down
+   (NOT a timer, NOT a one-shot animation -- reversible on scroll-up
+   like every other scroll-tied effect on this page). #ignite-gate's own
+   opacity/lock/CTA sequence is UNCHANGED (still a true opacity fade for
+   the flickering-circle UI chrome, not the video itself) -- see
+   RISE_START/RISE_END + the videos-bg-video-12 transform block in
+   app.js's renderVideosChain() for the new translateY logic. */
 #ignite-gate {
   position: fixed;
   inset: 0;
@@ -608,9 +621,18 @@ html, body {
    sampling (flat ~16 from t=0-1s while only the blazing torch fills
    frame, rising to a peak of 24.16 at t=2.0s as the photographer comes
    fully into focus). Shown/animated by GSAP scroll-tied logic in
-   setupVideosBgVideo() (videosConnectedTextTween), not pure CSS --
-   opacity/transform starting state below is just the "hidden, ready to
-   reveal" baseline JS animates from.
+   setupVideosBgVideo() (renderVideosChain's connectedEl block), not
+   pure CSS -- opacity/transform starting state below is just the
+   "hidden, ready to reveal" baseline JS animates from.
+   REVISED (explicit user spec -- "문장 마지막에 마침표를 없애주고, 더
+   인터랙티브하게 만들어줘"): (1) trailing period removed from the
+   sentence in home.html; (2) the old effect faded/slid the whole
+   paragraph as one static block -- replaced with a per-word reveal
+   (.vc-word spans, same structural idiom as .wr-word in the work-reel
+   tagline section elsewhere on this page) so each word blurs/scales/
+   rises into place in its own staggered sub-window of the scroll
+   range, all still driven continuously by scroll position (reversible
+   on scroll-up), not a fixed timer.
    ============================================================ */
 #videos-connected-text {
   position: fixed;
@@ -634,9 +656,13 @@ html, body {
   color: var(--fg);
   letter-spacing: 0.01em;
   text-shadow: 0 2px 22px rgba(0,0,0,0.75);
+}
+.vc-word {
+  display: inline-block;
   opacity: 0;
-  transform: translateY(26px);
-  will-change: transform, opacity;
+  filter: blur(6px);
+  transform: translateY(22px) scale(0.94);
+  will-change: opacity, transform, filter;
 }
 @media (max-width: 768px) {
   #videos-connected-text p { font-size: clamp(22px, 6vw, 34px); padding: 0 8vw; }

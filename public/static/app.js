@@ -1519,10 +1519,16 @@
     const gateEl = document.getElementById('ignite-gate');
     const gateCircle = document.getElementById('ignite-gate-circle');
     const connectedEl = document.getElementById('videos-connected-text');
-    const connectedP = connectedEl ? connectedEl.querySelector('p') : null;
+    // REVISED (explicit user spec -- "더 인터랙티브하게 만들어줘"): the old
+    // whole-paragraph fade+translateY is replaced by a per-word stagger
+    // (see .vc-word spans in home.html, same structural idiom as
+    // .wr-word in the work-reel tagline section) -- each word gets its
+    // own small scroll-progress sub-window for the blur/scale/rise
+    // reveal, computed in renderVideosChain() below.
+    const connectedWords = connectedEl ? gsap.utils.toArray(connectedEl.querySelectorAll('.vc-word')) : [];
 
     const videos = [v9, v10, v11, v12, v13, v14, v15, v16];
-    gsap.set(videos, { opacity: 0 });
+    gsap.set(videos, { opacity: 0, yPercent: 0 });
     gsap.set(v9, { opacity: 1 });
 
     // Same root-cause fix as the other two bg-video layers -- see
@@ -1629,6 +1635,31 @@
     const PHASE_V15_END = 0.925262;
     // PHASE_V16_END is implicitly 1.0 (last clip in the chain).
 
+    // ROOT-CAUSE FIX (explicit user spec -- "첫번째 이미지, 컷 투로 바로
+    // 붙는 게 아니고, 토치도 화면 아래서부터 스크롤다운에 반응하면서
+    // 올라와야지"): the v11->v12 handoff used to be a pure instant
+    // opacity swap (v12 simply appearing at opacity:1 already in its
+    // final resting position the moment p crossed PHASE_V11_END), which
+    // reads exactly as the "컷 투로 바로 붙는" hard cut the user is now
+    // asking to remove. RISE_START..RISE_END carves out a lead-in window
+    // from the TAIL of v11's own scroll range (v11 keeps playing/visible
+    // normally throughout) during which v12 becomes visible too --
+    // positioned via a continuous translateY(yPercent) so it visually
+    // enters by rising up from below the viewport, in lockstep with
+    // scroll-down, reaching its fully-in-place resting position exactly
+    // at RISE_END (== GATE_PROGRESS below, the point the ignite-gate
+    // arms). This is NOT an opacity dissolve -- v12 is always fully
+    // opaque (opacity:1) whenever visible at all; it simply occludes a
+    // growing slice of the frame as it rises, so wherever it hasn't yet
+    // covered, v11's own already-opaque pixels show through underneath
+    // with zero alpha-blending between the two clips. Scrolling back up
+    // reverses the rise smoothly (yPercent is a pure function of p), same
+    // "interactive/reversible" contract as every other scroll-tied
+    // effect on this page.
+    const RISE_WIDTH = 0.03;
+    const RISE_END = PHASE_V11_END; // numerically == GATE_PROGRESS, defined further below
+    const RISE_START = Math.max(PHASE_V10_END, RISE_END - RISE_WIDTH);
+
     function renderVideosChain(p) {
       const local9 = PHASE_V9_END > 0 ? p / PHASE_V9_END : 1;
       const local10 = (p - PHASE_V9_END) / (PHASE_V10_END - PHASE_V9_END);
@@ -1667,18 +1698,37 @@
         o16 = 1;
       }
 
+      // Rise-up entrance window (see RISE_START/RISE_END long comment
+      // above): while p sits inside [RISE_START, RISE_END), v12 turns
+      // visible EARLY (ahead of its normal PHASE_V11_END cut point) and
+      // is stacked on TOP of v11 (v11 stays opacity:1 underneath,
+      // unchanged -- z-order alone, no blending) while a translateY
+      // pushes v12 down below the frame at the window's start and
+      // eases it up to 0 (fully in place) by the window's end. Once p
+      // reaches RISE_END the normal hard-cut logic above has already
+      // taken over (o11=0/o12=1), so this only ever touches the brief
+      // lead-in, never the steady-state hold.
+      let riseYPercent = 0;
+      if (p >= RISE_START && p < RISE_END && RISE_END > RISE_START) {
+        const riseP = (p - RISE_START) / (RISE_END - RISE_START);
+        riseYPercent = (1 - riseP) * 100; // 100% (fully below frame) -> 0% (in place)
+        o12 = 1; // pulled forward so it's visible during the rise, stacked above v11
+      } else if (p >= RISE_END) {
+        riseYPercent = 0; // fully settled for the remainder of v12's normal hold
+      }
+
       gsap.set(v9, { opacity: o9 });
       gsap.set(v10, { opacity: o10 });
-      gsap.set(v11, { opacity: o11 });
-      gsap.set(v12, { opacity: o12 });
+      gsap.set(v11, { opacity: o11, zIndex: 0 });
+      gsap.set(v12, { opacity: o12, yPercent: riseYPercent, zIndex: 1 });
       gsap.set(v13, { opacity: o13 });
       gsap.set(v14, { opacity: o14 });
       gsap.set(v15, { opacity: o15 });
       gsap.set(v16, { opacity: o16 });
 
       // NEW (this turn -- "두번째 첨부이미지가 나오는 시점에서 ...
-      // 인터랙티브하게 나오게끔"): "You are now connected with my work."
-      // fades/slides in continuously as the user scrubs through v13's own
+      // 인터랙티브하게 나오게끔"): "You are now connected with my work"
+      // reveals continuously as the user scrubs through v13's own
       // "photographer reveal" window -- frame-accurate ffmpeg/PIL mean-
       // gray forensics on videos-bg-13.mp4 found the torch-only shot flat
       // at brightness~16 for t=0-1s, then rising as the camera pulls back
@@ -1689,10 +1739,19 @@
       // directly scroll-position-driven (scrubs forward AND reverses
       // cleanly on scroll-up, same "interactive" contract as every other
       // scroll-tied effect on this page) rather than a static one-shot
-      // reveal. Fades in across t=1.5s->2.5s (local13 0.25->0.4167,
-      // matching the photographer becoming visible through fully in
-      // focus), holds through the rest of the reveal shot, then fades
-      // out again just before v13 hands off to v14.
+      // reveal.
+      // REVISED (explicit user spec -- "문장 마지막에 마침표를 없애주고,
+      // 더 인터랙티브하게 만들어줘"): trailing period removed from the
+      // sentence in home.html (now "...with my work", no "."); the old
+      // whole-paragraph fade+translateY(26px) is replaced by a per-word
+      // stagger over .vc-word spans (same idiom as .wr-word in the
+      // work-reel tagline section) -- each of the 7 words gets its own
+      // small overlapping sub-window inside the overall in/out envelope
+      // below, animating opacity + blur(px->0) + translateY + scale in
+      // lockstep with scroll, so the sentence visibly assembles itself
+      // word-by-word as the user scrolls (and un-assembles word-by-word
+      // in reverse on scroll-up) instead of appearing/leaving as one
+      // static block.
       if (connectedEl) {
         const CONNECTED_IN_START = 0.25;
         const CONNECTED_IN_END = 0.4167;
@@ -1710,7 +1769,29 @@
         }
         co = Math.max(0, Math.min(1, co));
         gsap.set(connectedEl, { opacity: co > 0.01 ? 1 : 0 });
-        if (connectedP) gsap.set(connectedP, { opacity: co, y: (1 - co) * 26 });
+
+        if (connectedWords.length) {
+          const WORD_COUNT = connectedWords.length;
+          // Each word's own reveal ramps across a BAND-wide slice of the
+          // overall [0,1] "co" envelope, staggered left-to-right (word 0
+          // starts revealing first, the last word finishes last), with
+          // adjacent bands overlapping by half so the sentence assembles
+          // smoothly rather than one word waiting for the previous one
+          // to fully finish. On the way OUT (co falling from 1 back to
+          // 0) the exact same per-word bands run in reverse, so the
+          // sentence disassembles word-by-word in the mirror order.
+          const BAND = 1 / (WORD_COUNT * 0.6);
+          connectedWords.forEach((word, i) => {
+            const bandStart = (i / WORD_COUNT) * (1 - BAND) * 0.6;
+            const wp = Math.max(0, Math.min(1, (co - bandStart) / BAND));
+            gsap.set(word, {
+              opacity: wp,
+              y: (1 - wp) * 22,
+              scale: 0.94 + wp * 0.06,
+              filter: `blur(${(1 - wp) * 6}px)`,
+            });
+          });
+        }
       }
     }
 
