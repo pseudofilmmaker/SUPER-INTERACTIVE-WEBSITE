@@ -121,10 +121,16 @@
 - 기존에는 문단 전체가 하나의 블록으로 페이드인/아웃(opacity + translateY 26px)했으나, 이를 단어별 스태거 리빌로 교체 — `work-reel` 섹션의 `.wr-word` 패턴과 동일한 구조(`.vc-word` span 7개)를 적용
 - 각 단어는 `co`(전체 in/out envelope, 0..1) 위에서 자신만의 겹치는 서브구간(band)을 가지며, blur(6px→0) + translateY(22px→0) + scale(0.94→1) + opacity(0→1)를 동시에 애니메이션 — 왼쪽부터 순서대로 하나씩 선명해지며 문장이 "조립"되고, exit 구간에서는 동일한 순서로 다시 "해체"됨. 여전히 스크롤 진행률의 순수 함수라 스크롤을 위아래로 오가면 실시간으로 반응/역재생됨
 
+**3) "This is where stories catch fire" 인터랙티브 리빌** — `videos-bg-14.mp4`(모닥불이 격렬하게 타오르는 장면, 사용자의 세번째 첨부 스크린샷과 일치)의 로컬 진행률(`local14`)에 직접 연동. 사용자 요청("이때부터 Have a story worth filming? Let's make it real 를 인터랙티브 요소를 많이 가미해서 넣으려고해. 근데 이 문구말고, 포트폴리오와 포트폴리오 분위기에 맞는 다른 문구가 있을까?")에 따라, 원래 제안된 문구는 광고/CTA 톤이라 이 사이트의 조용한 1인칭 내레이션 톤("You are now connected with my work")과 맞지 않는다고 판단해 5개의 대안 문구를 제시했고, 그중 실제 화면의 불(fire)을 직접적인 은유로 활용할 수 있는 **"This is where stories catch fire"**를 추천 — 문법/자연스러움을 재확인("이게 문법에 맞고, 북미에서 쓰는 말이야?")한 뒤 최종 채택:
+- 정밀 프레임 포렌식(ffmpeg으로 `videos-bg-14.mp4`의 144프레임 중 12프레임 간격 샘플링 + 그리드 비교)으로, 사진작가→모닥불 전환 시 발생하는 모션 블러 구간(`local14` 0~약 0.17)이 끝나고 안정적으로 타오르는 고립된 모닥불 장면(숲/밤하늘 요소 없음, 사용자 스크린샷과 정확히 일치)이 유지되는 구간(`local14` 약 0.22~0.90, `videos-bg-15.mp4`에서 숲/은하수가 드러나기 전)을 확인
+- `local14` 0.22→0.40 구간에서 단어별로 순차 등장(assemble), 0.78→0.92 구간에서 역순으로 사라짐(disassemble) — "connected" 텍스트와 동일한 `.vc-word`/`.wr-word` 구조 원칙을 따르는 신규 `.cf-word` span 6개(`#videos-catchfire-text`)
+- **"더 인터랙티브하게" 추가 요소**: 마지막 단어 "fire"가 완전히 조립되면(스크롤 진행률 기반 boolean, 타이머 아님) `.cf-word--ember` + `is-ablaze` 클래스가 토글되어 흰색 텍스트가 불꽃색(주황)으로 은은하게 발광(`text-shadow` pulse `@keyframes`)하기 시작 — 실제 화면 속 불과 시각적으로 공명하는 디테일. 스크롤을 다시 올려 "fire" 단어가 다시 흐려지면 즉시 클래스가 제거되어 발광도 꺼짐(완전히 가역적)
+- 역시 고정 타이머가 아니라 스크롤 진행률(`local14`)의 순수 연속 함수이므로 스크롤을 위아래로 오가면 실시간으로 반응/역재생됨 (Playwright로 순방향/역방향 각 17개 지점 샘플링해 완전 일치 확인, 단어별 opacity가 IN 구간에서 단조 비감소함도 확인, 기존 게이트/rise-up/connected-text 로직과의 상호 간섭 없음도 별도 확인)
+
 **코드 변경**:
-- `src/pages/home.html`: `#ignite-gate`(원+링+CTA 텍스트) 및 `#videos-connected-text`(단어별 `.vc-word` span 7개, 마침표 없음) 오버레이 마크업 추가 (`#videos-bg-video-layer` 바로 뒤, `<main>` 앞)
-- `public/static/style.css`: `#ignite-gate`/`.ignite-gate-ring`/`.ignite-gate-orb`/`#ignite-gate-cta`(+ `igniteGateFlicker` keyframes), `#videos-connected-text`/`.vc-word` 스타일, `.videos-bg-video-el`에 `transform` will-change 추가
-- `public/static/app.js`: `setupVideosBgVideo()` 내부에 게이트 상태 머신(`armGate`/`igniteTorch`/`handleVideosProgress`, `idle→armed→igniting→released` 상태), `RISE_START`/`RISE_END` 기반 v12 상승 진입 transform 로직, `renderVideosChain()`에 "connected" 텍스트 단어별 스태거 리빌 계산 로직 추가. 기존 하드컷 렌더링 로직(`seek()`, opacity 바이너리 전환)은 전혀 변경하지 않음 — 게이트/상승 진입은 어디까지나 v11 꼬리~v12 진입 시점에만 개입하는 오버레이 상태 머신
+- `src/pages/home.html`: `#ignite-gate`(원+링+CTA 텍스트), `#videos-connected-text`(단어별 `.vc-word` span 7개, 마침표 없음), `#videos-catchfire-text`(단어별 `.cf-word` span 6개, 마지막 단어에 `.cf-word--ember` 클래스) 오버레이 마크업 추가 (`#videos-bg-video-layer` 바로 뒤, `<main>` 앞)
+- `public/static/style.css`: `#ignite-gate`/`.ignite-gate-ring`/`.ignite-gate-orb`/`#ignite-gate-cta`(+ `igniteGateFlicker` keyframes), `#videos-connected-text`/`.vc-word` 스타일, `#videos-catchfire-text`/`.cf-word`/`.cf-word--ember`(+ `catchfireEmberPulse` keyframes) 스타일, `.videos-bg-video-el`에 `transform` will-change 추가
+- `public/static/app.js`: `setupVideosBgVideo()` 내부에 게이트 상태 머신(`armGate`/`igniteTorch`/`handleVideosProgress`, `idle→armed→igniting→released` 상태), `RISE_START`/`RISE_END` 기반 v12 상승 진입 transform 로직, `renderVideosChain()`에 "connected" 텍스트 및 "catch fire" 텍스트 단어별 스태거 리빌 계산 로직(+ ember 발광 클래스 토글) 추가. 기존 하드컷 렌더링 로직(`seek()`, opacity 바이너리 전환)은 전혀 변경하지 않음 — 게이트/상승 진입/텍스트 리빌은 어디까지나 오버레이 상태로만 개입, 비디오 체인 자체의 하드컷 원칙은 그대로 유지
 
 ## 다음 단계 (Not Yet Implemented)
 - 실제 Cloudflare Pages 프로덕션 배포

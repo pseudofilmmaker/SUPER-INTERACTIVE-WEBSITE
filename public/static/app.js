@@ -1527,6 +1527,15 @@
     // reveal, computed in renderVideosChain() below.
     const connectedWords = connectedEl ? gsap.utils.toArray(connectedEl.querySelectorAll('.vc-word')) : [];
 
+    // NEW (this turn -- "이때부터 ... 인터랙티브 요소를 많이 가미해서 넣으려고해
+    // ... 포트폴리오 분위기에 맞는 다른 문구"): "This is where stories catch
+    // fire" reveals over videos-bg-14.mp4's own stable full-blaze campfire
+    // window (see the long CSS comment above #videos-catchfire-text for the
+    // frame-forensics that pinpointed this window and the phrase choice).
+    const catchfireEl = document.getElementById('videos-catchfire-text');
+    const catchfireWords = catchfireEl ? gsap.utils.toArray(catchfireEl.querySelectorAll('.cf-word')) : [];
+    const catchfireEmberWord = catchfireEl ? catchfireEl.querySelector('.cf-word--ember') : null;
+
     const videos = [v9, v10, v11, v12, v13, v14, v15, v16];
     gsap.set(videos, { opacity: 0, yPercent: 0 });
     gsap.set(v9, { opacity: 1 });
@@ -1791,6 +1800,67 @@
               filter: `blur(${(1 - wp) * 6}px)`,
             });
           });
+        }
+      }
+
+      // NEW (this turn -- campfire scene interactive text). Reveals
+      // continuously as the user scrubs through v14's own stable
+      // full-blaze campfire window -- keyed to local14 (v14's own 0..1
+      // local progress, already computed above), same "scroll-position-
+      // driven, never a fixed timer" contract as the connectedEl block
+      // above. IN window starts at local14 0.22 (just after the
+      // photographer->campfire motion-blur transition settles, per the
+      // fine-grained frame forensics in the CSS comment) and OUT window
+      // ends at local14 0.92 (just before v15's own campfire->forest/
+      // starry-sky reveal begins), so the text is only ever visible
+      // while the screen shows the isolated campfire matching the
+      // user's reference screenshot.
+      if (catchfireEl) {
+        const CATCHFIRE_IN_START = 0.22;
+        const CATCHFIRE_IN_END = 0.40;
+        const CATCHFIRE_OUT_START = 0.78;
+        const CATCHFIRE_OUT_END = 0.92;
+        let cf = 0;
+        if (local14 >= CATCHFIRE_IN_START && local14 <= CATCHFIRE_OUT_END) {
+          if (local14 < CATCHFIRE_IN_END) {
+            cf = (local14 - CATCHFIRE_IN_START) / (CATCHFIRE_IN_END - CATCHFIRE_IN_START);
+          } else if (local14 < CATCHFIRE_OUT_START) {
+            cf = 1;
+          } else {
+            cf = 1 - (local14 - CATCHFIRE_OUT_START) / (CATCHFIRE_OUT_END - CATCHFIRE_OUT_START);
+          }
+        }
+        cf = Math.max(0, Math.min(1, cf));
+        gsap.set(catchfireEl, { opacity: cf > 0.01 ? 1 : 0 });
+
+        if (catchfireWords.length) {
+          const CF_WORD_COUNT = catchfireWords.length;
+          const CF_BAND = 1 / (CF_WORD_COUNT * 0.6);
+          catchfireWords.forEach((word, i) => {
+            const bandStart = (i / CF_WORD_COUNT) * (1 - CF_BAND) * 0.6;
+            const wp = Math.max(0, Math.min(1, (cf - bandStart) / CF_BAND));
+            gsap.set(word, {
+              opacity: wp,
+              y: (1 - wp) * 22,
+              scale: 0.94 + wp * 0.06,
+              filter: `blur(${(1 - wp) * 6}px)`,
+            });
+          });
+        }
+
+        // "더 인터랙티브하게" embellishment: once the final word ("fire")
+        // has fully assembled (wp==1, i.e. cf has reached the end of its
+        // own band), toggle a CSS class that warms it from white to a
+        // flame-orange with a gently pulsing glow -- purely a scroll-
+        // driven boolean derived from cf, not a separate timer, so it
+        // still reverses cleanly on scroll-up (class removed the instant
+        // cf drops back below full for that word's band).
+        if (catchfireEmberWord) {
+          const emberIndex = catchfireWords.indexOf(catchfireEmberWord);
+          const emberBandStart = emberIndex >= 0 ? (emberIndex / catchfireWords.length) * (1 - (1 / (catchfireWords.length * 0.6))) * 0.6 : 0;
+          const emberBand = 1 / (catchfireWords.length * 0.6);
+          const emberWp = Math.max(0, Math.min(1, (cf - emberBandStart) / emberBand));
+          catchfireEmberWord.classList.toggle('is-ablaze', emberWp >= 1);
         }
       }
     }

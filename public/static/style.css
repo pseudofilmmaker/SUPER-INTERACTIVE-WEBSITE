@@ -669,6 +669,80 @@ html, body {
 }
 
 /* ============================================================
+   VIDEOS-CATCHFIRE TEXT — "이때부터 Have a story worth filming? Let's
+   make it real 를 인터랙티브 요소를 많이 가미해서 넣으려고해 ... 포트폴리오
+   분위기에 맞는 다른 문구". User's reference screenshot (isolated,
+   full-blaze campfire with sparks flying, black background, no
+   forest/night-sky elements yet) was pinpointed via fine-grained
+   ffmpeg frame sampling (every 12th of 144 frames) of
+   videos-bg-14.mp4 to its STABLE mid-clip window -- roughly local14
+   0.25-0.90 -- after the opening photographer-to-campfire motion-
+   blur transition (local14 0-~0.17) settles and before local15's
+   own campfire-to-forest/starry-sky reveal begins. Phrase "This is
+   where stories catch fire" chosen (over the original suggested
+   CTA-style line) to match this site's quieter, cinematic first-
+   person narration tone (same register as "You are now connected
+   with my work") while doubling as a literal/figurative pun on the
+   actual fire visible on screen; confirmed grammatically correct and
+   naturally idiomatic in North American English before implementing.
+   Shown/animated by GSAP scroll-tied logic in setupVideosBgVideo()
+   (renderVideosChain's catchfireEl block) -- opacity/transform
+   starting state below is just the "hidden, ready to reveal"
+   baseline JS animates from. Per-word stagger (.cf-word spans) uses
+   the same structural idiom as .vc-word/.wr-word elsewhere on this
+   page, all driven continuously by scroll position (reversible on
+   scroll-up), never a fixed timer. The final word "fire" gets an
+   extra ember-glow color/flicker treatment (.cf-word--ember) as the
+   "더 인터랙티브하게" (more interactive) embellishment the user asked
+   for -- it doesn't just fade/rise into place like the other words,
+   it also warms from white to a flame-orange with a soft glowing
+   text-shadow that gently pulses once fully revealed.
+   ============================================================ */
+#videos-catchfire-text {
+  position: fixed;
+  inset: 0;
+  z-index: 16;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0;
+  will-change: opacity;
+}
+#videos-catchfire-text p {
+  margin: 0;
+  text-align: center;
+  font-family: 'Fraunces', var(--font-serif);
+  font-weight: 500;
+  font-variation-settings: 'wght' 480, 'opsz' 60, 'SOFT' 0;
+  font-size: clamp(28px, 4.4vw, 58px);
+  line-height: 1.28;
+  color: var(--fg);
+  letter-spacing: 0.01em;
+  text-shadow: 0 2px 22px rgba(0,0,0,0.75);
+}
+.cf-word {
+  display: inline-block;
+  opacity: 0;
+  filter: blur(6px);
+  transform: translateY(22px) scale(0.94);
+  will-change: opacity, transform, filter;
+}
+.cf-word--ember {
+  will-change: opacity, transform, filter, color, text-shadow;
+}
+.cf-word--ember.is-ablaze {
+  animation: catchfireEmberPulse 2.2s ease-in-out infinite;
+}
+@keyframes catchfireEmberPulse {
+  0%, 100% { text-shadow: 0 2px 22px rgba(0,0,0,0.75), 0 0 18px rgba(255,138,61,0.55); }
+  50% { text-shadow: 0 2px 22px rgba(0,0,0,0.75), 0 0 30px rgba(255,138,61,0.9); }
+}
+@media (max-width: 768px) {
+  #videos-catchfire-text p { font-size: clamp(22px, 6vw, 34px); padding: 0 8vw; }
+}
+
+/* ============================================================
    SECTION 1 — Intro + Cube
    The section's own background is fully transparent -- NO extra
    texture/scrim layers of its own -- so the #fixed-bg-video layer
