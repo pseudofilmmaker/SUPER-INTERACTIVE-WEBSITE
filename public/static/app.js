@@ -1688,7 +1688,26 @@
       const local9 = PHASE_V9_END > 0 ? p / PHASE_V9_END : 1;
       const local10 = (p - PHASE_V9_END) / (PHASE_V10_END - PHASE_V9_END);
       const local11 = (p - PHASE_V10_END) / (PHASE_V11_END - PHASE_V10_END);
-      const local12 = (p - PHASE_V11_END) / (PHASE_V12_END - PHASE_V11_END);
+      // ROOT-CAUSE FIX (explicit user spec, this turn -- "하단좌측쪽에
+      // 불씨가 있어", i.e. a stray ember/spark visible on the gate/hold
+      // screen): frame-accurate ffmpeg/PIL forensics on the raw source
+      // file videos-bg-12.mp4 found a single-frame lens/sensor artifact (a
+      // tiny diagonal red-pink streak, bottom-left of frame) baked into
+      // the footage at EXACTLY t=0.0 -- confirmed gone by t=0.05 and never
+      // reappearing through t=1.45s. v12's local progress reaches exactly
+      // 0 at three points: (a) the v11->v12 hard-cut boundary during
+      // normal scroll, (b) the gate's held/armed frame (frozen at
+      // GATE_PROGRESS == local12 0), and (c) the very first tick of
+      // igniteTorch()'s ignition tween (proxy.p starts at GATE_PROGRESS).
+      // Rather than special-case each caller, floor local12 itself so
+      // v12.currentTime never lands on the defective frame anywhere in
+      // the chain -- the torch is otherwise visually identical/still
+      // fully unlit at this tiny offset (per the earlier frame-forensics
+      // establishing v12 stays a flat unlit hold through ~t=1.3s), so
+      // this is a pure spark-avoidance floor with no visible side effect.
+      const GATE_HOLD_LOCAL12 = 0.1 / CLIP_DURATION; // v12 currentTime floor = 0.1s
+      const local12Raw = (p - PHASE_V11_END) / (PHASE_V12_END - PHASE_V11_END);
+      const local12 = Math.max(local12Raw, GATE_HOLD_LOCAL12);
       const local13 = (p - PHASE_V12_END) / (PHASE_V13_END - PHASE_V12_END);
       const local14 = (p - PHASE_V13_END) / (PHASE_V14_END - PHASE_V13_END);
       const local15 = (p - PHASE_V14_END) / (PHASE_V15_END - PHASE_V14_END);
@@ -2000,7 +2019,11 @@
        normal scroll-scrub resumes for the remainder of the chain.
        ========================================================== */
     const V12_PHASE_WIDTH = PHASE_V12_END - PHASE_V11_END;
-    const GATE_PROGRESS = PHASE_V11_END; // t=0 of v12 -- fully unlit hold frame
+    const GATE_PROGRESS = PHASE_V11_END; // scroll-trigger threshold that arms the gate
+    // NOTE: the v12 spark/ember artifact fix (see renderVideosChain()'s
+    // GATE_HOLD_LOCAL12 floor above) already keeps v12 off its defective
+    // t=0 frame everywhere in the chain, including this gate's own
+    // held/armed screen -- no extra handling needed here.
     const LIT_PROGRESS = PHASE_V11_END + V12_PHASE_WIDTH * (2.35 / CLIP_DURATION); // t=2.35s -- steady lit burn
     const GATE_RESET_MARGIN = 0.004;
     let gateState = 'idle'; // idle | armed | igniting | released
@@ -2079,7 +2102,29 @@
         if (gateState === 'released' && p < GATE_PROGRESS - GATE_RESET_MARGIN) {
           // Scrolled back up above the gate zone -- reset so scrolling
           // back down re-triggers the click-to-ignite gate again.
+          // ROOT-CAUSE FIX (explicit user spec, this turn -- "스크롤
+          // 업으로 되감기를 해도, 스크롤 다운의 역순으로 나왔으면해"):
+          // this reset only ever flipped the internal `gateState` JS
+          // variable back to 'idle' -- it never cleaned up `gateEl`'s
+          // OWN CSS class/opacity, which `igniteTorch()` had left as
+          // `is-igniting` + opacity:0 (correct for the "released, gate
+          // long gone" state going forward, but wrong for reverse
+          // scroll: the gate's DOM/visual state must unwind back to
+          // its pre-arm appearance -- invisible, no leftover ignition
+          // class -- exactly as it looked before the user ever
+          // scrolled down into this zone, mirroring "idle" both in
+          // the JS state AND the DOM). Without this, gateEl silently
+          // kept displaying its post-ignition classes/opacity through
+          // the entire reverse scroll until armGate() incidentally
+          // cleaned it up the next time the user scrolled back down
+          // past GATE_PROGRESS -- confirmed via a full forward/reverse
+          // Playwright progress sweep (gateEl.className stuck at
+          // "is-igniting" for the whole reverse pass otherwise).
           gateState = 'idle';
+          if (gateEl) {
+            gateEl.classList.remove('is-igniting', 'is-armed');
+            gsap.set(gateEl, { opacity: 0 });
+          }
         }
       }
       renderVideosChain(p);

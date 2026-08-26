@@ -154,6 +154,19 @@
   - `public/static/app.js`: `footerEl`/`footerLines` 엘리먼트 참조 추가, `renderVideosChain()`에 `local16` 기반 footer 라인 스태거 렌더 블록 추가(OUT 구간 없음), `mainST`의 `onUpdate`/`onRefresh`를 `self.isActive || self.progress >= 1`로 수정하고 `onLeave`의 강제 `opacity:0` 제거(마지막 프레임 홀드 버그 근본 수정)
 - **검증**: Playwright로 순방향/역방향 각 13개 지점 스윕(진행률 0.9→1.0) — 마지막 프레임 홀드(진행률=1.0에서 `layerOpacity`="1", `v16CurrentTime`=6, 더 이상 블랙 화면 아님), footer 라인별 스태거 타이밍, 완전한 가역성(정방향/역방향 완전히 대칭), 기존 `junehongEl`/`catchfireEl`과의 상호 간섭 없음, 콘솔 에러 없음을 모두 확인. 스크린샷 3장(진행률 0.96/0.985/1.0)으로 footer 미노출→부분 리빌(라인별 순차)→완전 리빌+마지막 프레임 홀드를 시각적으로도 재확인.
 
+## 헤더 페더링 + 점화 게이트 불씨 제거 + 역스크롤 대칭성 수정 (완료)
+사용자가 스크린샷 2장과 함께 지적한 3가지 문제를 진단·수정:
+
+1. **상단 고정 헤더에 feather(페더링)가 없어 어색함**: `#site-header`의 기존 그라디언트가 헤더 자체 높이(76px) 안에 압축되어 있어, 밝고 대비가 강한 별이 총총한 은하수 배경 위에서는 부드러운 페더링이 아니라 뚝 끊기는 경계선처럼 보임(understand_images 분석 + 직접 픽셀 샘플링으로 확인). **수정**: 헤더 바로 아래에 `#header-feather`라는 별도의 넓은 페이드 레이어(18vh, 최소 130px)를 새로 추가 — 헤더 자체는 그대로 불투명 네비바로 유지하면서, 이 레이어가 아래로 자연스럽게 사라지는 그라디언트를 제공.
+2. **점화 게이트(LIGHT THE TORCH) 화면 좌측 하단의 불씨**: ffmpeg/PIL로 원본 소스 영상 `videos-bg-12.mp4`를 프레임 단위로 정밀 분석한 결과, 정확히 t=0.0 지점에만 존재하는 렌즈/센서 결함(빨간/분홍 대각선 스트릭)을 발견 — t=0.05부터 t=1.45까지는 완전히 사라짐. 게이트가 정확히 `local12=0`(=t=0.0) 프레임에서 화면을 고정(hold)하고 있었기 때문에 이 결함 프레임이 그대로 노출된 것. **수정**: `renderVideosChain()`에서 `local12`에 최소값(t=0.1s 상당)을 두어, 체인 전체(일반 스크롤·게이트 고정·점화 트윈 시작 순간 포함)에서 절대 t=0.0 프레임이 렌더링되지 않도록 함 — 토치의 시각적 모습은 t=0.1s에서도 동일(완전히 꺼진 상태 유지)하므로 부작용 없음.
+3. **스크롤 업(되감기) 시 스크롤 다운의 역순으로 나오지 않는 문제**: Playwright로 정방향/역방향 진행률 스윕 테스트를 실행해 근본 원인을 확정 — `igniteTorch()`가 추가한 `is-igniting` CSS 클래스가 `gateState`가 `'released'`에서 `'idle'`로 리셋될 때(스크롤을 게이트 지점 위로 다시 올렸을 때) 전혀 제거되지 않아, 사용자가 위로 스크롤해도 게이트 요소가 계속 점화 후 모습(투명도 0, `is-igniting` 클래스)으로 DOM에 남아있었음(다음번에 다시 아래로 스크롤해 `armGate()`가 호출될 때만 우연히 정리됨). **수정**: `handleVideosProgress()`의 `'released'→'idle'` 리셋 분기에서 `gateEl`의 클래스(`is-igniting`, `is-armed`)와 투명도(0)를 명시적으로 초기화하도록 추가 — 이제 스크롤 업 시 게이트가 정확히 "한 번도 도달한 적 없는" 원래 모습(완전히 보이지 않음)으로 즉시 되돌아감.
+
+- **코드 변경**:
+  - `src/pages/home.html`: `#site-header` 바로 뒤에 `<div id="header-feather" aria-hidden="true"></div>` 추가
+  - `public/static/style.css`: `#header-feather` 규칙(고정 위치, `top:76px`, 18vh 그라디언트, 모바일 미디어쿼리 포함) 신규 추가
+  - `public/static/app.js`: `renderVideosChain()` 내부에 `GATE_HOLD_LOCAL12`(=0.1s 상당) 플로어를 도입해 `local12`가 절대 결함 프레임(t=0)에 닿지 않도록 수정; `handleVideosProgress()`의 게이트 리셋 분기에 `gateEl.classList.remove('is-igniting','is-armed')` + `gsap.set(gateEl,{opacity:0})` 추가
+- **검증**: Playwright로 실제 마우스 휠 스크롤을 시뮬레이션해 게이트 진입(armed) → 클릭 점화 → 역스크롤까지 전 과정을 샘플링. 결과: armed 상태에서 `v12Time`이 기존 `0.000`(불씨 노출)에서 `0.1`(불씨 없음)로 확인; 점화 후 역스크롤 완료 시점에 `gateClasses`가 기존 `"is-igniting"`(고착)에서 `""`(완전 초기화), `gateOpacity`가 `"0"`으로 정상 확인. 헤더 페더링은 은하수 파이널 장면(진행률 0.95)에서 스크린샷으로 재확인 — 헤더 하단이 부드럽게 사라지는 것을 시각적으로 확인.
+
 ## 다음 단계 (Not Yet Implemented)
 - 실제 Cloudflare Pages 프로덕션 배포
 - `photoCards`, `landscapeVideos`, `reelVideos`, `videosIntroThumb`, `splitPhoto` 등 media-config.js의 빈 슬롯에 실제 콘텐츠 채우기 (현재는 placeholder만 표시됨 — 원본 사이트도 동일 상태)
