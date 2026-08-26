@@ -56,6 +56,18 @@ html, body {
 }
 
 /* ---------------- Fixed site header (JUNE HONG / HOME·PHOTOS·VIDEOS·ABOUT ME) ---------------- */
+/* ROOT-CAUSE FIX (explicit user spec, this turn -- first pass added a
+   dedicated #header-feather gradient layer beneath the header, but over
+   bright/high-contrast content (fire, starry sky) its own fade-out edge
+   itself read as an awkward visible band/seam: "차라리 그냥 투명하게
+   처리하는 게 나을 거 같은데?" i.e. "wouldn't it be better to just make it
+   fully transparent instead?"). FIX: removed both #site-header's own
+   background gradient AND the separate #header-feather layer entirely --
+   the header is now fully transparent, with legibility over any
+   background (bright or dark) provided purely by a text-shadow on the
+   brand/nav labels (same technique already used elsewhere on this page,
+   e.g. #ignite-gate-cta), so there is no overlay band of any kind to
+   look awkward against. */
 #site-header {
   position: fixed;
   top: 0; left: 0;
@@ -66,8 +78,7 @@ html, body {
   justify-content: space-between;
   padding: 0 32px;
   z-index: 300;
-  background: linear-gradient(to bottom, rgba(5,5,6,0.85) 0%, rgba(5,5,6,0.55) 60%, transparent 100%);
-  backdrop-filter: blur(6px);
+  background: transparent;
   pointer-events: none;
 }
 #site-header .brand,
@@ -83,6 +94,7 @@ html, body {
   color: var(--fg);
   text-decoration: none;
   text-transform: uppercase;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.85), 0 0 16px rgba(0,0,0,0.6);
 }
 #site-header .main-nav {
   display: flex;
@@ -98,6 +110,7 @@ html, body {
   position: relative;
   padding-bottom: 4px;
   transition: color 0.3s ease;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.85), 0 0 16px rgba(0,0,0,0.6);
 }
 #site-header .main-nav a::after {
   content: '';
@@ -483,7 +496,7 @@ html, body {
   height: 100%;
   object-fit: cover;
   opacity: 0;
-  will-change: opacity;
+  will-change: opacity, transform;
 }
 #videos-bg-video-9 { opacity: 1; }
 .videos-bg-video-scrim {
@@ -492,6 +505,409 @@ html, body {
   background:
     radial-gradient(ellipse at 50% 45%, rgba(5,3,2,0) 0%, rgba(5,3,2,0.32) 82%),
     linear-gradient(180deg, rgba(5,3,2,0.22) 0%, transparent 22%, transparent 78%, rgba(5,3,2,0.3) 100%);
+}
+
+/* ============================================================
+   IGNITE GATE — "횃불에 불이 붙기 전에 재생을 스크롤다운에도 반응없이,
+   고정된 화면에서 첨부한 이미지의 원처럼 점멸하는 원 옆에 불을
+   붙여주세요를 영어로 점멸하게끔". Reference image (torch, unlit,
+   white glow orb + thin outer ring centered on the torch head) was
+   analyzed via understand_images: circle center sits at 49.6%/30.6%
+   of that 1024x576 reference frame, inner-circle radius ~32px (6.25%
+   of frame width), outer ring radius ~60px (11.7% of frame width).
+   The ACTUAL on-screen torch head in videos-bg-12.mp4 (1920x1080,
+   object-fit:cover) was independently pinpointed via pixel-brightness
+   blob detection (PIL + scipy.ndimage, threshold>30, largest connected
+   component, top 22% of its bbox = the head): centered at x=49.74%,
+   y=18.94% of the frame -- stable across t=0..1s (the fully-unlit
+   pre-ignition hold window). Positioned here at that same x/y via
+   left/top percentages of the fixed full-viewport video layer so it
+   visually sits right on the torch head regardless of viewport size
+   (object-fit:cover keeps the horizontal center fixed; vertical crop
+   only trims top/bottom edges on unusual aspect ratios, which this
+   upper-third placement comfortably tolerates).
+   Shown/hidden entirely by JS (setupIgniteGate() in app.js) -- opacity
+   here starts at 0 so nothing is visible until the gate is actually
+   armed (i.e. scroll has reached video-12's phase for the first time).
+   ============================================================ */
+/* ROOT-CAUSE FIX (explicit user spec -- "첫번째 이미지, 컷 투로 바로 붙는
+   게 아니고, 토치도 화면 아래서부터 스크롤다운에 반응하면서 올라와야지"):
+   v11->v12's handoff used to be a pure opacity hard-cut (v12 simply
+   appears at opacity:1 in its resting position the instant v11 ends),
+   which reads as exactly the "컷 투로 바로 붙는" instant-cut the user is
+   now asking to remove. The torch (v12) itself must physically enter
+   the frame by rising up from below, continuously tied to scroll-down
+   (NOT a timer, NOT a one-shot animation -- reversible on scroll-up
+   like every other scroll-tied effect on this page). #ignite-gate's own
+   opacity/lock/CTA sequence is UNCHANGED (still a true opacity fade for
+   the flickering-circle UI chrome, not the video itself) -- see
+   RISE_START/RISE_END + the videos-bg-video-12 transform block in
+   app.js's renderVideosChain() for the new translateY logic. */
+#ignite-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 15;
+  pointer-events: none;
+  opacity: 0;
+  will-change: opacity;
+}
+#ignite-gate-circle {
+  position: absolute;
+  left: 49.74%;
+  top: 18.94%;
+  transform: translate(-50%, -50%);
+  width: 120px;
+  height: 120px;
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#ignite-gate.is-armed #ignite-gate-circle {
+  pointer-events: auto;
+}
+.ignite-gate-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.75);
+  animation: igniteGateFlicker 1.6s ease-in-out infinite;
+}
+.ignite-gate-orb {
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 42% 38%, #ffffff 0%, #f2ede2 38%, #cfc6b3 70%, rgba(207,198,179,0) 100%);
+  box-shadow: 0 0 24px 6px rgba(255, 255, 255, 0.55);
+  animation: igniteGateFlicker 1.6s ease-in-out infinite;
+  animation-delay: 0.15s;
+}
+#ignite-gate-circle:hover .ignite-gate-orb,
+#ignite-gate-circle:focus-visible .ignite-gate-orb {
+  box-shadow: 0 0 32px 10px rgba(255, 255, 255, 0.75);
+}
+@keyframes igniteGateFlicker {
+  0%, 100% { opacity: 1; }
+  38% { opacity: 0.45; }
+  50% { opacity: 0.9; }
+  62% { opacity: 0.35; }
+  78% { opacity: 1; }
+}
+#ignite-gate-cta {
+  position: absolute;
+  left: 49.74%;
+  top: calc(18.94% + 78px);
+  transform: translateX(-50%);
+  margin: 0;
+  white-space: nowrap;
+  font-family: var(--font-clean);
+  font-size: 13px;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: var(--fg);
+  text-shadow: 0 0 12px rgba(0,0,0,0.8), 0 1px 3px rgba(0,0,0,0.9);
+  animation: igniteGateFlicker 1.6s ease-in-out infinite;
+  animation-delay: 0.3s;
+}
+#ignite-gate.is-igniting #ignite-gate-circle,
+#ignite-gate.is-igniting #ignite-gate-cta {
+  animation: none;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+@media (max-width: 768px) {
+  #ignite-gate-circle { width: 90px; height: 90px; }
+  .ignite-gate-orb { width: 46px; height: 46px; }
+  #ignite-gate-cta { top: calc(18.94% + 62px); font-size: 11px; letter-spacing: 0.26em; }
+}
+
+/* ============================================================
+   VIDEOS-CONNECTED TEXT — "두번째 첨부이미지가 나오는 시점에서,
+   '당신은 나의 작업물과 연결되었습니다.'를 영어로 인터랙티브하게".
+   The reference screenshot (JUNE HONG header, photographer smiling
+   holding a lit torch + camera) matches videos-bg-13.mp4's own
+   "photographer reveal" moment -- pinpointed via mean-gray brightness
+   sampling (flat ~16 from t=0-1s while only the blazing torch fills
+   frame, rising to a peak of 24.16 at t=2.0s as the photographer comes
+   fully into focus). Shown/animated by GSAP scroll-tied logic in
+   setupVideosBgVideo() (renderVideosChain's connectedEl block), not
+   pure CSS -- opacity/transform starting state below is just the
+   "hidden, ready to reveal" baseline JS animates from.
+   REVISED (explicit user spec -- "문장 마지막에 마침표를 없애주고, 더
+   인터랙티브하게 만들어줘"): (1) trailing period removed from the
+   sentence in home.html; (2) the old effect faded/slid the whole
+   paragraph as one static block -- replaced with a per-word reveal
+   (.vc-word spans, same structural idiom as .wr-word in the work-reel
+   tagline section elsewhere on this page) so each word blurs/scales/
+   rises into place in its own staggered sub-window of the scroll
+   range, all still driven continuously by scroll position (reversible
+   on scroll-up), not a fixed timer.
+   ============================================================ */
+#videos-connected-text {
+  position: fixed;
+  inset: 0;
+  z-index: 16;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0;
+  will-change: opacity;
+}
+#videos-connected-text p {
+  margin: 0;
+  text-align: center;
+  font-family: 'Fraunces', var(--font-serif);
+  font-weight: 500;
+  font-variation-settings: 'wght' 480, 'opsz' 60, 'SOFT' 0;
+  font-size: clamp(28px, 4.4vw, 58px);
+  line-height: 1.28;
+  color: var(--fg);
+  letter-spacing: 0.01em;
+  text-shadow: 0 2px 22px rgba(0,0,0,0.75);
+}
+.vc-word {
+  display: inline-block;
+  opacity: 0;
+  filter: blur(6px);
+  transform: translateY(22px) scale(0.94);
+  will-change: opacity, transform, filter;
+}
+@media (max-width: 768px) {
+  #videos-connected-text p { font-size: clamp(22px, 6vw, 34px); padding: 0 8vw; }
+}
+
+/* ============================================================
+   VIDEOS-CATCHFIRE TEXT — "이때부터 Have a story worth filming? Let's
+   make it real 를 인터랙티브 요소를 많이 가미해서 넣으려고해 ... 포트폴리오
+   분위기에 맞는 다른 문구". User's reference screenshot (isolated,
+   full-blaze campfire with sparks flying, black background, no
+   forest/night-sky elements yet) was pinpointed via fine-grained
+   ffmpeg frame sampling (every 12th of 144 frames) of
+   videos-bg-14.mp4 to its STABLE mid-clip window -- roughly local14
+   0.25-0.90 -- after the opening photographer-to-campfire motion-
+   blur transition (local14 0-~0.17) settles and before local15's
+   own campfire-to-forest/starry-sky reveal begins. Phrase "This is
+   where stories catch fire" chosen (over the original suggested
+   CTA-style line) to match this site's quieter, cinematic first-
+   person narration tone (same register as "You are now connected
+   with my work") while doubling as a literal/figurative pun on the
+   actual fire visible on screen; confirmed grammatically correct and
+   naturally idiomatic in North American English before implementing.
+   Shown/animated by GSAP scroll-tied logic in setupVideosBgVideo()
+   (renderVideosChain's catchfireEl block) -- opacity/transform
+   starting state below is just the "hidden, ready to reveal"
+   baseline JS animates from. Per-word stagger (.cf-word spans) uses
+   the same structural idiom as .vc-word/.wr-word elsewhere on this
+   page, all driven continuously by scroll position (reversible on
+   scroll-up), never a fixed timer. The final word "fire" gets an
+   extra ember-glow color/flicker treatment (.cf-word--ember) as the
+   "더 인터랙티브하게" (more interactive) embellishment the user asked
+   for -- it doesn't just fade/rise into place like the other words,
+   it also warms from white to a flame-orange with a soft glowing
+   text-shadow that gently pulses once fully revealed.
+   ============================================================ */
+#videos-catchfire-text {
+  position: fixed;
+  inset: 0;
+  z-index: 16;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0;
+  will-change: opacity;
+}
+#videos-catchfire-text p {
+  margin: 0;
+  text-align: center;
+  font-family: 'Fraunces', var(--font-serif);
+  font-weight: 500;
+  font-variation-settings: 'wght' 480, 'opsz' 60, 'SOFT' 0;
+  font-size: clamp(28px, 4.4vw, 58px);
+  line-height: 1.28;
+  color: var(--fg);
+  letter-spacing: 0.01em;
+  text-shadow: 0 2px 22px rgba(0,0,0,0.75);
+}
+.cf-word {
+  display: inline-block;
+  opacity: 0;
+  filter: blur(6px);
+  transform: translateY(22px) scale(0.94);
+  will-change: opacity, transform, filter;
+}
+.cf-word--ember {
+  will-change: opacity, transform, filter, color, text-shadow;
+}
+.cf-word--ember.is-ablaze {
+  animation: catchfireEmberPulse 2.2s ease-in-out infinite;
+}
+@keyframes catchfireEmberPulse {
+  0%, 100% { text-shadow: 0 2px 22px rgba(0,0,0,0.75), 0 0 18px rgba(255,138,61,0.55); }
+  50% { text-shadow: 0 2px 22px rgba(0,0,0,0.75), 0 0 30px rgba(255,138,61,0.9); }
+}
+@media (max-width: 768px) {
+  #videos-catchfire-text p { font-size: clamp(22px, 6vw, 34px); padding: 0 8vw; }
+}
+
+/* ============================================================
+   NEW (this turn -- "이 구간부터 JUNE HONG을 인터랙티브 요소를 가미해
+   넣어보자"): a third full-screen scroll-tied text reveal, this time
+   for the site's own brand/artist name ("JUNE HONG", the same text
+   as the static header link), timed to appear once v15's campfire
+   scene has fully pulled back to reveal the surrounding forest and
+   the Milky Way night sky -- frame-accurate ffmpeg forensics on
+   videos-bg-15.mp4 found the dark, isolated-campfire framing (the
+   already-implemented catchfire-text zone) holding through
+   local15~0.42, a brief transition (forest silhouettes emerging,
+   then the Milky Way fading in) from local15~0.42-0.46, and the
+   full campfire+forest+starry-sky composition -- matching the
+   user's newest reference screenshot -- settling into a stable,
+   near-static hold from local15~0.46 through the end of the clip
+   (confirmed continuous into v16's own opening frames, before v16's
+   camera later pans away from the campfire into a pure sky-only
+   finale). So this reveal is keyed to local15, arriving only once
+   that wider vista is fully visible, and fades back out with a
+   margin before the v15->v16 cut.
+   Per user's explicit choice ("레터 스태거로 가줘" -- letter-by-letter
+   stagger), each character of "JUNE HONG" gets its own .jh-letter
+   span and animates in individually (rather than word-by-word like
+   the other two overlays), giving it more of a title-card / signature
+   "reveal" feel appropriate for a name. Uses the header brand's own
+   clean sans-serif (Jost) + wide uppercase letter-spacing so it reads
+   as the same identity, just presented as a cinematic full-screen
+   moment instead of a small persistent link. Driven continuously by
+   scroll position, never a fixed timer -- fully reversible on
+   scroll-up, same contract as .vc-word/.cf-word above.
+   ============================================================ */
+#videos-junehong-text {
+  position: fixed;
+  inset: 0;
+  z-index: 17;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0;
+  will-change: opacity;
+}
+#videos-junehong-text p {
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-clean);
+  font-weight: 600;
+  font-style: normal;
+  text-transform: uppercase;
+  font-size: clamp(36px, 8vw, 108px);
+  line-height: 1;
+  color: var(--fg);
+  white-space: nowrap;
+}
+.jh-letter {
+  display: inline-block;
+  opacity: 0;
+  filter: blur(10px);
+  letter-spacing: 0.34em;
+  transform: translateY(30px) scale(0.9);
+  text-shadow: 0 2px 30px rgba(0,0,0,0.8);
+  will-change: opacity, transform, filter, text-shadow;
+}
+.jh-letter.is-lit {
+  text-shadow: 0 2px 30px rgba(0,0,0,0.8), 0 0 26px rgba(255,201,77,0.65);
+}
+.jh-space {
+  width: 0.5em;
+}
+@media (max-width: 768px) {
+  #videos-junehong-text p { font-size: clamp(26px, 11vw, 48px); }
+  .jh-letter { letter-spacing: 0.22em; }
+}
+
+/* ============================================================
+   VIDEOS chain closing footer (this turn -- 사용자 요청: "마지막 영상에서
+   마지막 프레임을 홀드해줘 ... 이걸 footer로 박아줘. 마지막 프레임에 닿기
+   전에, 스크롤에 반응하면서 나오게끔해줘"). Contact/branding footer that
+   reveals over v16's own stable full Milky Way finale (see the
+   renderVideosChain() long comment in app.js for the frame-forensics
+   that pinpointed the reveal window) -- appears continuously as the
+   user scrolls through the tail of local16, fully in place well BEFORE
+   local16 reaches 1.0 (the true end of the scroll chain), then holds
+   visible through the end. Reuses the same `.jh-letter`-style fixed,
+   centered, pointer-events:none overlay pattern as the other three
+   text reveals, but LINE-staggered (4 lines) rather than word/letter
+   staggered, since this is a block of distinct contact facts rather
+   than a single sentence/name -- and unlike those three ephemeral
+   "moment" reveals, this one is a real footer (persistent contact
+   info) so it only fades IN, never back OUT, once revealed. The email/
+   phone lines are real mailto:/tel: links (pointer-events re-enabled
+   only on the .vf-line anchors) so they stay usable once shown. z-index
+   18 -- one above #videos-junehong-text (17), consistent with every
+   prior overlay in this chain incrementing by 1. */
+#videos-footer-text {
+  position: fixed;
+  inset: 0;
+  z-index: 18;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0;
+  will-change: opacity;
+}
+.vf-inner {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.vf-line {
+  opacity: 0;
+  filter: blur(8px);
+  transform: translateY(24px);
+  font-family: var(--font-clean);
+  color: var(--fg-dim);
+  letter-spacing: 0.08em;
+  font-size: 15px;
+  /* Legibility fix: the Milky Way finale frame this footer sits over
+     has bright, high-texture sky (dense star clusters + glowing core)
+     right where these lines land -- with no shadow the --fg-dim
+     (60% opacity) text was blending into the busy background (same
+     "text on unpredictable video brightness" problem already solved
+     for .wr-word/.vc-word/.cf-word elsewhere on this page via
+     text-shadow). Same fix here: a tight dark contact shadow plus a
+     soft wider glow to punch the glyphs off the sky regardless of
+     which part of the frame sits behind them. */
+  text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 0 14px rgba(0,0,0,0.7);
+  will-change: opacity, transform, filter;
+}
+.vf-line[data-line="0"] {
+  color: var(--fg);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 16px;
+  margin-bottom: 4px;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 0 16px rgba(0,0,0,0.75);
+}
+.vf-line a {
+  color: inherit;
+  text-decoration: none;
+  pointer-events: auto;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+.vf-line a:hover {
+  color: var(--fg);
+  border-color: var(--accent-gold);
+}
+@media (max-width: 768px) {
+  .vf-line { font-size: 13px; }
+  .vf-line[data-line="0"] { font-size: 14px; }
 }
 
 /* ============================================================
@@ -749,6 +1165,23 @@ html, body {
 .wr-word {
   display: inline-block;
   will-change: opacity, color, transform;
+  /* ROOT-CAUSE FIX (explicit user feedback on a screenshot of this exact
+     section, this turn): the tagline sits directly over the work-reel's
+     own bright/high-contrast footage (light matchstick wood, glowing
+     orange flame) with nothing behind it but its own thin, semi-
+     transparent serif glyphs -- no overlay, outline, or shadow at all --
+     so words over the brightest patches (match wood, flame center) read
+     as almost fully washed out/illegible while only the words sitting
+     over darker out-of-focus areas ("concept", "final color") were even
+     partly legible. Rather than add a dedicated dark overlay/scrim layer
+     behind the whole tagline (which, per the SAME user's rejection of the
+     analogous #header-feather approach earlier in this project, tends to
+     read as its own awkward band over bright content), this applies a
+     text-shadow directly to each word -- same technique already used by
+     #site-header .brand/.main-nav a and #ignite-gate-cta elsewhere on
+     this page -- so every word stays legible against ANY footage
+     brightness without any separate visible layer of its own. */
+  text-shadow: 0 1px 5px rgba(0,0,0,0.9), 0 0 18px rgba(0,0,0,0.7);
 }
 @media (max-width: 768px) {
   .work-reel-tagline { font-size: clamp(16px, 4.6vw, 24px); padding: 0 22px; }
@@ -1389,6 +1822,24 @@ html, body {
    ============================================================ */
 .videos-outro {
   background: transparent;
+  /* EXTENDED (this turn -- "관련영상이 끝나자마자, 첨부한 영상 순서대로 ...
+     영상을 이어 올려줘"): 5 new background clips (videos-bg-12..16, each
+     6s) were appended to the #videos-bg-video-layer hard-cut chain (see
+     setupVideosBgVideo() in app.js) so they play out immediately after
+     video-11 finishes. Since this whole chain is scroll-scrubbed (not
+     autoplaying on a timer), each additional clip needs its own slice of
+     ACTUAL scroll distance to scrub through -- otherwise the same old
+     100vh budget would have to be shared across 6 clips instead of 1,
+     making every one of them fly by in a fraction of a scroll-second.
+     +500vh (100vh per new clip, matching the flat/unpinned pace video-9
+     already gets during section-5's own plain 100vh span) on top of the
+     original 100vh keeps this new stretch feeling consistent with the
+     rest of the chain instead of rushed. Still fully transparent/empty
+     of foreground content -- purely extra scroll runway, same rationale
+     as the original 100vh (all VIDEOS-group UI has already risen away
+     per setupVideosGroupExit() well before this point). */
+  min-height: 600vh;
+  min-height: calc(var(--vh, 1vh) * 600);
 }
 
 /* ============================================================

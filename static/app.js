@@ -1447,47 +1447,118 @@
      VIDEOS BACKGROUND VIDEO -- third "media player" layer, same
      scrub-chain pattern as setupPhotosBgVideo() above but scoped to
      the whole VIDEOS group (section-5 intro through section-7 reels)
-     PLUS the new outro (section-8). Per this turn's spec: "비디오
-     관련 배경영상을 차례대로 로딩에 최적화되게끔 생성해줘" -- three
-     uploaded clips (9/10/11.mp4, each re-encoded from source 4K/24fps
-     down to 1080p H.264 ~1-2MB for web) hard-cut in sequence
-     9 -> 10 -> 11 as the user scrolls through the group.
+     PLUS the outro (section-8). Per the original spec: "비디오 관련
+     배경영상을 차례대로 로딩에 최적화되게끔 생성해줘" -- three uploaded
+     clips (9/10/11.mp4, each re-encoded from source 4K/24fps down to
+     1080p H.264 ~1-2MB for web) hard-cut in sequence 9 -> 10 -> 11 as
+     the user scrolls through the group.
      Unlike setupPhotosBgVideo's span (which ends at the NEXT group's
      own top, since photos-outro-08 must fully finish before VIDEOS
      begins), this trigger's `endTrigger`/`end` deliberately reaches
-     all the way to section-8's own BOTTOM (not top) -- video-11 must
-     still be mid-playback (not yet finished) at the moment section-8
-     begins, so it keeps scrubbing/finishing DURING the outro's own
+     all the way to section-8's own BOTTOM (not top) -- so the whole
+     9..16 chain keeps scrubbing/finishing DURING the outro's own
      scroll transit while the foreground VIDEOS content has already
      risen away (see setupVideosGroupExit() below), exactly matching
      "11번영상이 끝나기 전에 비디오 관련 컨텐츠는 모두 화면위로
      올라가면서 사라져야해" (before video 11 finishes, all video
      content must already have risen off-screen).
-     Phase split is NOT an even 3-way share of progress -- weighted
-     roughly by how much actual scroll distance each sub-section
-     consumes (section-5 is a single unpinned ~100vh panel; section-6's
-     pin runs ~22%*14=308vh; section-7+outro's pin+plain span runs
-     ~30%*11+100=430vh) so no single clip's scrub feels rushed or
-     stretched relative to how long the user is actually looking at
-     its corresponding foreground content.
+     EXTENDED (this turn -- "캡쳐 이미지를 분석해 관련영상이 끝나자마자,
+     첨부한 영상 순서대로 투명도 조절없이 원본 그대로, 다만 로딩에
+     최적화되게끔, 영상을 이어 올려줘"): 5 more uploaded clips
+     (12/13/14/15/16.mp4, same re-encode pipeline: 4K->1080p H.264,
+     audio stripped, faststart) appended to the SAME hard-cut chain so
+     they play, in order, immediately after video-11 finishes -- see the
+     PHASE_V*_END constants and renderVideosChain() below for the exact
+     per-clip scroll-progress boundaries and #section-8's extended
+     min-height in style.css for the extra scroll runway this needed.
+     Phase split is NOT an even 8-way share of progress -- weighted by
+     how much actual scroll distance each sub-section consumes (see the
+     long comment directly above the PHASE_V9_END.. constants below for
+     the full breakdown) so no single clip's scrub feels rushed or
+     stretched relative to how long the user is actually looking at its
+     corresponding foreground content.
      ============================================================ */
   function setupVideosBgVideo() {
     const layer = document.getElementById('videos-bg-video-layer');
     const v9 = document.getElementById('videos-bg-video-9');
     const v10 = document.getElementById('videos-bg-video-10');
     const v11 = document.getElementById('videos-bg-video-11');
+    // NEW (this turn -- "관련영상이 끝나자마자, 첨부한 영상 순서대로
+    // 투명도 조절없이 원본 그대로 ... 영상을 이어 올려줘"): 5 more
+    // user-uploaded clips, re-encoded 4K->1080p/h264/no-audio/faststart
+    // (same pipeline as 9/10/11, ffprobe-confirmed 1920x1080/24fps/
+    // exactly 6.000000s each) appended to the SAME hard-cut chain so
+    // they play immediately after video-11 finishes, in the exact
+    // order supplied: 12 -> 13 -> 14 -> 15 -> 16. Frame-accurate
+    // forensics (mean-gray + direct visual diff of extracted first/
+    // last frames) confirmed a continuous narrative and clean cut
+    // points throughout: v11 ends on the small unlit-torch flame from
+    // the user's own reference screenshot; v12 opens on that same
+    // torch (now catching) and ends fully ablaze; v13 opens on a
+    // near-identical blazing-torch frame then pulls back to reveal a
+    // photographer holding the torch/camera; v14 continues that same
+    // reveal into a full campfire shot; v15 opens on a near-identical
+    // campfire frame then widens to a starry-sky/forest vista; v16
+    // opens on that same vista and pushes into a full Milky Way finale.
+    const v12 = document.getElementById('videos-bg-video-12');
+    const v13 = document.getElementById('videos-bg-video-13');
+    const v14 = document.getElementById('videos-bg-video-14');
+    const v15 = document.getElementById('videos-bg-video-15');
+    const v16 = document.getElementById('videos-bg-video-16');
     const s5 = document.getElementById('section-5');
     const s8 = document.getElementById('section-8');
-    if (!layer || !v9 || !v10 || !v11 || !s5 || !s8) return;
+    if (!layer || !v9 || !v10 || !v11 || !v12 || !v13 || !v14 || !v15 || !v16 || !s5 || !s8) return;
 
-    const videos = [v9, v10, v11];
-    gsap.set(videos, { opacity: 0 });
+    // NEW (this turn -- "횃불에 불이 붙기 전에 재생을 스크롤다운에도 반응없이,
+    // 고정된 화면에서 ... 점멸하는 원 옆에 불을 붙여주세요를 영어로 점멸하게끔
+    // ... 원을 클릭하는 순간 불이 붙은 장면에서 다시 멈춤. 거기서 다시
+    // 스크롤다운에 반응하는 영상으로 전환"): the "IGNITE GATE" -- a
+    // click-to-advance interaction spliced into the middle of v12's
+    // otherwise pure scroll-scrub. Optional lookups (feature degrades
+    // gracefully to the old pure-scroll chain if this markup is absent).
+    const gateEl = document.getElementById('ignite-gate');
+    const gateCircle = document.getElementById('ignite-gate-circle');
+    const connectedEl = document.getElementById('videos-connected-text');
+    // REVISED (explicit user spec -- "더 인터랙티브하게 만들어줘"): the old
+    // whole-paragraph fade+translateY is replaced by a per-word stagger
+    // (see .vc-word spans in home.html, same structural idiom as
+    // .wr-word in the work-reel tagline section) -- each word gets its
+    // own small scroll-progress sub-window for the blur/scale/rise
+    // reveal, computed in renderVideosChain() below.
+    const connectedWords = connectedEl ? gsap.utils.toArray(connectedEl.querySelectorAll('.vc-word')) : [];
+
+    // NEW (this turn -- "이때부터 ... 인터랙티브 요소를 많이 가미해서 넣으려고해
+    // ... 포트폴리오 분위기에 맞는 다른 문구"): "This is where stories catch
+    // fire" reveals over videos-bg-14.mp4's own stable full-blaze campfire
+    // window (see the long CSS comment above #videos-catchfire-text for the
+    // frame-forensics that pinpointed this window and the phrase choice).
+    const catchfireEl = document.getElementById('videos-catchfire-text');
+    const catchfireWords = catchfireEl ? gsap.utils.toArray(catchfireEl.querySelectorAll('.cf-word')) : [];
+    const catchfireEmberWord = catchfireEl ? catchfireEl.querySelector('.cf-word--ember') : null;
+
+    // NEW (this turn -- "이 구간부터 JUNE HONG을 인터랙티브 요소를 가미해
+    // 넣어보자"): letter-staggered "JUNE HONG" reveal over v15's own
+    // stable campfire+forest+Milky Way vista (see the long CSS comment
+    // above #videos-junehong-text for the frame-forensics that pinpointed
+    // this window).
+    const junehongEl = document.getElementById('videos-junehong-text');
+    const junehongLetters = junehongEl ? gsap.utils.toArray(junehongEl.querySelectorAll('.jh-letter')) : [];
+
+    // NEW (this turn -- "마지막 프레임에 닿기 전에, 스크롤에 반응하면서
+    // 나오게끔해줘"): closing contact/branding footer, line-staggered,
+    // revealed over the tail of v16's own local progress (see the long
+    // CSS comment above #videos-footer-text for the full rationale).
+    const footerEl = document.getElementById('videos-footer-text');
+    const footerLines = footerEl ? gsap.utils.toArray(footerEl.querySelectorAll('.vf-line')) : [];
+
+    const videos = [v9, v10, v11, v12, v13, v14, v15, v16];
+    gsap.set(videos, { opacity: 0, yPercent: 0 });
     gsap.set(v9, { opacity: 1 });
 
     // Same root-cause fix as the other two bg-video layers -- see
     // blobifySeekableVideo()'s top-of-file comment. Staggered 250ms
     // apart per video for the same "avoid simultaneous decoder init"
-    // reason.
+    // reason (now 8 videos, so v16 initializes at +1750ms).
     videos.forEach((v, i) => blobifySeekableVideo(v, i * 250));
 
     // Pre-warm each clip's decoder at its own t=0 while still hidden,
@@ -1500,16 +1571,13 @@
       });
       if (video.readyState > 0) video.currentTime = t;
     }
-    prewarmSeek(v9, 0);
-    prewarmSeek(v10, 0);
-    prewarmSeek(v11, 0);
+    videos.forEach((v) => prewarmSeek(v, 0));
 
-    // All three re-encoded clips are exactly 6.000000s (ffprobe-confirmed);
+    // All eight re-encoded clips are exactly 6.000000s (ffprobe-confirmed);
     // no baked-in fade-to-black footage was found at either end of any of
-    // the three (brightness sampled every 1s across each clip stayed in a
-    // consistent ~16-51 mean-gray range throughout), so -- unlike
-    // setupPhotosBgVideo's V7/V8_SAFE_START/END -- the full [0, 6] duration
-    // is used directly with no safe-window remapping needed.
+    // them, so -- unlike setupPhotosBgVideo's V7/V8_SAFE_START/END -- the
+    // full [0, 6] duration is used directly with no safe-window remapping
+    // needed.
     const CLIP_DURATION = 6.0;
     function seek(video, localP) {
       const t = Math.max(0, Math.min(1, localP)) * CLIP_DURATION;
@@ -1564,32 +1632,531 @@
     // exactly ONE of v9/v10/v11 is opacity:1 and the other two are
     // opacity:0, with no intermediate tick where two are simultaneously
     // nonzero (i.e. no dissolve, ever).
-    const PHASE_V9_END = 0.15;
-    const PHASE_V10_END = 0.55;
+    //
+    // EXTENDED to 8 clips (this turn -- "투명도 조절없이 원본 그대로 ...
+    // 영상을 이어 올려줘", explicitly repeating the "no opacity blending"
+    // requirement for the 5 newly-appended clips): every new boundary
+    // below uses the exact same zero-width hard-cut pattern as the
+    // original v9/v10/v11 boundaries -- one clip's opacity is always
+    // exactly 1 and all others exactly 0, never blended.
+    //
+    // Phase widths are NOT an even 8-way split -- weighted by actual
+    // scroll distance each stretch consumes, same principle as the
+    // original 3-clip comment above: section-5 (v9) = 100vh flat;
+    // section-6 (v10) pin = 22%*14 = 308vh; section-7 (v11) pin =
+    // 30%*11 = 330vh (v9+v10+v11 old total = 838vh, unchanged); each new
+    // clip (v12-v16) gets its own fresh 100vh slice carved out of
+    // section-8's now-extended height (see .videos-outro's min-height in
+    // style.css) so none of the 5 new clips scrubs by faster than v9's
+    // own original pace. New grand total = 838 + 5*100 = 1338vh; boundary
+    // fractions below are each clip's cumulative-vh-so-far / 1338.
+    const PHASE_V9_END = 0.093946;
+    const PHASE_V10_END = 0.344469;
+    const PHASE_V11_END = 0.626308;
+    const PHASE_V12_END = 0.701046;
+    const PHASE_V13_END = 0.775785;
+    const PHASE_V14_END = 0.850523;
+    const PHASE_V15_END = 0.925262;
+    // PHASE_V16_END is implicitly 1.0 (last clip in the chain).
+
+    // ROOT-CAUSE FIX (explicit user spec -- "첫번째 이미지, 컷 투로 바로
+    // 붙는 게 아니고, 토치도 화면 아래서부터 스크롤다운에 반응하면서
+    // 올라와야지"): the v11->v12 handoff used to be a pure instant
+    // opacity swap (v12 simply appearing at opacity:1 already in its
+    // final resting position the moment p crossed PHASE_V11_END), which
+    // reads exactly as the "컷 투로 바로 붙는" hard cut the user is now
+    // asking to remove. RISE_START..RISE_END carves out a lead-in window
+    // from the TAIL of v11's own scroll range (v11 keeps playing/visible
+    // normally throughout) during which v12 becomes visible too --
+    // positioned via a continuous translateY(yPercent) so it visually
+    // enters by rising up from below the viewport, in lockstep with
+    // scroll-down, reaching its fully-in-place resting position exactly
+    // at RISE_END (== GATE_PROGRESS below, the point the ignite-gate
+    // arms). This is NOT an opacity dissolve -- v12 is always fully
+    // opaque (opacity:1) whenever visible at all; it simply occludes a
+    // growing slice of the frame as it rises, so wherever it hasn't yet
+    // covered, v11's own already-opaque pixels show through underneath
+    // with zero alpha-blending between the two clips. Scrolling back up
+    // reverses the rise smoothly (yPercent is a pure function of p), same
+    // "interactive/reversible" contract as every other scroll-tied
+    // effect on this page.
+    const RISE_WIDTH = 0.03;
+    const RISE_END = PHASE_V11_END; // numerically == GATE_PROGRESS, defined further below
+    const RISE_START = Math.max(PHASE_V10_END, RISE_END - RISE_WIDTH);
 
     function renderVideosChain(p) {
       const local9 = PHASE_V9_END > 0 ? p / PHASE_V9_END : 1;
       const local10 = (p - PHASE_V9_END) / (PHASE_V10_END - PHASE_V9_END);
-      const local11 = (p - PHASE_V10_END) / (1 - PHASE_V10_END);
+      const local11 = (p - PHASE_V10_END) / (PHASE_V11_END - PHASE_V10_END);
+      // ROOT-CAUSE FIX (explicit user spec, this turn -- "하단좌측쪽에
+      // 불씨가 있어", i.e. a stray ember/spark visible on the gate/hold
+      // screen): frame-accurate ffmpeg/PIL forensics on the raw source
+      // file videos-bg-12.mp4 found a single-frame lens/sensor artifact (a
+      // tiny diagonal red-pink streak, bottom-left of frame) baked into
+      // the footage at EXACTLY t=0.0 -- confirmed gone by t=0.05 and never
+      // reappearing through t=1.45s. v12's local progress reaches exactly
+      // 0 at three points: (a) the v11->v12 hard-cut boundary during
+      // normal scroll, (b) the gate's held/armed frame (frozen at
+      // GATE_PROGRESS == local12 0), and (c) the very first tick of
+      // igniteTorch()'s ignition tween (proxy.p starts at GATE_PROGRESS).
+      // Rather than special-case each caller, floor local12 itself so
+      // v12.currentTime never lands on the defective frame anywhere in
+      // the chain -- the torch is otherwise visually identical/still
+      // fully unlit at this tiny offset (per the earlier frame-forensics
+      // establishing v12 stays a flat unlit hold through ~t=1.3s), so
+      // this is a pure spark-avoidance floor with no visible side effect.
+      const GATE_HOLD_LOCAL12 = 0.1 / CLIP_DURATION; // v12 currentTime floor = 0.1s
+      const local12Raw = (p - PHASE_V11_END) / (PHASE_V12_END - PHASE_V11_END);
+      const local12 = Math.max(local12Raw, GATE_HOLD_LOCAL12);
+      const local13 = (p - PHASE_V12_END) / (PHASE_V13_END - PHASE_V12_END);
+      const local14 = (p - PHASE_V13_END) / (PHASE_V14_END - PHASE_V13_END);
+      const local15 = (p - PHASE_V14_END) / (PHASE_V15_END - PHASE_V14_END);
+      // USER REQUEST THIS TURN ("첫번째 첨부한 이미지에서 홀드를 걸어줘" --
+      // add a scroll hold at the Milky Way vista shown in the user's
+      // screenshot). CORRECTED after user feedback: the user's intent was
+      // never a "text-free gap" -- it's to freeze the shot right BEFORE
+      // videos-bg-16.mp4's camera visibly turns/pans LEFT, per the
+      // reference image (thin/low treeline, diagonal Milky Way, horizon
+      // glow centered). Pixel-level ffmpeg frame forensics on the raw clip
+      // (horizon-glow x-position tracked frame-by-frame, corroborated by
+      // an independent AI video-motion read) show the framing is fully
+      // LOCKED/static from t~=1.75s to t~=3.29s (glow x holds flat at
+      // ~53.7-54.5% of frame width), after which it sweeps rapidly
+      // rightward (56%->62%->72%->96% by t=5.5s) -- that rightward glow
+      // drift IS the visual signature of the camera panning LEFT.
+      //
+      // PERMANENT last-frame hold (per user-confirmed reference image):
+      // the reference composition (bare tree left / diagonal Milky Way /
+      // centered glow) matches t=3.5s (frame_085 @ 24fps) inside the
+      // stable plateau. Unlike the old temporary hold, this is a TRUE
+      // clamp with no "resume" branch -- once local16Raw reaches
+      // SCENE_HOLD_POINT, local16 stays pinned there for the rest of the
+      // scroll chain, so the leftward pan is never shown. local16Raw
+      // itself keeps advancing all the way to 1.0 and is used (instead of
+      // the now-frozen local16) to drive anything that must keep
+      // reacting to continued scroll past this point (e.g. the footer).
+      const SCENE_HOLD_POINT = 3.5 / CLIP_DURATION; // ~0.5833
+      const local16Raw = (p - PHASE_V15_END) / (1 - PHASE_V15_END);
+      const local16 = Math.min(local16Raw, SCENE_HOLD_POINT);
       seek(v9, local9);
       seek(v10, local10);
       seek(v11, local11);
+      seek(v12, local12);
+      seek(v13, local13);
+      seek(v14, local14);
+      seek(v15, local15);
+      seek(v16, local16);
 
-      let o9 = 0;
-      let o10 = 0;
-      let o11 = 0;
+      let o9 = 0, o10 = 0, o11 = 0, o12 = 0, o13 = 0, o14 = 0, o15 = 0, o16 = 0;
 
       if (p < PHASE_V9_END) {
         o9 = 1;
       } else if (p < PHASE_V10_END) {
         o10 = 1;
-      } else {
+      } else if (p < PHASE_V11_END) {
         o11 = 1;
+      } else if (p < PHASE_V12_END) {
+        o12 = 1;
+      } else if (p < PHASE_V13_END) {
+        o13 = 1;
+      } else if (p < PHASE_V14_END) {
+        o14 = 1;
+      } else if (p < PHASE_V15_END) {
+        o15 = 1;
+      } else {
+        o16 = 1;
+      }
+
+      // Rise-up entrance window (see RISE_START/RISE_END long comment
+      // above): while p sits inside [RISE_START, RISE_END), v12 turns
+      // visible EARLY (ahead of its normal PHASE_V11_END cut point) and
+      // is stacked on TOP of v11 (v11 stays opacity:1 underneath,
+      // unchanged -- z-order alone, no blending) while a translateY
+      // pushes v12 down below the frame at the window's start and
+      // eases it up to 0 (fully in place) by the window's end. Once p
+      // reaches RISE_END the normal hard-cut logic above has already
+      // taken over (o11=0/o12=1), so this only ever touches the brief
+      // lead-in, never the steady-state hold.
+      let riseYPercent = 0;
+      if (p >= RISE_START && p < RISE_END && RISE_END > RISE_START) {
+        const riseP = (p - RISE_START) / (RISE_END - RISE_START);
+        riseYPercent = (1 - riseP) * 100; // 100% (fully below frame) -> 0% (in place)
+        o12 = 1; // pulled forward so it's visible during the rise, stacked above v11
+      } else if (p >= RISE_END) {
+        riseYPercent = 0; // fully settled for the remainder of v12's normal hold
       }
 
       gsap.set(v9, { opacity: o9 });
       gsap.set(v10, { opacity: o10 });
-      gsap.set(v11, { opacity: o11 });
+      gsap.set(v11, { opacity: o11, zIndex: 0 });
+      gsap.set(v12, { opacity: o12, yPercent: riseYPercent, zIndex: 1 });
+      gsap.set(v13, { opacity: o13 });
+      gsap.set(v14, { opacity: o14 });
+      gsap.set(v15, { opacity: o15 });
+      gsap.set(v16, { opacity: o16 });
+
+      // NEW (this turn -- "두번째 첨부이미지가 나오는 시점에서 ...
+      // 인터랙티브하게 나오게끔"): "You are now connected with my work"
+      // reveals continuously as the user scrubs through v13's own
+      // "photographer reveal" window -- frame-accurate ffmpeg/PIL mean-
+      // gray forensics on videos-bg-13.mp4 found the torch-only shot flat
+      // at brightness~16 for t=0-1s, then rising as the camera pulls back
+      // to reveal the photographer, peaking at t=2.0s (brightness 24.16,
+      // the closest match to the user's second attached screenshot) --
+      // so the reveal is keyed to local13 (v13's own 0..1 local progress,
+      // already computed above), NOT a fixed fade-in/out timer, making it
+      // directly scroll-position-driven (scrubs forward AND reverses
+      // cleanly on scroll-up, same "interactive" contract as every other
+      // scroll-tied effect on this page) rather than a static one-shot
+      // reveal.
+      // REVISED (explicit user spec -- "문장 마지막에 마침표를 없애주고,
+      // 더 인터랙티브하게 만들어줘"): trailing period removed from the
+      // sentence in home.html (now "...with my work", no "."); the old
+      // whole-paragraph fade+translateY(26px) is replaced by a per-word
+      // stagger over .vc-word spans (same idiom as .wr-word in the
+      // work-reel tagline section) -- each of the 7 words gets its own
+      // small overlapping sub-window inside the overall in/out envelope
+      // below, animating opacity + blur(px->0) + translateY + scale in
+      // lockstep with scroll, so the sentence visibly assembles itself
+      // word-by-word as the user scrolls (and un-assembles word-by-word
+      // in reverse on scroll-up) instead of appearing/leaving as one
+      // static block.
+      if (connectedEl) {
+        const CONNECTED_IN_START = 0.25;
+        const CONNECTED_IN_END = 0.4167;
+        const CONNECTED_OUT_START = 0.82;
+        const CONNECTED_OUT_END = 0.96;
+        let co = 0;
+        if (local13 >= CONNECTED_IN_START && local13 <= CONNECTED_OUT_END) {
+          if (local13 < CONNECTED_IN_END) {
+            co = (local13 - CONNECTED_IN_START) / (CONNECTED_IN_END - CONNECTED_IN_START);
+          } else if (local13 < CONNECTED_OUT_START) {
+            co = 1;
+          } else {
+            co = 1 - (local13 - CONNECTED_OUT_START) / (CONNECTED_OUT_END - CONNECTED_OUT_START);
+          }
+        }
+        co = Math.max(0, Math.min(1, co));
+        gsap.set(connectedEl, { opacity: co > 0.01 ? 1 : 0 });
+
+        if (connectedWords.length) {
+          const WORD_COUNT = connectedWords.length;
+          // Each word's own reveal ramps across a BAND-wide slice of the
+          // overall [0,1] "co" envelope, staggered left-to-right (word 0
+          // starts revealing first, the last word finishes last), with
+          // adjacent bands overlapping by half so the sentence assembles
+          // smoothly rather than one word waiting for the previous one
+          // to fully finish. On the way OUT (co falling from 1 back to
+          // 0) the exact same per-word bands run in reverse, so the
+          // sentence disassembles word-by-word in the mirror order.
+          const BAND = 1 / (WORD_COUNT * 0.6);
+          connectedWords.forEach((word, i) => {
+            const bandStart = (i / WORD_COUNT) * (1 - BAND) * 0.6;
+            const wp = Math.max(0, Math.min(1, (co - bandStart) / BAND));
+            gsap.set(word, {
+              opacity: wp,
+              y: (1 - wp) * 22,
+              scale: 0.94 + wp * 0.06,
+              filter: `blur(${(1 - wp) * 6}px)`,
+            });
+          });
+        }
+      }
+
+      // NEW (this turn -- campfire scene interactive text). Reveals
+      // continuously as the user scrubs through v14's own stable
+      // full-blaze campfire window -- keyed to local14 (v14's own 0..1
+      // local progress, already computed above), same "scroll-position-
+      // driven, never a fixed timer" contract as the connectedEl block
+      // above. IN window starts at local14 0.22 (just after the
+      // photographer->campfire motion-blur transition settles, per the
+      // fine-grained frame forensics in the CSS comment) and OUT window
+      // ends at local14 0.92 (just before v15's own campfire->forest/
+      // starry-sky reveal begins), so the text is only ever visible
+      // while the screen shows the isolated campfire matching the
+      // user's reference screenshot.
+      if (catchfireEl) {
+        const CATCHFIRE_IN_START = 0.22;
+        const CATCHFIRE_IN_END = 0.40;
+        const CATCHFIRE_OUT_START = 0.78;
+        const CATCHFIRE_OUT_END = 0.92;
+        let cf = 0;
+        if (local14 >= CATCHFIRE_IN_START && local14 <= CATCHFIRE_OUT_END) {
+          if (local14 < CATCHFIRE_IN_END) {
+            cf = (local14 - CATCHFIRE_IN_START) / (CATCHFIRE_IN_END - CATCHFIRE_IN_START);
+          } else if (local14 < CATCHFIRE_OUT_START) {
+            cf = 1;
+          } else {
+            cf = 1 - (local14 - CATCHFIRE_OUT_START) / (CATCHFIRE_OUT_END - CATCHFIRE_OUT_START);
+          }
+        }
+        cf = Math.max(0, Math.min(1, cf));
+        gsap.set(catchfireEl, { opacity: cf > 0.01 ? 1 : 0 });
+
+        if (catchfireWords.length) {
+          const CF_WORD_COUNT = catchfireWords.length;
+          const CF_BAND = 1 / (CF_WORD_COUNT * 0.6);
+          catchfireWords.forEach((word, i) => {
+            const bandStart = (i / CF_WORD_COUNT) * (1 - CF_BAND) * 0.6;
+            const wp = Math.max(0, Math.min(1, (cf - bandStart) / CF_BAND));
+            gsap.set(word, {
+              opacity: wp,
+              y: (1 - wp) * 22,
+              scale: 0.94 + wp * 0.06,
+              filter: `blur(${(1 - wp) * 6}px)`,
+            });
+          });
+        }
+
+        // "더 인터랙티브하게" embellishment: once the final word ("fire")
+        // has fully assembled (wp==1, i.e. cf has reached the end of its
+        // own band), toggle a CSS class that warms it from white to a
+        // flame-orange with a gently pulsing glow -- purely a scroll-
+        // driven boolean derived from cf, not a separate timer, so it
+        // still reverses cleanly on scroll-up (class removed the instant
+        // cf drops back below full for that word's band).
+        if (catchfireEmberWord) {
+          const emberIndex = catchfireWords.indexOf(catchfireEmberWord);
+          const emberBandStart = emberIndex >= 0 ? (emberIndex / catchfireWords.length) * (1 - (1 / (catchfireWords.length * 0.6))) * 0.6 : 0;
+          const emberBand = 1 / (catchfireWords.length * 0.6);
+          const emberWp = Math.max(0, Math.min(1, (cf - emberBandStart) / emberBand));
+          catchfireEmberWord.classList.toggle('is-ablaze', emberWp >= 1);
+        }
+      }
+
+      // NEW (this turn -- campfire+forest+Milky Way vista interactive
+      // brand reveal). Reveals continuously as the user scrubs through
+      // v15's own wide-vista hold window -- keyed to local15 (v15's own
+      // 0..1 local progress, already computed above), same "scroll-
+      // position-driven, never a fixed timer" contract as the
+      // connectedEl/catchfireEl blocks above. IN window starts at
+      // local15 0.46 (right after the forest/Milky Way reveal settles,
+      // per the fine-grained frame forensics in the CSS comment) and OUT
+      // window ends at local15 0.94 (just before the v15->v16 clip cut),
+      // so the name is only ever visible while the screen shows the
+      // full campfire+forest+starry-sky composition matching the user's
+      // reference screenshot.
+      if (junehongEl) {
+        const JUNEHONG_IN_START = 0.46;
+        const JUNEHONG_IN_END = 0.62;
+        const JUNEHONG_OUT_START = 0.82;
+        const JUNEHONG_OUT_END = 0.94;
+        let jh = 0;
+        if (local15 >= JUNEHONG_IN_START && local15 <= JUNEHONG_OUT_END) {
+          if (local15 < JUNEHONG_IN_END) {
+            jh = (local15 - JUNEHONG_IN_START) / (JUNEHONG_IN_END - JUNEHONG_IN_START);
+          } else if (local15 < JUNEHONG_OUT_START) {
+            jh = 1;
+          } else {
+            jh = 1 - (local15 - JUNEHONG_OUT_START) / (JUNEHONG_OUT_END - JUNEHONG_OUT_START);
+          }
+        }
+        jh = Math.max(0, Math.min(1, jh));
+        gsap.set(junehongEl, { opacity: jh > 0.01 ? 1 : 0 });
+
+        if (junehongLetters.length) {
+          // Letter-by-letter stagger (per explicit user choice: "레터
+          // 스태거로 가줘"), same per-item "band" idiom as the word-
+          // stagger blocks above but sliced across individual characters
+          // instead of whole words -- reads as a name assembling itself
+          // letter by letter, like a title card / signature reveal.
+          const JH_COUNT = junehongLetters.length;
+          const JH_BAND = 1 / (JH_COUNT * 0.6);
+          junehongLetters.forEach((letter, i) => {
+            const bandStart = (i / JH_COUNT) * (1 - JH_BAND) * 0.6;
+            const wp = Math.max(0, Math.min(1, (jh - bandStart) / JH_BAND));
+            gsap.set(letter, {
+              opacity: wp,
+              y: (1 - wp) * 30,
+              scale: 0.9 + wp * 0.1,
+              filter: `blur(${(1 - wp) * 10}px)`,
+            });
+            letter.classList.toggle('is-lit', wp >= 1);
+          });
+        }
+      }
+
+      // Closing footer. UPDATED (this turn): v16's visual is now
+      // PERMANENTLY frozen at SCENE_HOLD_POINT (see local16 above), so
+      // the footer can no longer be keyed to local16 -- once local16
+      // clamps, a local16-driven reveal would freeze too and the footer
+      // would never keep responding to further scrolling. Per explicit
+      // user confirmation ("b도 맞고" -- keep the footer continuously
+      // reactive to scroll-down), this is now keyed to local16Raw
+      // instead: local16Raw keeps advancing 0->1 across v16's whole
+      // scroll segment even though the on-screen frame no longer moves,
+      // so the footer still reveals/staggers progressively as the user
+      // keeps scrolling past the frozen scene. IN window (0.6 -> 0.92)
+      // starts shortly after the freeze engages (SCENE_HOLD_POINT
+      // ~=0.583) and finishes with margin before local16Raw=1 so the
+      // footer is fully readable by the time scrolling bottoms out.
+      // UNLIKE the three ephemeral "moment" overlays above
+      // (connectedEl/catchfireEl/junehongEl), this is real footer
+      // content -- once revealed it should stay put rather than fade
+      // back out, so there is deliberately no OUT window: fo simply
+      // holds at 1 for the remainder of local16Raw (including exactly at
+      // and "past" 1.0, since seek()/mainST below now clamp there
+      // instead of blacking out).
+      if (footerEl) {
+        const FOOTER_IN_START = 0.6;
+        const FOOTER_IN_END = 0.92;
+        let fo = 0;
+        if (local16Raw >= FOOTER_IN_START) {
+          fo = local16Raw < FOOTER_IN_END
+            ? (local16Raw - FOOTER_IN_START) / (FOOTER_IN_END - FOOTER_IN_START)
+            : 1;
+        }
+        fo = Math.max(0, Math.min(1, fo));
+        gsap.set(footerEl, { opacity: fo > 0.01 ? 1 : 0 });
+
+        if (footerLines.length) {
+          const FL_COUNT = footerLines.length;
+          const FL_BAND = 1 / (FL_COUNT * 0.6);
+          footerLines.forEach((line, i) => {
+            const bandStart = (i / FL_COUNT) * (1 - FL_BAND) * 0.6;
+            const lp = Math.max(0, Math.min(1, (fo - bandStart) / FL_BAND));
+            gsap.set(line, {
+              opacity: lp,
+              y: (1 - lp) * 24,
+              filter: `blur(${(1 - lp) * 8}px)`,
+            });
+          });
+        }
+      }
+    }
+
+    /* ==========================================================
+       IGNITE GATE state machine -- see the long comment above the
+       gateEl/gateCircle/connectedEl lookups near the top of this
+       function for the full user-spec quote. Splices a click-to-advance
+       interaction into v12's otherwise pure scroll-scrub: right as v12
+       begins (t=0, confirmed via forensics as a stable fully-unlit torch
+       silhouette held flat through t~1.3s -- see v12_t0.jpg), scroll is
+       physically locked (wheel/touchmove/keys prevented + actual scroll
+       position pinned via ScrollTrigger's own self.scroll() setter, NOT
+       just a visual freeze -- matches "고정된 화면" / "a fixed screen")
+       and a flickering circular hotspot + "Light the torch" CTA fade in
+       (see #ignite-gate CSS). Clicking the circle plays a TIME-based
+       (not scroll-based) GSAP tween of the shared progress value from
+       the hold point through the ignition burst to a steady, settled
+       burn (t=2.35s -- chosen deliberately AFTER the brightest t~1.9s
+       ignition-flash peak, confirmed via fine-grained brightness
+       forensics: t=1.9 -> 33.25, t=2.3 -> 24.70, t=2.4 -> 21.41 -- so the
+       freeze lands on "torch is now lit" rather than "mid-flash burst").
+       Once that tween completes, actual scroll position is advanced to
+       match (so the frozen frame doesn't jump when scroll unlocks) and
+       normal scroll-scrub resumes for the remainder of the chain.
+       ========================================================== */
+    const V12_PHASE_WIDTH = PHASE_V12_END - PHASE_V11_END;
+    const GATE_PROGRESS = PHASE_V11_END; // scroll-trigger threshold that arms the gate
+    // NOTE: the v12 spark/ember artifact fix (see renderVideosChain()'s
+    // GATE_HOLD_LOCAL12 floor above) already keeps v12 off its defective
+    // t=0 frame everywhere in the chain, including this gate's own
+    // held/armed screen -- no extra handling needed here.
+    const LIT_PROGRESS = PHASE_V11_END + V12_PHASE_WIDTH * (2.35 / CLIP_DURATION); // t=2.35s -- steady lit burn
+    const GATE_RESET_MARGIN = 0.004;
+    let gateState = 'idle'; // idle | armed | igniting | released
+    let mainST = null;
+
+    function blockScrollEvent(e) { e.preventDefault(); }
+    function blockScrollKeys(e) {
+      if (e.target === gateCircle) return;
+      const blocked = ['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', ' ', 'Spacebar', 'End', 'Home'];
+      if (blocked.indexOf(e.key) !== -1) e.preventDefault();
+    }
+    function lockScroll() {
+      window.addEventListener('wheel', blockScrollEvent, { passive: false });
+      window.addEventListener('touchmove', blockScrollEvent, { passive: false });
+      window.addEventListener('keydown', blockScrollKeys, { passive: false });
+    }
+    function unlockScroll() {
+      window.removeEventListener('wheel', blockScrollEvent, { passive: false });
+      window.removeEventListener('touchmove', blockScrollEvent, { passive: false });
+      window.removeEventListener('keydown', blockScrollKeys, { passive: false });
+    }
+    function scrollToProgress(p) {
+      if (!mainST) return;
+      mainST.scroll(mainST.start + p * (mainST.end - mainST.start));
+    }
+    function armGate() {
+      gateState = 'armed';
+      scrollToProgress(GATE_PROGRESS);
+      renderVideosChain(GATE_PROGRESS);
+      if (gateEl) {
+        gateEl.classList.remove('is-igniting');
+        gateEl.classList.add('is-armed');
+        gsap.to(gateEl, { opacity: 1, duration: 0.5 });
+      }
+      lockScroll();
+    }
+    function igniteTorch() {
+      if (gateState !== 'armed') return;
+      gateState = 'igniting';
+      if (gateEl) {
+        gateEl.classList.add('is-igniting');
+        gateEl.classList.remove('is-armed');
+      }
+      const proxy = { p: GATE_PROGRESS };
+      gsap.to(proxy, {
+        p: LIT_PROGRESS,
+        duration: 1.3,
+        ease: 'power2.out',
+        onUpdate: () => renderVideosChain(proxy.p),
+        onComplete: () => {
+          gateState = 'released';
+          if (gateEl) gsap.set(gateEl, { opacity: 0 });
+          scrollToProgress(LIT_PROGRESS);
+          unlockScroll();
+        },
+      });
+    }
+    if (gateCircle) gateCircle.addEventListener('click', igniteTorch);
+
+    function handleVideosProgress(p) {
+      if (gateEl && gateCircle) {
+        if (gateState === 'idle' && p >= GATE_PROGRESS) {
+          armGate();
+          return;
+        }
+        if (gateState === 'armed') {
+          renderVideosChain(GATE_PROGRESS);
+          return;
+        }
+        if (gateState === 'igniting') {
+          // The click-triggered tween above owns rendering exclusively
+          // while it runs -- ignore scroll-driven updates entirely so the
+          // two never fight over the shared video elements' currentTime.
+          return;
+        }
+        if (gateState === 'released' && p < GATE_PROGRESS - GATE_RESET_MARGIN) {
+          // Scrolled back up above the gate zone -- reset so scrolling
+          // back down re-triggers the click-to-ignite gate again.
+          // ROOT-CAUSE FIX (explicit user spec, this turn -- "스크롤
+          // 업으로 되감기를 해도, 스크롤 다운의 역순으로 나왔으면해"):
+          // this reset only ever flipped the internal `gateState` JS
+          // variable back to 'idle' -- it never cleaned up `gateEl`'s
+          // OWN CSS class/opacity, which `igniteTorch()` had left as
+          // `is-igniting` + opacity:0 (correct for the "released, gate
+          // long gone" state going forward, but wrong for reverse
+          // scroll: the gate's DOM/visual state must unwind back to
+          // its pre-arm appearance -- invisible, no leftover ignition
+          // class -- exactly as it looked before the user ever
+          // scrolled down into this zone, mirroring "idle" both in
+          // the JS state AND the DOM). Without this, gateEl silently
+          // kept displaying its post-ignition classes/opacity through
+          // the entire reverse scroll until armGate() incidentally
+          // cleaned it up the next time the user scrolled back down
+          // past GATE_PROGRESS -- confirmed via a full forward/reverse
+          // Playwright progress sweep (gateEl.className stuck at
+          // "is-igniting" for the whole reverse pass otherwise).
+          gateState = 'idle';
+          if (gateEl) {
+            gateEl.classList.remove('is-igniting', 'is-armed');
+            gsap.set(gateEl, { opacity: 0 });
+          }
+        }
+      }
+      renderVideosChain(p);
     }
 
     // Single ScrollTrigger spanning section-5's own top through
@@ -1597,7 +2164,37 @@
     // differs from setupPhotosBgVideo's "ends at the NEXT group's top"
     // span). Transparently covers section-6/7's own pinned conveyor
     // runs, same as setupPhotosBgVideo covers section-4's pin.
-    ScrollTrigger.create({
+    //
+    // ROOT-CAUSE FIX (explicit user spec, this turn -- "마지막 영상에서
+    // 마지막 프레임을 홀드해줘"): the OLD onUpdate/onRefresh/onLeave below
+    // gated the whole layer's opacity on `self.isActive` alone, which
+    // GSAP reports as false BOTH before this trigger's start (progress
+    // pinned at 0 -- correct, nothing to show yet) AND after its end
+    // (progress pinned at 1, once the user scrolls all the way to the
+    // document's true bottom -- WRONG, this is exactly the "hold on
+    // v16's last frame" moment, yet the old code faded the entire video
+    // layer to fully transparent/black right at that instant, visibly
+    // "losing" the last frame the user scrolled all the way to see).
+    // Confirmed via direct Playwright progress sampling: at progress
+    // 0.999 the layer was opacity 1 (v16 mid-frame), but at progress
+    // 1.0 (and beyond, since the document has no further scroll room
+    // past that point) isActive flips false and the old code snapped
+    // opacity to 0 -- a hard cut to black baked directly into the
+    // "reaching the end" experience. FIX: distinguish the two
+    // false-isActive cases by `self.progress` itself (0 = at-or-before
+    // start, 1 = at-or-after end -- these never collide) instead of
+    // isActive alone: show the layer whenever active OR fully past the
+    // end (progress>=1), only hide when genuinely before the start
+    // (progress<=0 and not active). onLeave (forward exit, i.e.
+    // reaching the true end) no longer forces opacity:0 at all -- the
+    // last v9-v16 opacity state written by handleVideosProgress()/
+    // renderVideosChain() right before this point already has exactly
+    // one clip (v16) sitting at opacity:1, seeked to its own final
+    // frame (see seek()'s CLIP_DURATION clamp above), so simply leaving
+    // the layer visible holds that exact last frame indefinitely.
+    // onLeaveBack (scrolling back UP above section-5's own top) is
+    // unchanged -- that direction correctly still hides the layer.
+    mainST = ScrollTrigger.create({
       id: 'videos-bg-video',
       trigger: s5,
       endTrigger: s8,
@@ -1605,15 +2202,28 @@
       end: 'bottom top',
       scrub: true,
       onUpdate: (self) => {
-        gsap.set(layer, { opacity: self.isActive ? 1 : 0 });
-        renderVideosChain(self.progress);
+        const show = self.isActive || self.progress >= 1;
+        gsap.set(layer, { opacity: show ? 1 : 0 });
+        handleVideosProgress(self.progress);
       },
       onRefresh: (self) => {
-        gsap.set(layer, { opacity: self.isActive ? 1 : 0 });
-        renderVideosChain(self.progress);
+        const show = self.isActive || self.progress >= 1;
+        gsap.set(layer, { opacity: show ? 1 : 0 });
+        handleVideosProgress(self.progress);
       },
-      onLeave: () => gsap.set(layer, { opacity: 0 }),
-      onLeaveBack: () => gsap.set(layer, { opacity: 0 }),
+      // onLeave intentionally does nothing now (see long comment above --
+      // forcing opacity:0 here is exactly the "loses the last frame" bug).
+      onLeaveBack: () => {
+        gsap.set(layer, { opacity: 0 });
+        // Safety net: if the user jumps away entirely (dot-nav click,
+        // header nav link, etc.) while the gate had scroll locked, make
+        // sure the lock/UI don't stay stuck engaged off-section.
+        if (gateState === 'armed' || gateState === 'igniting') {
+          gateState = 'idle';
+          unlockScroll();
+          if (gateEl) gsap.set(gateEl, { opacity: 0 });
+        }
+      },
     });
   }
   setupVideosBgVideo();
