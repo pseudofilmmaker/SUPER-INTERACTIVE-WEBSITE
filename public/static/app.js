@@ -1536,6 +1536,14 @@
     const catchfireWords = catchfireEl ? gsap.utils.toArray(catchfireEl.querySelectorAll('.cf-word')) : [];
     const catchfireEmberWord = catchfireEl ? catchfireEl.querySelector('.cf-word--ember') : null;
 
+    // NEW (this turn -- "이 구간부터 JUNE HONG을 인터랙티브 요소를 가미해
+    // 넣어보자"): letter-staggered "JUNE HONG" reveal over v15's own
+    // stable campfire+forest+Milky Way vista (see the long CSS comment
+    // above #videos-junehong-text for the frame-forensics that pinpointed
+    // this window).
+    const junehongEl = document.getElementById('videos-junehong-text');
+    const junehongLetters = junehongEl ? gsap.utils.toArray(junehongEl.querySelectorAll('.jh-letter')) : [];
+
     const videos = [v9, v10, v11, v12, v13, v14, v15, v16];
     gsap.set(videos, { opacity: 0, yPercent: 0 });
     gsap.set(v9, { opacity: 1 });
@@ -1861,6 +1869,58 @@
           const emberBand = 1 / (catchfireWords.length * 0.6);
           const emberWp = Math.max(0, Math.min(1, (cf - emberBandStart) / emberBand));
           catchfireEmberWord.classList.toggle('is-ablaze', emberWp >= 1);
+        }
+      }
+
+      // NEW (this turn -- campfire+forest+Milky Way vista interactive
+      // brand reveal). Reveals continuously as the user scrubs through
+      // v15's own wide-vista hold window -- keyed to local15 (v15's own
+      // 0..1 local progress, already computed above), same "scroll-
+      // position-driven, never a fixed timer" contract as the
+      // connectedEl/catchfireEl blocks above. IN window starts at
+      // local15 0.46 (right after the forest/Milky Way reveal settles,
+      // per the fine-grained frame forensics in the CSS comment) and OUT
+      // window ends at local15 0.94 (just before the v15->v16 clip cut),
+      // so the name is only ever visible while the screen shows the
+      // full campfire+forest+starry-sky composition matching the user's
+      // reference screenshot.
+      if (junehongEl) {
+        const JUNEHONG_IN_START = 0.46;
+        const JUNEHONG_IN_END = 0.62;
+        const JUNEHONG_OUT_START = 0.82;
+        const JUNEHONG_OUT_END = 0.94;
+        let jh = 0;
+        if (local15 >= JUNEHONG_IN_START && local15 <= JUNEHONG_OUT_END) {
+          if (local15 < JUNEHONG_IN_END) {
+            jh = (local15 - JUNEHONG_IN_START) / (JUNEHONG_IN_END - JUNEHONG_IN_START);
+          } else if (local15 < JUNEHONG_OUT_START) {
+            jh = 1;
+          } else {
+            jh = 1 - (local15 - JUNEHONG_OUT_START) / (JUNEHONG_OUT_END - JUNEHONG_OUT_START);
+          }
+        }
+        jh = Math.max(0, Math.min(1, jh));
+        gsap.set(junehongEl, { opacity: jh > 0.01 ? 1 : 0 });
+
+        if (junehongLetters.length) {
+          // Letter-by-letter stagger (per explicit user choice: "레터
+          // 스태거로 가줘"), same per-item "band" idiom as the word-
+          // stagger blocks above but sliced across individual characters
+          // instead of whole words -- reads as a name assembling itself
+          // letter by letter, like a title card / signature reveal.
+          const JH_COUNT = junehongLetters.length;
+          const JH_BAND = 1 / (JH_COUNT * 0.6);
+          junehongLetters.forEach((letter, i) => {
+            const bandStart = (i / JH_COUNT) * (1 - JH_BAND) * 0.6;
+            const wp = Math.max(0, Math.min(1, (jh - bandStart) / JH_BAND));
+            gsap.set(letter, {
+              opacity: wp,
+              y: (1 - wp) * 30,
+              scale: 0.9 + wp * 0.1,
+              filter: `blur(${(1 - wp) * 10}px)`,
+            });
+            letter.classList.toggle('is-lit', wp >= 1);
+          });
         }
       }
     }

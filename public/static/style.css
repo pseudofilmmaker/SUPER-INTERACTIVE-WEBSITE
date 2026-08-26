@@ -743,6 +743,79 @@ html, body {
 }
 
 /* ============================================================
+   NEW (this turn -- "이 구간부터 JUNE HONG을 인터랙티브 요소를 가미해
+   넣어보자"): a third full-screen scroll-tied text reveal, this time
+   for the site's own brand/artist name ("JUNE HONG", the same text
+   as the static header link), timed to appear once v15's campfire
+   scene has fully pulled back to reveal the surrounding forest and
+   the Milky Way night sky -- frame-accurate ffmpeg forensics on
+   videos-bg-15.mp4 found the dark, isolated-campfire framing (the
+   already-implemented catchfire-text zone) holding through
+   local15~0.42, a brief transition (forest silhouettes emerging,
+   then the Milky Way fading in) from local15~0.42-0.46, and the
+   full campfire+forest+starry-sky composition -- matching the
+   user's newest reference screenshot -- settling into a stable,
+   near-static hold from local15~0.46 through the end of the clip
+   (confirmed continuous into v16's own opening frames, before v16's
+   camera later pans away from the campfire into a pure sky-only
+   finale). So this reveal is keyed to local15, arriving only once
+   that wider vista is fully visible, and fades back out with a
+   margin before the v15->v16 cut.
+   Per user's explicit choice ("레터 스태거로 가줘" -- letter-by-letter
+   stagger), each character of "JUNE HONG" gets its own .jh-letter
+   span and animates in individually (rather than word-by-word like
+   the other two overlays), giving it more of a title-card / signature
+   "reveal" feel appropriate for a name. Uses the header brand's own
+   clean sans-serif (Jost) + wide uppercase letter-spacing so it reads
+   as the same identity, just presented as a cinematic full-screen
+   moment instead of a small persistent link. Driven continuously by
+   scroll position, never a fixed timer -- fully reversible on
+   scroll-up, same contract as .vc-word/.cf-word above.
+   ============================================================ */
+#videos-junehong-text {
+  position: fixed;
+  inset: 0;
+  z-index: 17;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0;
+  will-change: opacity;
+}
+#videos-junehong-text p {
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-clean);
+  font-weight: 600;
+  font-style: normal;
+  text-transform: uppercase;
+  font-size: clamp(36px, 8vw, 108px);
+  line-height: 1;
+  color: var(--fg);
+  white-space: nowrap;
+}
+.jh-letter {
+  display: inline-block;
+  opacity: 0;
+  filter: blur(10px);
+  letter-spacing: 0.34em;
+  transform: translateY(30px) scale(0.9);
+  text-shadow: 0 2px 30px rgba(0,0,0,0.8);
+  will-change: opacity, transform, filter, text-shadow;
+}
+.jh-letter.is-lit {
+  text-shadow: 0 2px 30px rgba(0,0,0,0.8), 0 0 26px rgba(255,201,77,0.65);
+}
+.jh-space {
+  width: 0.5em;
+}
+@media (max-width: 768px) {
+  #videos-junehong-text p { font-size: clamp(26px, 11vw, 48px); }
+  .jh-letter { letter-spacing: 0.22em; }
+}
+
+/* ============================================================
    SECTION 1 — Intro + Cube
    The section's own background is fully transparent -- NO extra
    texture/scrim layers of its own -- so the #fixed-bg-video layer
