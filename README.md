@@ -140,6 +140,20 @@
 - `public/static/style.css`: `#ignite-gate`/`.ignite-gate-ring`/`.ignite-gate-orb`/`#ignite-gate-cta`(+ `igniteGateFlicker` keyframes), `#videos-connected-text`/`.vc-word` 스타일, `#videos-catchfire-text`/`.cf-word`/`.cf-word--ember`(+ `catchfireEmberPulse` keyframes) 스타일, `#videos-junehong-text`/`.jh-letter`/`.jh-space`(+ `.is-lit` 글로우) 스타일, `.videos-bg-video-el`에 `transform` will-change 추가
 - `public/static/app.js`: `setupVideosBgVideo()` 내부에 게이트 상태 머신(`armGate`/`igniteTorch`/`handleVideosProgress`, `idle→armed→igniting→released` 상태), `RISE_START`/`RISE_END` 기반 v12 상승 진입 transform 로직, `renderVideosChain()`에 "connected" 텍스트/"catch fire" 텍스트 단어별 스태거 리빌 계산 로직(+ ember 발광 클래스 토글) 및 "JUNE HONG" 글자별 스태거 리빌 계산 로직(+ `is-lit` 글로우 클래스 토글) 추가. 기존 하드컷 렌더링 로직(`seek()`, opacity 바이너리 전환)은 전혀 변경하지 않음 — 게이트/상승 진입/텍스트 리빌은 어디까지나 오버레이 상태로만 개입, 비디오 체인 자체의 하드컷 원칙은 그대로 유지
 
+**5) 마지막 프레임 홀드 버그 수정 + 클로징 Footer(라인 스태거) 추가** — 사용자가 첫번째 첨부 이미지(모닥불 없이 은하수만 가득한 순수 야경, `videos-bg-16.mp4`의 실제 피날레 프레임과 일치)와 함께 "마지막 영상에서 마지막 프레임을 홀드해줘 ... © 2026. JUNE HONG - HONG JOONSEONG / pseudofilmmaker@gmail.com / +1 236 866 6081 / About June Hong, VIDEO and PHOTO, Vancouver, CANADA 해서 이걸 footer로 박아줘. 마지막 프레임에 닿기 전에, 스크롤에 반응하면서 나오게끔해줘"라고 요청한 내용을 반영:
+
+- **프레임 포렌식**: ffmpeg 다단계 샘플링(`-sseof`로 마지막 0.3s, 전체 0-6s 균등 샘플링, 전환 구간 정밀 재샘플링)으로 `videos-bg-16.mp4`의 콘텐츠 타임라인을 확인 — 모닥불+숲(t=0-1s) → 숲 실루엣+은하수 전환(t=1.5-2s) → **모닥불 없이 은하수만 안정적으로 유지되는 순수 야경 피날레(t≈2.0-2.5s부터 클립 끝 t=6.0s까지)**가 사용자의 첫번째 첨부 이미지와 정확히 일치함을 확인. Footer 리빌 타이밍(`local16` 0.72~0.88 → t=4.32~5.28s)을 이 안정 구간 안쪽에 배치.
+
+- **마지막 프레임 홀드 버그 원인 및 수정**: 스크롤이 문서 최하단(진행률=1.0)에 도달하면 배경 영상 레이어가 얼어붙은 마지막 프레임이 아니라 완전히 까맣게(opacity:0) 꺼지는 버그를 발견. 원인은 영상 엘리먼트 자체가 아니라(격리 테스트로 `currentTime`/`ended`/`readyState`가 duration 이상 seek 시 모두 올바르게 클램프됨을 확인), VIDEOS 체인 전체를 구동하는 단일 `mainST` ScrollTrigger의 `onUpdate`/`onRefresh`/`onLeave` 콜백이 레이어 표시 여부를 `self.isActive` 하나에만 의존했기 때문 — GSAP은 이 트리거의 **시작 이전(progress=0)** 과 **종료 이후(progress=1, 즉 진짜 문서 맨 끝)** 를 모두 동일하게 `isActive:false`로 보고해 구분이 안 됨. `self.progress >= 1`(종료 이후) 케이스를 별도로 체크해 이때도 레이어를 계속 표시하도록 수정하고, `onLeave`의 무조건적 `opacity:0` 강제도 제거(`onLeaveBack`는 섹션-5 진입 이전으로 스크롤을 올릴 때의 정상적인 리셋 동작이므로 변경하지 않음).
+
+- **클로징 Footer**: `#videos-footer-text`(z-index 18, `#videos-junehong-text` 바로 다음 신규 오버레이)에 4줄(`.vf-line`) 마크업 추가 — ①`© 2026 JUNE HONG — HONG JOONSEONG`(브랜드 라인, 강조 스타일), ②`mailto:pseudofilmmaker@gmail.com` 링크, ③`tel:+12368666081` 링크, ④`About June Hong, VIDEO and PHOTO, Vancouver, CANADA`. 기존 4개 스태거 오버레이(`.wr-word`/`.vc-word`/`.cf-word`/`.jh-letter`)와 동일한 "envelope + 아이템별 band" 수학 패턴을 **라인 단위**로 적용(`.vf-line` 4개), `local16` 0.72→0.88 구간에서 순차 등장. 단, 나머지 오버레이들은 모두 등장(IN) 후 다시 사라지는(OUT) "일시적 순간" 연출인 반면, Footer는 **영구적인 연락처 정보**이므로 의도적으로 OUT 구간 없이 한 번 나타나면 `local16=1`(문서 맨 끝) 이후까지도 계속 유지됨. 이메일/전화 `<a>` 태그에만 `pointer-events: auto`를 되살려(부모 오버레이 및 나머지 `.vf-line`은 기존 관례대로 `pointer-events: none` 유지) 리빌된 후 실제로 클릭 가능하게 함.
+
+- **코드 변경**:
+  - `src/pages/home.html`: `#videos-footer-text`(4개 `.vf-line`) 오버레이 마크업을 `#videos-junehong-text` 바로 뒤에 추가
+  - `public/static/style.css`: `#videos-footer-text`/`.vf-inner`/`.vf-line`/`.vf-line[data-line="0"]`/`.vf-line a`(+ hover) 스타일 및 모바일 미디어쿼리 추가
+  - `public/static/app.js`: `footerEl`/`footerLines` 엘리먼트 참조 추가, `renderVideosChain()`에 `local16` 기반 footer 라인 스태거 렌더 블록 추가(OUT 구간 없음), `mainST`의 `onUpdate`/`onRefresh`를 `self.isActive || self.progress >= 1`로 수정하고 `onLeave`의 강제 `opacity:0` 제거(마지막 프레임 홀드 버그 근본 수정)
+- **검증**: Playwright로 순방향/역방향 각 13개 지점 스윕(진행률 0.9→1.0) — 마지막 프레임 홀드(진행률=1.0에서 `layerOpacity`="1", `v16CurrentTime`=6, 더 이상 블랙 화면 아님), footer 라인별 스태거 타이밍, 완전한 가역성(정방향/역방향 완전히 대칭), 기존 `junehongEl`/`catchfireEl`과의 상호 간섭 없음, 콘솔 에러 없음을 모두 확인. 스크린샷 3장(진행률 0.96/0.985/1.0)으로 footer 미노출→부분 리빌(라인별 순차)→완전 리빌+마지막 프레임 홀드를 시각적으로도 재확인.
+
 ## 다음 단계 (Not Yet Implemented)
 - 실제 Cloudflare Pages 프로덕션 배포
 - `photoCards`, `landscapeVideos`, `reelVideos`, `videosIntroThumb`, `splitPhoto` 등 media-config.js의 빈 슬롯에 실제 콘텐츠 채우기 (현재는 placeholder만 표시됨 — 원본 사이트도 동일 상태)

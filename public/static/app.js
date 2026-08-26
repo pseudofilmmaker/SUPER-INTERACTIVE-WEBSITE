@@ -1544,6 +1544,13 @@
     const junehongEl = document.getElementById('videos-junehong-text');
     const junehongLetters = junehongEl ? gsap.utils.toArray(junehongEl.querySelectorAll('.jh-letter')) : [];
 
+    // NEW (this turn -- "마지막 프레임에 닿기 전에, 스크롤에 반응하면서
+    // 나오게끔해줘"): closing contact/branding footer, line-staggered,
+    // revealed over the tail of v16's own local progress (see the long
+    // CSS comment above #videos-footer-text for the full rationale).
+    const footerEl = document.getElementById('videos-footer-text');
+    const footerLines = footerEl ? gsap.utils.toArray(footerEl.querySelectorAll('.vf-line')) : [];
+
     const videos = [v9, v10, v11, v12, v13, v14, v15, v16];
     gsap.set(videos, { opacity: 0, yPercent: 0 });
     gsap.set(v9, { opacity: 1 });
@@ -1923,6 +1930,51 @@
           });
         }
       }
+
+      // NEW (this turn -- closing footer). Reveals continuously as the
+      // user scrubs through v16's own final stretch -- keyed to local16
+      // (v16's own 0..1 local progress, already computed above), same
+      // "scroll-position-driven, never a fixed timer" contract as every
+      // other reveal in this chain. IN window (0.72 -> 0.88) sits inside
+      // v16's stable full Milky Way finale (frame-forensics: the
+      // forest/tree-silhouette motion settles into the static wide sky
+      // vista by roughly local16 0.55-0.6 and holds unchanged through
+      // 1.0 -- see videos-bg-16.mp4 grid samples), and critically
+      // FINISHES (reaches full opacity) well BEFORE local16=1 so the
+      // footer is already fully readable by the time scrolling bottoms
+      // out. UNLIKE the three ephemeral "moment" overlays above
+      // (connectedEl/catchfireEl/junehongEl), this is real footer
+      // content -- once revealed it should stay put rather than fade
+      // back out, so there is deliberately no OUT window: fo simply
+      // holds at 1 for the remainder of local16 (including exactly at
+      // and "past" 1.0, since seek()/mainST below now clamp there
+      // instead of blacking out).
+      if (footerEl) {
+        const FOOTER_IN_START = 0.72;
+        const FOOTER_IN_END = 0.88;
+        let fo = 0;
+        if (local16 >= FOOTER_IN_START) {
+          fo = local16 < FOOTER_IN_END
+            ? (local16 - FOOTER_IN_START) / (FOOTER_IN_END - FOOTER_IN_START)
+            : 1;
+        }
+        fo = Math.max(0, Math.min(1, fo));
+        gsap.set(footerEl, { opacity: fo > 0.01 ? 1 : 0 });
+
+        if (footerLines.length) {
+          const FL_COUNT = footerLines.length;
+          const FL_BAND = 1 / (FL_COUNT * 0.6);
+          footerLines.forEach((line, i) => {
+            const bandStart = (i / FL_COUNT) * (1 - FL_BAND) * 0.6;
+            const lp = Math.max(0, Math.min(1, (fo - bandStart) / FL_BAND));
+            gsap.set(line, {
+              opacity: lp,
+              y: (1 - lp) * 24,
+              filter: `blur(${(1 - lp) * 8}px)`,
+            });
+          });
+        }
+      }
     }
 
     /* ==========================================================
@@ -2038,6 +2090,36 @@
     // differs from setupPhotosBgVideo's "ends at the NEXT group's top"
     // span). Transparently covers section-6/7's own pinned conveyor
     // runs, same as setupPhotosBgVideo covers section-4's pin.
+    //
+    // ROOT-CAUSE FIX (explicit user spec, this turn -- "마지막 영상에서
+    // 마지막 프레임을 홀드해줘"): the OLD onUpdate/onRefresh/onLeave below
+    // gated the whole layer's opacity on `self.isActive` alone, which
+    // GSAP reports as false BOTH before this trigger's start (progress
+    // pinned at 0 -- correct, nothing to show yet) AND after its end
+    // (progress pinned at 1, once the user scrolls all the way to the
+    // document's true bottom -- WRONG, this is exactly the "hold on
+    // v16's last frame" moment, yet the old code faded the entire video
+    // layer to fully transparent/black right at that instant, visibly
+    // "losing" the last frame the user scrolled all the way to see).
+    // Confirmed via direct Playwright progress sampling: at progress
+    // 0.999 the layer was opacity 1 (v16 mid-frame), but at progress
+    // 1.0 (and beyond, since the document has no further scroll room
+    // past that point) isActive flips false and the old code snapped
+    // opacity to 0 -- a hard cut to black baked directly into the
+    // "reaching the end" experience. FIX: distinguish the two
+    // false-isActive cases by `self.progress` itself (0 = at-or-before
+    // start, 1 = at-or-after end -- these never collide) instead of
+    // isActive alone: show the layer whenever active OR fully past the
+    // end (progress>=1), only hide when genuinely before the start
+    // (progress<=0 and not active). onLeave (forward exit, i.e.
+    // reaching the true end) no longer forces opacity:0 at all -- the
+    // last v9-v16 opacity state written by handleVideosProgress()/
+    // renderVideosChain() right before this point already has exactly
+    // one clip (v16) sitting at opacity:1, seeked to its own final
+    // frame (see seek()'s CLIP_DURATION clamp above), so simply leaving
+    // the layer visible holds that exact last frame indefinitely.
+    // onLeaveBack (scrolling back UP above section-5's own top) is
+    // unchanged -- that direction correctly still hides the layer.
     mainST = ScrollTrigger.create({
       id: 'videos-bg-video',
       trigger: s5,
@@ -2046,14 +2128,17 @@
       end: 'bottom top',
       scrub: true,
       onUpdate: (self) => {
-        gsap.set(layer, { opacity: self.isActive ? 1 : 0 });
+        const show = self.isActive || self.progress >= 1;
+        gsap.set(layer, { opacity: show ? 1 : 0 });
         handleVideosProgress(self.progress);
       },
       onRefresh: (self) => {
-        gsap.set(layer, { opacity: self.isActive ? 1 : 0 });
+        const show = self.isActive || self.progress >= 1;
+        gsap.set(layer, { opacity: show ? 1 : 0 });
         handleVideosProgress(self.progress);
       },
-      onLeave: () => gsap.set(layer, { opacity: 0 }),
+      // onLeave intentionally does nothing now (see long comment above --
+      // forcing opacity:0 here is exactly the "loses the last frame" bug).
       onLeaveBack: () => {
         gsap.set(layer, { opacity: 0 });
         // Safety net: if the user jumps away entirely (dot-nav click,

@@ -816,6 +816,77 @@ html, body {
 }
 
 /* ============================================================
+   VIDEOS chain closing footer (this turn -- 사용자 요청: "마지막 영상에서
+   마지막 프레임을 홀드해줘 ... 이걸 footer로 박아줘. 마지막 프레임에 닿기
+   전에, 스크롤에 반응하면서 나오게끔해줘"). Contact/branding footer that
+   reveals over v16's own stable full Milky Way finale (see the
+   renderVideosChain() long comment in app.js for the frame-forensics
+   that pinpointed the reveal window) -- appears continuously as the
+   user scrolls through the tail of local16, fully in place well BEFORE
+   local16 reaches 1.0 (the true end of the scroll chain), then holds
+   visible through the end. Reuses the same `.jh-letter`-style fixed,
+   centered, pointer-events:none overlay pattern as the other three
+   text reveals, but LINE-staggered (4 lines) rather than word/letter
+   staggered, since this is a block of distinct contact facts rather
+   than a single sentence/name -- and unlike those three ephemeral
+   "moment" reveals, this one is a real footer (persistent contact
+   info) so it only fades IN, never back OUT, once revealed. The email/
+   phone lines are real mailto:/tel: links (pointer-events re-enabled
+   only on the .vf-line anchors) so they stay usable once shown. z-index
+   18 -- one above #videos-junehong-text (17), consistent with every
+   prior overlay in this chain incrementing by 1. */
+#videos-footer-text {
+  position: fixed;
+  inset: 0;
+  z-index: 18;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0;
+  will-change: opacity;
+}
+.vf-inner {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.vf-line {
+  opacity: 0;
+  filter: blur(8px);
+  transform: translateY(24px);
+  font-family: var(--font-clean);
+  color: var(--fg-dim);
+  letter-spacing: 0.08em;
+  font-size: 15px;
+  will-change: opacity, transform, filter;
+}
+.vf-line[data-line="0"] {
+  color: var(--fg);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+.vf-line a {
+  color: inherit;
+  text-decoration: none;
+  pointer-events: auto;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+.vf-line a:hover {
+  color: var(--fg);
+  border-color: var(--accent-gold);
+}
+@media (max-width: 768px) {
+  .vf-line { font-size: 13px; }
+  .vf-line[data-line="0"] { font-size: 14px; }
+}
+
+/* ============================================================
    SECTION 1 — Intro + Cube
    The section's own background is fully transparent -- NO extra
    texture/scrim layers of its own -- so the #fixed-bg-video layer
