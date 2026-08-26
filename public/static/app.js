@@ -1711,7 +1711,32 @@
       const local13 = (p - PHASE_V12_END) / (PHASE_V13_END - PHASE_V12_END);
       const local14 = (p - PHASE_V13_END) / (PHASE_V14_END - PHASE_V13_END);
       const local15 = (p - PHASE_V14_END) / (PHASE_V15_END - PHASE_V14_END);
-      const local16 = (p - PHASE_V15_END) / (1 - PHASE_V15_END);
+      // USER REQUEST THIS TURN ("첫번째 첨부한 이미지에서 홀드를 걸어줘" --
+      // add a scroll hold at the plain, text-free Milky Way vista shown in
+      // the user's screenshot): ffmpeg frame-forensics on the raw
+      // videos-bg-16.mp4 footage plus a fine-grained (0.005-step) post-
+      // ignite Playwright sweep pinpointed the exact matching frame at
+      // local16 ~= 0.4648 (absolute progress p ~= 0.96), sitting in the
+      // existing "empty gap" window after junehongEl's fade-out finishes
+      // (~p 0.921) and before footerEl's fade-in begins (~p 0.979). Freeze
+      // local16's effective value across [SCENE_HOLD_START, SCENE_HOLD_END]
+      // at SCENE_HOLD_START itself (the same value the raw progress already
+      // has on entry, so there's no visible jump when the hold engages),
+      // then remap the remaining raw range back onto [SCENE_HOLD_START, 1]
+      // so v16 resumes advancing smoothly into the footer reveal with no
+      // discontinuity on exit either -- same "clamp, don't truncate"
+      // contract as GATE_HOLD_LOCAL12 above.
+      const SCENE_HOLD_START = 0.40;
+      const SCENE_HOLD_END = 0.62;
+      const local16Raw = (p - PHASE_V15_END) / (1 - PHASE_V15_END);
+      let local16;
+      if (local16Raw < SCENE_HOLD_START) {
+        local16 = local16Raw;
+      } else if (local16Raw < SCENE_HOLD_END) {
+        local16 = SCENE_HOLD_START;
+      } else {
+        local16 = SCENE_HOLD_START + (local16Raw - SCENE_HOLD_END) * (1 - SCENE_HOLD_START) / (1 - SCENE_HOLD_END);
+      }
       seek(v9, local9);
       seek(v10, local10);
       seek(v11, local11);
