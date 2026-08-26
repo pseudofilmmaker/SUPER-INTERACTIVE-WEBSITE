@@ -95,7 +95,7 @@
 - 구간 경계(`PHASE_V*_END`)는 8개 클립 균등분할이 아니라 실제 스크롤 거리 가중치로 계산: section-5(v9)=100vh, section-6 핀(v10)=308vh, section-7 핀(v11)=330vh(기존 3편 합계 838vh, 변경 없음) + 신규 5편은 각각 100vh씩(section-8 확장분) — 새 전체 합계 1338vh 기준으로 각 클립이 균일한 스크럽 속도를 유지하도록 비율 계산
 - `#section-8`(`.videos-outro`)의 `min-height`를 기존 100vh(기본 `.panel` 높이)에서 600vh로 확장 — 신규 5클립(각 100vh)이 뭉개지지 않고 기존 클립들과 동일한 페이스로 스크럽될 수 있도록 스크롤 공간 확보. 여전히 완전 투명(`background: transparent`)이며 전경 콘텐츠는 없음(section-7에서 이미 모든 VIDEOS UI가 화면 위로 사라진 이후 구간)
 
-## 점화 게이트(IGNITE GATE) + "You are now connected with my work." 인터랙션
+## 점화 게이트(IGNITE GATE) + "You are now connected with my work" 인터랙션
 사용자 요청("횃불에 불이 붙기 전에 재생을 스크롤다운에도 반응없이, 고정된 화면에서 ... 점멸하는 원 옆에 불을 붙여주세요를 영어로 점멸하게끔 ... 원을 클릭하는 순간 불이 붙은 장면에서 다시 멈춤. 거기서 다시 스크롤다운에 반응하는 영상으로 전환 ... 두번째 첨부이미지가 나오는 시점에서, '당신은 나의 작업물과 연결되었습니다.'를 영어로 인터랙티브하게")에 따라, VIDEOS 배경 체인(`videos-bg-12`~`13`) 구간에 두 가지 신규 인터랙션을 추가했습니다.
 
 **1) 점화 게이트 (클릭-투-이그나이트)** — `videos-bg-12.mp4` 시작 지점(t=0, 완전히 꺼진 횃불)에서:
@@ -106,14 +106,25 @@
 - 트윈 완료 시 스크롤 잠금 해제 + 실제 스크롤 위치를 목표 지점으로 동기화 → 이후 남은 체인(v12 나머지→v13→...→v16)은 다시 완전히 스크롤 스크럽 방식으로 재생됨
 - 스크롤을 다시 게이트 지점 위로 올리면 상태가 초기화되어, 다시 내려오면 게이트가 재작동함(무한 반복 가능)
 
-**2) "You are now connected with my work." 인터랙티브 리빌** — `videos-bg-13.mp4`(사진작가 리빌 장면, 사용자의 두번째 첨부 스크린샷과 일치)의 로컬 진행률(`local13`)에 직접 연동:
-- 밝기 포렌식(t=0-1s 평탄 ~16 → t=1.5s부터 상승 → t=2.0s에서 피크 24.16, 사진작가가 완전히 선명하게 드러나는 지점)을 바탕으로 `local13` 0.25→0.4167(t=1.5s→2.5s) 구간에서 텍스트가 아래에서 위로 슬라이드하며 페이드인, 0.82→0.96 구간에서 다시 페이드아웃
+**1-1) 횃불 상승 진입(rise-up entrance) — 개정 (사용자 피드백: "첫번째 이미지, 컷 투로 바로 붙는 게 아니고, 토치도 화면 아래서부터 스크롤다운에 반응하면서 올라와야지")**:
+- 기존에는 v11→v12 전환이 순수 opacity 하드컷(v12가 이미 최종 위치에 놓인 채 opacity 0→1로 즉시 등장)이라 "컷 투로 바로 붙는" 느낌이 있었음
+- v11의 스크롤 구간 꼬리(`RISE_START` = `GATE_PROGRESS - 0.03`)부터 게이트가 실제로 arm되는 지점(`RISE_END` = `GATE_PROGRESS` = `PHASE_V11_END`)까지, v12를 v11 위에 stack(z-index로만 겹침, opacity 블렌딩 없음)한 뒤 `translateY(yPercent)`를 100%(화면 완전 아래)→0%(제자리)로 스크롤 진행률의 연속 함수로 애니메이션 — 횃불이 실제로 화면 아래에서 스크롤다운에 반응하며 솟아오르는 것처럼 보임
+- v12는 이 구간 내내 완전 불투명(opacity:1)이며, 아직 덮지 못한 부분은 그 아래 v11의 프레임이 그대로 보임(알파 블렌딩 없음 → "디졸브 아님" 원칙 유지, 두 클립 사이 크로스페이드가 아니라 위치 이동에 의한 자연스러운 가림)
+- 스크롤을 다시 올리면 `yPercent`가 그대로 역산되어 횃불이 화면 아래로 다시 가라앉음(완전히 가역적) — 이 상승 애니메이션이 끝나야만(= `RISE_END` 도달) 게이트 arm(스크롤 잠금 + 점멸 원/CTA 표시)이 실행됨
+
+**2) "You are now connected with my work" 인터랙티브 리빌** — `videos-bg-13.mp4`(사진작가 리빌 장면, 사용자의 두번째 첨부 스크린샷과 일치)의 로컬 진행률(`local13`)에 직접 연동:
+- 밝기 포렌식(t=0-1s 평탄 ~16 → t=1.5s부터 상승 → t=2.0s에서 피크 24.16, 사진작가가 완전히 선명하게 드러나는 지점)을 바탕으로 `local13` 0.25→0.4167(t=1.5s→2.5s) 구간에서 텍스트가 나타나고, 0.82→0.96 구간에서 다시 사라짐
 - 고정 타이머가 아니라 **스크롤 진행률(p)의 연속 함수**로 opacity/transform을 계산하므로, 스크롤을 위아래로 오가면 텍스트도 실시간으로 나타났다 사라졌다 반응함(진짜 "인터랙티브" 리빌 — 다른 모든 스크롤 연동 효과와 동일한 원칙)
 
+**2-1) 개정 (사용자 피드백: "두번째 이미지, 문장 마지막에 마침표를 없애주고, 더 인터랙티브하게 만들어줘")**:
+- 문장 끝의 마침표 제거: "You are now connected with my work." → "You are now connected with my work" (마침표 없음)
+- 기존에는 문단 전체가 하나의 블록으로 페이드인/아웃(opacity + translateY 26px)했으나, 이를 단어별 스태거 리빌로 교체 — `work-reel` 섹션의 `.wr-word` 패턴과 동일한 구조(`.vc-word` span 7개)를 적용
+- 각 단어는 `co`(전체 in/out envelope, 0..1) 위에서 자신만의 겹치는 서브구간(band)을 가지며, blur(6px→0) + translateY(22px→0) + scale(0.94→1) + opacity(0→1)를 동시에 애니메이션 — 왼쪽부터 순서대로 하나씩 선명해지며 문장이 "조립"되고, exit 구간에서는 동일한 순서로 다시 "해체"됨. 여전히 스크롤 진행률의 순수 함수라 스크롤을 위아래로 오가면 실시간으로 반응/역재생됨
+
 **코드 변경**:
-- `src/pages/home.html`: `#ignite-gate`(원+링+CTA 텍스트) 및 `#videos-connected-text` 오버레이 마크업 추가 (`#videos-bg-video-layer` 바로 뒤, `<main>` 앞)
-- `public/static/style.css`: `#ignite-gate`/`.ignite-gate-ring`/`.ignite-gate-orb`/`#ignite-gate-cta`(+ `igniteGateFlicker` keyframes) 및 `#videos-connected-text` 스타일 추가
-- `public/static/app.js`: `setupVideosBgVideo()` 내부에 게이트 상태 머신(`armGate`/`igniteTorch`/`handleVideosProgress`, `idle→armed→igniting→released` 상태) 및 `renderVideosChain()`에 "connected" 텍스트 스크롤 연동 opacity 계산 로직 추가. 기존 하드컷 렌더링 로직(`seek()`, opacity 바이너리 전환)은 전혀 변경하지 않음 — 게이트는 어디까지나 v12 구간 진입 시점에만 개입하는 오버레이 상태 머신
+- `src/pages/home.html`: `#ignite-gate`(원+링+CTA 텍스트) 및 `#videos-connected-text`(단어별 `.vc-word` span 7개, 마침표 없음) 오버레이 마크업 추가 (`#videos-bg-video-layer` 바로 뒤, `<main>` 앞)
+- `public/static/style.css`: `#ignite-gate`/`.ignite-gate-ring`/`.ignite-gate-orb`/`#ignite-gate-cta`(+ `igniteGateFlicker` keyframes), `#videos-connected-text`/`.vc-word` 스타일, `.videos-bg-video-el`에 `transform` will-change 추가
+- `public/static/app.js`: `setupVideosBgVideo()` 내부에 게이트 상태 머신(`armGate`/`igniteTorch`/`handleVideosProgress`, `idle→armed→igniting→released` 상태), `RISE_START`/`RISE_END` 기반 v12 상승 진입 transform 로직, `renderVideosChain()`에 "connected" 텍스트 단어별 스태거 리빌 계산 로직 추가. 기존 하드컷 렌더링 로직(`seek()`, opacity 바이너리 전환)은 전혀 변경하지 않음 — 게이트/상승 진입은 어디까지나 v11 꼬리~v12 진입 시점에만 개입하는 오버레이 상태 머신
 
 ## 다음 단계 (Not Yet Implemented)
 - 실제 Cloudflare Pages 프로덕션 배포
