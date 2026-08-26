@@ -1389,6 +1389,24 @@ html, body {
    ============================================================ */
 .videos-outro {
   background: transparent;
+  /* EXTENDED (this turn -- "관련영상이 끝나자마자, 첨부한 영상 순서대로 ...
+     영상을 이어 올려줘"): 5 new background clips (videos-bg-12..16, each
+     6s) were appended to the #videos-bg-video-layer hard-cut chain (see
+     setupVideosBgVideo() in app.js) so they play out immediately after
+     video-11 finishes. Since this whole chain is scroll-scrubbed (not
+     autoplaying on a timer), each additional clip needs its own slice of
+     ACTUAL scroll distance to scrub through -- otherwise the same old
+     100vh budget would have to be shared across 6 clips instead of 1,
+     making every one of them fly by in a fraction of a scroll-second.
+     +500vh (100vh per new clip, matching the flat/unpinned pace video-9
+     already gets during section-5's own plain 100vh span) on top of the
+     original 100vh keeps this new stretch feeling consistent with the
+     rest of the chain instead of rushed. Still fully transparent/empty
+     of foreground content -- purely extra scroll runway, same rationale
+     as the original 100vh (all VIDEOS-group UI has already risen away
+     per setupVideosGroupExit() well before this point). */
+  min-height: 600vh;
+  min-height: calc(var(--vh, 1vh) * 600);
 }
 
 /* ============================================================

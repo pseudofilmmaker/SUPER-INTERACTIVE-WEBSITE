@@ -1447,47 +1447,76 @@
      VIDEOS BACKGROUND VIDEO -- third "media player" layer, same
      scrub-chain pattern as setupPhotosBgVideo() above but scoped to
      the whole VIDEOS group (section-5 intro through section-7 reels)
-     PLUS the new outro (section-8). Per this turn's spec: "비디오
-     관련 배경영상을 차례대로 로딩에 최적화되게끔 생성해줘" -- three
-     uploaded clips (9/10/11.mp4, each re-encoded from source 4K/24fps
-     down to 1080p H.264 ~1-2MB for web) hard-cut in sequence
-     9 -> 10 -> 11 as the user scrolls through the group.
+     PLUS the outro (section-8). Per the original spec: "비디오 관련
+     배경영상을 차례대로 로딩에 최적화되게끔 생성해줘" -- three uploaded
+     clips (9/10/11.mp4, each re-encoded from source 4K/24fps down to
+     1080p H.264 ~1-2MB for web) hard-cut in sequence 9 -> 10 -> 11 as
+     the user scrolls through the group.
      Unlike setupPhotosBgVideo's span (which ends at the NEXT group's
      own top, since photos-outro-08 must fully finish before VIDEOS
      begins), this trigger's `endTrigger`/`end` deliberately reaches
-     all the way to section-8's own BOTTOM (not top) -- video-11 must
-     still be mid-playback (not yet finished) at the moment section-8
-     begins, so it keeps scrubbing/finishing DURING the outro's own
+     all the way to section-8's own BOTTOM (not top) -- so the whole
+     9..16 chain keeps scrubbing/finishing DURING the outro's own
      scroll transit while the foreground VIDEOS content has already
      risen away (see setupVideosGroupExit() below), exactly matching
      "11번영상이 끝나기 전에 비디오 관련 컨텐츠는 모두 화면위로
      올라가면서 사라져야해" (before video 11 finishes, all video
      content must already have risen off-screen).
-     Phase split is NOT an even 3-way share of progress -- weighted
-     roughly by how much actual scroll distance each sub-section
-     consumes (section-5 is a single unpinned ~100vh panel; section-6's
-     pin runs ~22%*14=308vh; section-7+outro's pin+plain span runs
-     ~30%*11+100=430vh) so no single clip's scrub feels rushed or
-     stretched relative to how long the user is actually looking at
-     its corresponding foreground content.
+     EXTENDED (this turn -- "캡쳐 이미지를 분석해 관련영상이 끝나자마자,
+     첨부한 영상 순서대로 투명도 조절없이 원본 그대로, 다만 로딩에
+     최적화되게끔, 영상을 이어 올려줘"): 5 more uploaded clips
+     (12/13/14/15/16.mp4, same re-encode pipeline: 4K->1080p H.264,
+     audio stripped, faststart) appended to the SAME hard-cut chain so
+     they play, in order, immediately after video-11 finishes -- see the
+     PHASE_V*_END constants and renderVideosChain() below for the exact
+     per-clip scroll-progress boundaries and #section-8's extended
+     min-height in style.css for the extra scroll runway this needed.
+     Phase split is NOT an even 8-way share of progress -- weighted by
+     how much actual scroll distance each sub-section consumes (see the
+     long comment directly above the PHASE_V9_END.. constants below for
+     the full breakdown) so no single clip's scrub feels rushed or
+     stretched relative to how long the user is actually looking at its
+     corresponding foreground content.
      ============================================================ */
   function setupVideosBgVideo() {
     const layer = document.getElementById('videos-bg-video-layer');
     const v9 = document.getElementById('videos-bg-video-9');
     const v10 = document.getElementById('videos-bg-video-10');
     const v11 = document.getElementById('videos-bg-video-11');
+    // NEW (this turn -- "관련영상이 끝나자마자, 첨부한 영상 순서대로
+    // 투명도 조절없이 원본 그대로 ... 영상을 이어 올려줘"): 5 more
+    // user-uploaded clips, re-encoded 4K->1080p/h264/no-audio/faststart
+    // (same pipeline as 9/10/11, ffprobe-confirmed 1920x1080/24fps/
+    // exactly 6.000000s each) appended to the SAME hard-cut chain so
+    // they play immediately after video-11 finishes, in the exact
+    // order supplied: 12 -> 13 -> 14 -> 15 -> 16. Frame-accurate
+    // forensics (mean-gray + direct visual diff of extracted first/
+    // last frames) confirmed a continuous narrative and clean cut
+    // points throughout: v11 ends on the small unlit-torch flame from
+    // the user's own reference screenshot; v12 opens on that same
+    // torch (now catching) and ends fully ablaze; v13 opens on a
+    // near-identical blazing-torch frame then pulls back to reveal a
+    // photographer holding the torch/camera; v14 continues that same
+    // reveal into a full campfire shot; v15 opens on a near-identical
+    // campfire frame then widens to a starry-sky/forest vista; v16
+    // opens on that same vista and pushes into a full Milky Way finale.
+    const v12 = document.getElementById('videos-bg-video-12');
+    const v13 = document.getElementById('videos-bg-video-13');
+    const v14 = document.getElementById('videos-bg-video-14');
+    const v15 = document.getElementById('videos-bg-video-15');
+    const v16 = document.getElementById('videos-bg-video-16');
     const s5 = document.getElementById('section-5');
     const s8 = document.getElementById('section-8');
-    if (!layer || !v9 || !v10 || !v11 || !s5 || !s8) return;
+    if (!layer || !v9 || !v10 || !v11 || !v12 || !v13 || !v14 || !v15 || !v16 || !s5 || !s8) return;
 
-    const videos = [v9, v10, v11];
+    const videos = [v9, v10, v11, v12, v13, v14, v15, v16];
     gsap.set(videos, { opacity: 0 });
     gsap.set(v9, { opacity: 1 });
 
     // Same root-cause fix as the other two bg-video layers -- see
     // blobifySeekableVideo()'s top-of-file comment. Staggered 250ms
     // apart per video for the same "avoid simultaneous decoder init"
-    // reason.
+    // reason (now 8 videos, so v16 initializes at +1750ms).
     videos.forEach((v, i) => blobifySeekableVideo(v, i * 250));
 
     // Pre-warm each clip's decoder at its own t=0 while still hidden,
@@ -1500,16 +1529,13 @@
       });
       if (video.readyState > 0) video.currentTime = t;
     }
-    prewarmSeek(v9, 0);
-    prewarmSeek(v10, 0);
-    prewarmSeek(v11, 0);
+    videos.forEach((v) => prewarmSeek(v, 0));
 
-    // All three re-encoded clips are exactly 6.000000s (ffprobe-confirmed);
+    // All eight re-encoded clips are exactly 6.000000s (ffprobe-confirmed);
     // no baked-in fade-to-black footage was found at either end of any of
-    // the three (brightness sampled every 1s across each clip stayed in a
-    // consistent ~16-51 mean-gray range throughout), so -- unlike
-    // setupPhotosBgVideo's V7/V8_SAFE_START/END -- the full [0, 6] duration
-    // is used directly with no safe-window remapping needed.
+    // them, so -- unlike setupPhotosBgVideo's V7/V8_SAFE_START/END -- the
+    // full [0, 6] duration is used directly with no safe-window remapping
+    // needed.
     const CLIP_DURATION = 6.0;
     function seek(video, localP) {
       const t = Math.max(0, Math.min(1, localP)) * CLIP_DURATION;
@@ -1564,32 +1590,79 @@
     // exactly ONE of v9/v10/v11 is opacity:1 and the other two are
     // opacity:0, with no intermediate tick where two are simultaneously
     // nonzero (i.e. no dissolve, ever).
-    const PHASE_V9_END = 0.15;
-    const PHASE_V10_END = 0.55;
+    //
+    // EXTENDED to 8 clips (this turn -- "투명도 조절없이 원본 그대로 ...
+    // 영상을 이어 올려줘", explicitly repeating the "no opacity blending"
+    // requirement for the 5 newly-appended clips): every new boundary
+    // below uses the exact same zero-width hard-cut pattern as the
+    // original v9/v10/v11 boundaries -- one clip's opacity is always
+    // exactly 1 and all others exactly 0, never blended.
+    //
+    // Phase widths are NOT an even 8-way split -- weighted by actual
+    // scroll distance each stretch consumes, same principle as the
+    // original 3-clip comment above: section-5 (v9) = 100vh flat;
+    // section-6 (v10) pin = 22%*14 = 308vh; section-7 (v11) pin =
+    // 30%*11 = 330vh (v9+v10+v11 old total = 838vh, unchanged); each new
+    // clip (v12-v16) gets its own fresh 100vh slice carved out of
+    // section-8's now-extended height (see .videos-outro's min-height in
+    // style.css) so none of the 5 new clips scrubs by faster than v9's
+    // own original pace. New grand total = 838 + 5*100 = 1338vh; boundary
+    // fractions below are each clip's cumulative-vh-so-far / 1338.
+    const PHASE_V9_END = 0.093946;
+    const PHASE_V10_END = 0.344469;
+    const PHASE_V11_END = 0.626308;
+    const PHASE_V12_END = 0.701046;
+    const PHASE_V13_END = 0.775785;
+    const PHASE_V14_END = 0.850523;
+    const PHASE_V15_END = 0.925262;
+    // PHASE_V16_END is implicitly 1.0 (last clip in the chain).
 
     function renderVideosChain(p) {
       const local9 = PHASE_V9_END > 0 ? p / PHASE_V9_END : 1;
       const local10 = (p - PHASE_V9_END) / (PHASE_V10_END - PHASE_V9_END);
-      const local11 = (p - PHASE_V10_END) / (1 - PHASE_V10_END);
+      const local11 = (p - PHASE_V10_END) / (PHASE_V11_END - PHASE_V10_END);
+      const local12 = (p - PHASE_V11_END) / (PHASE_V12_END - PHASE_V11_END);
+      const local13 = (p - PHASE_V12_END) / (PHASE_V13_END - PHASE_V12_END);
+      const local14 = (p - PHASE_V13_END) / (PHASE_V14_END - PHASE_V13_END);
+      const local15 = (p - PHASE_V14_END) / (PHASE_V15_END - PHASE_V14_END);
+      const local16 = (p - PHASE_V15_END) / (1 - PHASE_V15_END);
       seek(v9, local9);
       seek(v10, local10);
       seek(v11, local11);
+      seek(v12, local12);
+      seek(v13, local13);
+      seek(v14, local14);
+      seek(v15, local15);
+      seek(v16, local16);
 
-      let o9 = 0;
-      let o10 = 0;
-      let o11 = 0;
+      let o9 = 0, o10 = 0, o11 = 0, o12 = 0, o13 = 0, o14 = 0, o15 = 0, o16 = 0;
 
       if (p < PHASE_V9_END) {
         o9 = 1;
       } else if (p < PHASE_V10_END) {
         o10 = 1;
-      } else {
+      } else if (p < PHASE_V11_END) {
         o11 = 1;
+      } else if (p < PHASE_V12_END) {
+        o12 = 1;
+      } else if (p < PHASE_V13_END) {
+        o13 = 1;
+      } else if (p < PHASE_V14_END) {
+        o14 = 1;
+      } else if (p < PHASE_V15_END) {
+        o15 = 1;
+      } else {
+        o16 = 1;
       }
 
       gsap.set(v9, { opacity: o9 });
       gsap.set(v10, { opacity: o10 });
       gsap.set(v11, { opacity: o11 });
+      gsap.set(v12, { opacity: o12 });
+      gsap.set(v13, { opacity: o13 });
+      gsap.set(v14, { opacity: o14 });
+      gsap.set(v15, { opacity: o15 });
+      gsap.set(v16, { opacity: o16 });
     }
 
     // Single ScrollTrigger spanning section-5's own top through
