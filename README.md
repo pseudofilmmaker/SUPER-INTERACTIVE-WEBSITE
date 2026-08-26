@@ -167,6 +167,14 @@
   - `public/static/app.js`: `renderVideosChain()` 내부에 `GATE_HOLD_LOCAL12`(=0.1s 상당) 플로어를 도입해 `local12`가 절대 결함 프레임(t=0)에 닿지 않도록 수정; `handleVideosProgress()`의 게이트 리셋 분기에 `gateEl.classList.remove('is-igniting','is-armed')` + `gsap.set(gateEl,{opacity:0})` 추가
 - **검증**: Playwright로 실제 마우스 휠 스크롤을 시뮬레이션해 게이트 진입(armed) → 클릭 점화 → 역스크롤까지 전 과정을 샘플링. 결과: armed 상태에서 `v12Time`이 기존 `0.000`(불씨 노출)에서 `0.1`(불씨 없음)로 확인; 점화 후 역스크롤 완료 시점에 `gateClasses`가 기존 `"is-igniting"`(고착)에서 `""`(완전 초기화), `gateOpacity`가 `"0"`으로 정상 확인. 투명 헤더는 어두운 히어로(페이지 최상단)/밝은 불꽃 장면(스크롤 2200px)/별이 총총한 은하수 파이널(진행률 0.95) 세 지점 모두에서 스크린샷으로 재확인 — 어떤 배경에서도 헤더 텍스트가 또렷이 읽히고, 회색 띠나 경계선이 전혀 보이지 않음을 시각적으로 확인. 토치 장면(진행률 0.88/0.96)에서 투명 헤더와 불씨 제거 수정이 동시에 정상 동작함도 재확인.
 
+## 워크릴(work-reel) 태그라인 가독성 수정 (완료)
+사용자가 매치 헤드/불꽃 장면 스크린샷과 함께 지적: "글씨가 좀 더 잘 보여야될 거 같아. 다른 방법으로 부탁해" — SECTION 1과 SECTION 2 사이의 태그라인("directs, shoots, and edits brand films...")이 매치 헤드의 밝은 나무색/불꽃 배경 위에서 얇은 세리프체 + 낮은 투명도로만 표시되어 거의 안 보이는 문제.
+
+- **원인**: `.wr-word`에 텍스트 그림자나 어두운 배경 처리가 전혀 없어, 배경이 밝을 때(매치 나무, 불꽃 중심부) 글자가 거의 완전히 묻힘 — 반면 배경이 상대적으로 어두운 부분("concept", "final color")만 조금 더 읽힘 (understand_images 분석으로 확인).
+- **수정**: 헤더 투명화 때와 동일한 원칙(별도의 어두운 오버레이/스크림 레이어를 추가하면 밝은 배경 위에서 그 자체가 어색한 띠로 보일 위험 — 이 프로젝트에서 사용자가 이미 `#header-feather`를 반려한 전례) 아래, 오버레이 레이어 대신 각 단어에 `text-shadow`(`0 1px 5px rgba(0,0,0,.9), 0 0 18px rgba(0,0,0,.7)`)를 직접 적용 — `#site-header`/`#ignite-gate-cta`와 동일한 기법. 기존의 "읽기 스포트라이트"(단어별 opacity/color/scale 스윕) 애니메이션 로직은 그대로 유지.
+- **코드 변경**: `public/static/style.css`의 `.wr-word` 규칙에 `text-shadow` 한 줄 추가 (app.js/home.html 변경 없음).
+- **검증**: Playwright로 work-reel 핀 구간의 3개 지점(진행률 0.15/0.3/0.45)에서 스크린샷 확인 — 밝은 매치 나무, 불꽃 한가운데, 어두운 배경 등 모든 배경 밝기에서 텍스트가 또렷이 읽힘을 시각적으로 확인.
+
 ## 다음 단계 (Not Yet Implemented)
 - 실제 Cloudflare Pages 프로덕션 배포
 - `photoCards`, `landscapeVideos`, `reelVideos`, `videosIntroThumb`, `splitPhoto` 등 media-config.js의 빈 슬롯에 실제 콘텐츠 채우기 (현재는 placeholder만 표시됨 — 원본 사이트도 동일 상태)

@@ -1154,6 +1154,23 @@ html, body {
 .wr-word {
   display: inline-block;
   will-change: opacity, color, transform;
+  /* ROOT-CAUSE FIX (explicit user feedback on a screenshot of this exact
+     section, this turn): the tagline sits directly over the work-reel's
+     own bright/high-contrast footage (light matchstick wood, glowing
+     orange flame) with nothing behind it but its own thin, semi-
+     transparent serif glyphs -- no overlay, outline, or shadow at all --
+     so words over the brightest patches (match wood, flame center) read
+     as almost fully washed out/illegible while only the words sitting
+     over darker out-of-focus areas ("concept", "final color") were even
+     partly legible. Rather than add a dedicated dark overlay/scrim layer
+     behind the whole tagline (which, per the SAME user's rejection of the
+     analogous #header-feather approach earlier in this project, tends to
+     read as its own awkward band over bright content), this applies a
+     text-shadow directly to each word -- same technique already used by
+     #site-header .brand/.main-nav a and #ignite-gate-cta elsewhere on
+     this page -- so every word stays legible against ANY footage
+     brightness without any separate visible layer of its own. */
+  text-shadow: 0 1px 5px rgba(0,0,0,0.9), 0 0 18px rgba(0,0,0,0.7);
 }
 @media (max-width: 768px) {
   .work-reel-tagline { font-size: clamp(16px, 4.6vw, 24px); padding: 0 22px; }
