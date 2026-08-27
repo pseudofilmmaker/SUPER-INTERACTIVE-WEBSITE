@@ -206,4 +206,339 @@
 ## 다음 단계 (Not Yet Implemented)
 - 실제 Cloudflare Pages 프로덕션 배포
 - `photoCards`, `landscapeVideos`, `reelVideos`, `videosIntroThumb`, `splitPhoto` 등 media-config.js의 빈 슬롯에 실제 콘텐츠 채우기 (현재는 placeholder만 표시됨 — 원본 사이트도 동일 상태)
-- ABOUT ME 섹션 콘텐츠 (원본 사이트에도 별도 섹션 마크업은 없고 헤더 링크만 존재, `/#section-2`로 연결됨)
+- ~~ABOUT ME 섹션 콘텐츠~~ — 아래 "About Me page (/about)" 섹션들에서 별도의 스크롤 인터랙티브 `/about` 페이지로 구현 완료 (헤더의 ABOUT ME 링크는 이제 `/about`로 이동)
+## About Me page (/about) — this turn
+
+Added a new scroll-interactive `/about` page for June Hong's bio, following
+the pichiworld.co.kr reference pattern (prologue caption → title-card reveal
+→ Star Wars-style 3D opening crawl → resting photo+bio section), driven by
+GSAP/ScrollTrigger with the same "one pinned ScrollTrigger, many renderer
+functions" architecture used on the HOME page.
+
+**New/changed files:**
+- `src/pages/about.html` — new page markup
+- `src/index.tsx` — added `/about` route
+- `public/static/about.js` — new dedicated scroll-driving script (mirrors
+  `blobifySeekableVideo`/`prewarmSeek` from `app.js`, since `/about` doesn't
+  load `app.js`)
+- `public/static/style.css` — new `.about-*` / `#about-*` CSS block, plus
+  new `--about-violet` / `--about-ice` tokens scoped only to this page
+- `public/static/media/about/` — two optimized background videos
+  (campfire→galaxy 8s, starfield loop 4s) + background-removed profile photo
+- `src/pages/home.html`, `photos.html`, `videos.html` — "ABOUT ME" nav link
+  now points to `/about` instead of the old `#section-2` in-page anchor
+
+**Two deliberate deviations from prior site conventions, flagged here:**
+1. **Dissolve, not hard-cut**: the video1→video2 background handoff on this
+   page uses a real, narrow opacity crossfade (`DISSOLVE_WIDTH` in
+   `about.js`), per this page's explicit spec. Every other video chain on
+   the site (HOME's `renderVideosChain()` etc.) is a strict zero-width hard
+   cut. This dissolve is scoped to ONLY this one handoff on this one page.
+2. **Color palette**: the pichiworld.co.kr reference is purple/neon-pink,
+   but the site's global tokens are an established "fire" palette that
+   itself replaced an earlier purple scheme. Rather than reintroducing
+   purple site-wide, `/about` defines its own small `--about-violet`/
+   `--about-ice` tokens, scoped only to `#about-*` selectors, so the rest of
+   the site is unaffected.
+
+**Not yet done:** letter/word-level stagger reveal on the JUNE/HONG title
+(currently a simple opacity+rise fade, not letter-by-letter like
+`.jh-letter`); finer frame-accurate tuning of the video1 clip's own content
+against the scroll pacing; a possible dedicated `/about` entry in the
+site's dot-nav / mobile QA pass.
+
+## About Me page (/about) — Round 2 revisions (this turn)
+
+User reviewed Round 1 with 6 annotated screenshots and gave 7 itemized fixes
+(in Korean). All 7 are now implemented and visually verified via
+progress-accurate Playwright screenshots (see Testing methodology below).
+
+1. **Black-flash-at-start fix**: root cause was a JS opacity RAMP
+   (`Math.min(1, p/0.03)`) applied to the whole `#about-bg-video-layer`,
+   which faded the layer in from 0 even though the `<video>` itself already
+   had its first frame ready. Removed the ramp entirely — only the existing
+   outro fade-out remains. Verified: `p=0.00` now shows the campfire/Milky
+   Way frame immediately, no black flash.
+2. **Scroll-cue matched to HOME**: the page now reuses HOME's own
+   `.scroll-cue`/`#global-scroll-cue` markup/CSS exactly instead of a
+   diverging `#about-scroll-cue` custom style.
+3. **English prologue text**: replaced the Korean prologue line with a
+   single English line for now — **still pending final selection**, see
+   "Outstanding" below for several options to choose from.
+4. **Title/subtitle overlap + "PHOTOGRAPHER"**: fixed vertical spacing so
+   `JUNE` / subtitle / `HONG` never visually overlap each other, and added
+   `PHOTOGRAPHER` to the subtitle (`DIRECTOR · VIDEOGRAPHER · PHOTOGRAPHER ·
+   EDITOR`).
+5. **Scroll-interactive profile photo**: added a profile photo overlay
+   that reveals right after the JUNE/HONG title, using the same
+   opacity/scale/rise scroll-progress-driven pattern as the text overlays.
+6. **Crawl angle fixed for legibility**: reduced `rotateX()` on the 3D
+   opening-crawl text from `55deg` to `22deg`, matching the shallower,
+   readable angle in the pichiworld.co.kr reference screenshot.
+7. **Coded, autonomous starfield background**: added a `<canvas>`-based
+   procedural starfield, driven purely by its own `requestAnimationFrame`
+   loop (`performance.now()`-based, NOT tied to scroll progress). It's
+   revealed once `video2` ("ended" event) plays through, and persists
+   behind every following section (title/photo/crawl/outro/resting bio).
+
+**Sequential phase-timeline retiming (bug fix within this round):**
+Initial retiming for items 4/5 had two overlap bugs, found via accurate
+scroll-progress screenshot testing (see below): the prologue caption and
+the title card were briefly visible together (~p=0.54–0.60), and the
+profile photo visually collided with the still-opaque title text
+(~p=0.60–0.66). Fixed by rebuilding the whole phase timeline in
+`public/static/about.js` with an explicit ~0.03 progress-unit gap inserted
+between every consecutive pair of overlays (prologue→title,
+title→photo, photo→crawl), and increasing the pinned hero's total scroll
+distance from `+=480%` to `+=620%` so the added gaps don't compress any
+individual phase (particularly the crawl's own readable run length).
+Current phase windows (all values are the pinned ScrollTrigger's local
+progress `p`, 0–1):
+| Phase | IN | OUT |
+|---|---|---|
+| Prologue caption | (dissolve end)+0.02 → +0.06 | 0.46 → 0.50 |
+| Title card (JUNE/HONG) | 0.53 → 0.59 | 0.64 → 0.68 |
+| Profile photo | 0.71 → 0.75 | 0.80 → 0.84 |
+| Opening crawl | 0.87 → 0.91 | runs to 0.995 |
+| Outro fade to starfield | 0.94 → 1.0 | — |
+
+**Testing methodology note:** earlier verification screenshots computed
+scroll position as a fraction of `document.body.scrollHeight`, which does
+NOT correspond to the pinned ScrollTrigger's own local progress `p` (the
+page has non-pinned content — header, resting bio section — beyond the
+pinned hero). Fixed by querying `ScrollTrigger.getById('about-hero-pin')`
+for its exact `.start`/`.end` scroll-pixel bounds and computing
+`y = start + fraction * (end - start)`, validating against the readback
+`.progress` after each scroll. All Round 2 screenshots in this summary use
+this corrected methodology.
+
+**Outstanding items:**
+- **English prologue text — needs your pick.** The single line currently
+  live is: *"One camera. No borders — documentary, VR, commercial,
+  narrative…."* Alternative options in the same implicit/evocative,
+  pichiworld-style tone, fitting HOME's cinematic "catch fire" mood:
+  1. *"One camera. Every story it was never supposed to tell."*
+  2. *"Some stories are lit before they're written."*
+  3. *"Between documentary and dream, one camera keeps moving."*
+  4. *"No genre holds still long enough to frame it."*
+  5. *"This is where the frame catches fire."*
+  Let us know which (or a variant) to lock in, and it'll be a one-line
+  edit to `src/pages/about.html`.
+- The starfield's reveal is gated on `video2`'s real `ended` event
+  (~4s of real playback). A very fast scroller could in theory reach that
+  scroll point before 4 real seconds have elapsed; not yet tested against
+  real-world fast-scroll behavior — flagging as a known edge case, not
+  confirmed as an actual bug.
+
+## About Me page (/about) — Round 3 revisions (this turn)
+
+User attached 3 new reference images and gave 5 itemized Korean requests. All
+5 are implemented and verified via progress-accurate Playwright screenshots
+plus precise DOM measurement (`getBoundingClientRect`) where visual estimation
+was insufficient.
+
+1. **Subtitle centered between JUNE and HONG**: an earlier in-session attempt
+   used asymmetric CSS margins to compensate for the "J" descender, but that
+   overcorrected — confirmed via precise `getBoundingClientRect()` measurement
+   showing a 56px gap to JUNE vs only 23px gap to HONG. Fixed by using EQUAL
+   `margin-bottom`/`margin-top` (`clamp(18px, 2.8vw, 34px)` on both
+   `#about-title-june` and `#about-title-hong`); re-measured after the fix at
+   ~39.9px on both sides (centered within sub-pixel rounding).
+2. **Profile photo layered BEHIND JUNE/HONG (simultaneous, not sequential)**:
+   the photo's phase window (`PHOTO_IN_START/END`, `PHOTO_OUT_START/END`) is
+   now directly aliased to the title's own window instead of running as a
+   separate, later phase. Existing z-index stacking (photo: 8, title: 11)
+   already put it visually behind — only the timing needed to change.
+3. **Bio paragraph rises up before JUNE/HONG disappear**: new
+   `#about-hero-bio` overlay (z-index: 9, positioned in the lower third of the
+   viewport to avoid the large lettering) with `BIO_IN_START = TITLE_IN_END`
+   and exiting together with the title/photo group at `TITLE_OUT_START/END`.
+4. **New coded 3D-perspective "intro crawl" effect, connected at video2's
+   end**: no site URL was given — only 3 reference images — so this was
+   implemented by analyzing image 3 directly (a starfield with small/tilted/
+   distant crawl text above a larger/flat/legible paragraph below) and
+   inferring a single continuous Star-Wars-style 3D perspective crawl.
+   Replaces the old single-line flat prologue with a new two-line
+   `#about-intro-crawl-viewport` (`perspective: 500px`, `rotateX(42deg)`,
+   large line-spacing) that starts right after video1's dissolve and ends
+   before the title card, giving a strong small/tilted → readable/flat
+   contrast as it scrolls up. **This interpretation was not confirmed with
+   you before building — please review and flag if it doesn't match what you
+   had in mind (e.g. a specific site you meant to share a URL for).**
+5. **Transparent header like HOME**: added a `.about-header-transparent`
+   class (background: transparent, backdrop-filter: none) on the About page's
+   `<header>`, placed after `.static-header` in the stylesheet so it overrides
+   only the About page without touching `/photos` or `/videos`, which keep
+   the original solid header.
+
+**Architectural note — intentional break from Round 2's "no simultaneous
+overlays" rule:** Round 2 established a strict pattern of ~0.03 progress-unit
+gaps between every overlay so no two were ever visible at once. Round 3 item 2
+explicitly asks for two overlays (photo + title) to be simultaneous, and item
+3 adds a third (bio) into the same window — so this group now deliberately
+overlaps by design, while the gap pattern is kept between scene-level
+transitions (intro crawl → title group → closing crawl) to avoid a jarring
+cut.
+
+**Updated phase windows** (pinned ScrollTrigger's local progress `p`, 0–1):
+| Phase | IN | OUT |
+|---|---|---|
+| Intro crawl (new, replaces prologue) | (dissolve end)+0.02 → +0.07 | 0.46 → 0.50 |
+| Title card (JUNE/HONG) | 0.53 → 0.59 | 0.64 → 0.68 |
+| Profile photo (now aliased to title) | 0.53 → 0.59 | 0.64 → 0.68 |
+| Hero bio (new, aliased to title's exit) | 0.59 → 0.615 | 0.64 → 0.68 |
+| Closing crawl (moved earlier: 0.87 → 0.71) | 0.71 → 0.75 | runs to 0.995 |
+| Outro fade to starfield | 0.94 → 1.0 | — |
+
+**Verification performed:**
+- Full accurate-progress Playwright screenshot sweep (`p = 0.00` through
+  `p = 1.00`) confirmed: header transparency visible from the very first
+  frame, intro-crawl two-tier contrast reads clearly (small/tilted line above,
+  large/flat line below — matching the reference image), title+photo+bio
+  group fades in/out together cleanly with no stray artifacts, and the
+  closing-crawl's new earlier `IN_START = 0.71` does not collide with the
+  group's `OUT_END = 0.68` (0.03 gap holds).
+- Subtitle centering was NOT just visually spot-checked — it was measured
+  precisely via `getBoundingClientRect()` in a headless browser (see item 1
+  above), because an initial visual "fix" had actually overcorrected the gap
+  in the opposite direction. This is called out explicitly since it's the one
+  item where visual screenshot review alone was misleading.
+
+**Outstanding items carried forward:**
+- **Intro-crawl / prologue text — still needs your pick.** Round 2 offered 5
+  English one-line alternatives that were never selected; Round 3 has now
+  also changed the *format* itself (single line → two-line 3D crawl:
+  *"One camera. No borders."* / *"Documentary. VR. Commercial. Narrative."*).
+  Let us know if this current two-line text works, or if you'd like different
+  wording (can reuse a shorter version of Round 2's original single-line
+  options, split across the two lines, or a completely new pair of lines).
+- **Item 4's interpretation should be confirmed.** Since no actual site URL
+  was attached, the effect was built purely from analyzing the reference
+  image. If you had a specific website in mind (e.g. a Star Wars-crawl
+  portfolio site) that has additional nuances the reference image doesn't
+  capture (color, easing, speed, number of lines), please share the URL and
+  we'll refine it further.
+
+---
+
+## About page — Round 4 updates
+
+Four changes requested against 5 reference images (photo treatment, video2
+looping, bio timing reversal, prologue text redesign):
+
+1. **Single-line flat/2D prologue text** ("No genre holds still long enough
+   to frame it."): replaces Round 3's two-line 3D-perspective crawl entirely.
+   The new `#about-intro-crawl-viewport` is a plain flex-centered full-screen
+   box (no `perspective`/`rotateX` at all) so the line is genuinely flat and
+   pinned dead-center on both axes. `about.js` drives a 3-beat motion purely
+   via `opacity`/`translateY`/`scale`: rises up from below into place, holds
+   fully opaque and centered, then shrinks + fades out as if receding into
+   deep space. Verified via `getBoundingClientRect()` that it centers at
+   ~0px offset on both axes during its hold phase.
+2. **video2 (starfield-loop clip) now loops continuously** instead of
+   playing once and handing off to a coded `<canvas>` starfield: simply set
+   `video2.loop = true` in the HTML/JS. The old procedural starfield
+   `<canvas>` element, its CSS block, and its standalone
+   `requestAnimationFrame` draw loop (Round 2 item 7) were removed entirely
+   — the real looping footage is now the only starfield background.
+3. **Bio paragraph reverted to SEQUENTIAL, repositioned "attached to" the
+   name**: Round 3 item 3 made the bio appear simultaneously with
+   JUNE/HONG; this was reversed — `#about-hero-bio` now only starts fading
+   in once the title (`TITLE_OUT_END`) has fully finished fading out, and
+   is dead-center where the name just was (not the lower third), using a
+   bolder `var(--font-serif)` italic weight-600 typography matching the
+   resting section's bio treatment. Verified via `getBoundingClientRect()`
+   that the bio's centerY (360.00) matches the title block's own centerY
+   (359.99) — 0.01px difference.
+4. **Profile photo feathered + enlarged**: the `<img>` inside
+   `#about-photo-reveal` is now wrapped in `.about-photo-feather-mask`,
+   which applies a `mask-image: linear-gradient(...)` so the photo's hard
+   bottom edge fades to transparent and blends into the scene instead of
+   showing a flat cutout rectangle. Width cap increased from 360px to
+   `min(620px, 74vw)` so it fills noticeably more of the space directly
+   behind JUNE/HONG.
+
+**Updated phase windows after Round 4** (before Round 5's further retiming
+below):
+| Phase | IN | OUT |
+|---|---|---|
+| Prologue (single flat line) | (dissolve end)+0.02 → +0.07 | hold to 0.44, fade to 0.50 |
+| Title card (JUNE/HONG) | 0.53 → 0.59 | 0.64 → 0.68 |
+| Profile photo (aliased to title) | 0.53 → 0.59 | 0.64 → 0.68 |
+| Hero bio (now sequential, after title) | 0.69 → 0.72 | 0.80 → 0.84 |
+| Closing crawl (moved later to make room for sequential bio) | 0.87 → 0.91 | runs to 0.995 |
+| Outro fade to starfield | 0.94 → 1.0 | — |
+
+---
+
+## About page — Round 5 updates
+
+Four further changes requested against 4 reference images, including a
+correction to an oversight from Round 4:
+
+1. **Profile photo FILE actually replaced** (not just re-styled): Round 4
+   item 4 applied feather/enlarge CSS to the *existing* photo file, but the
+   underlying image asset itself was never swapped — the user's reference
+   image (June Hong holding a cinema camera rig, white-bg cutout) had
+   already been used purely as *styling* reference, not as the new source
+   file, which was a genuine gap. This is now corrected: the actual PNG at
+   `/static/media/about/june-hong-profile.png` has been overwritten with
+   the reference image (same 1024×572 RGBA dimensions as the old file, so
+   no HTML/CSS changes were needed — both the hero scroll-photo and the
+   resting-section photo share this one file and update together).
+2. **Prologue text stays on one line on desktop, wraps on mobile**: the
+   text was wrapping to 2 lines on common desktop widths because of a fixed
+   `width: min(760px, 84vw)` container combined with too-large a font size.
+   Fixed by letting `.about-intro-crawl-text` take the full padded viewport
+   width with `white-space: nowrap` on the paragraph and a more fluid,
+   slightly smaller `clamp(18px, 2.6vw, 34px)` font-size — verified via
+   `getBoundingClientRect()` that the text renders as one line with no
+   viewport overflow at 1024px/1280px/1440px widths. The existing
+   `@media (max-width: 768px)` override now explicitly re-enables
+   `white-space: normal` and a narrower `min(560px, 88vw)` box so the
+   sentence wraps and stays centered on phones (confirmed 2-line wrap at
+   375px width).
+3. **Hero-bio section removed entirely**: reverses Round 4 item 3 — the
+   `#about-hero-bio` element, its CSS rules (including the mobile
+   override), and all of its JS (the `heroBioEl` reference, the
+   `BIO_IN_START`/`BIO_IN_END`/`BIO_OUT_START`/`BIO_OUT_END` constants, and
+   its render block inside `renderAboutHero()`) have been deleted. Verified
+   via `page.evaluate()` that `document.getElementById('about-hero-bio')`
+   is now `null` throughout the entire scroll range.
+4. **Closing crawl now starts before JUNE/HONG's title fades away**: with
+   the hero-bio phase removed, the scroll-progress span it used to occupy
+   was freed up. `CRAWL_IN_START`/`CRAWL_IN_END` moved from `0.87`/`0.91`
+   all the way up to `0.60`/`0.65` — before `TITLE_OUT_START` (`0.64`) — so
+   the crawl now begins fading in and starts its upward scroll motion while
+   the title is still fully visible, and is already at full opacity and
+   running by the time the title is only partway through its own fade-out.
+   Verified via `getComputedStyle()` sampling across `p = 0.55...0.70` that
+   crawl opacity reaches `1` at `p = 0.65` while title opacity is still
+   `~0.94`, well before the title fully disappears at `p = 0.68`.
+
+**Final phase windows after Round 5:**
+| Phase | IN | OUT |
+|---|---|---|
+| Prologue (single flat line, one-line desktop / wraps mobile) | (dissolve end)+0.02 → +0.07 | hold to 0.44, fade to 0.50 |
+| Title card (JUNE/HONG) | 0.53 → 0.59 | 0.64 → 0.68 |
+| Profile photo (aliased to title, new photo asset) | 0.53 → 0.59 | 0.64 → 0.68 |
+| Closing crawl (now overlaps title's fade-out) | 0.60 → 0.65 | runs to 0.995 |
+| Outro fade to starfield | 0.94 → 1.0 | — |
+
+(Hero-bio phase removed entirely — its former role is fully absorbed by the
+closing crawl, which now carries the bio copy on its own.)
+
+**Verification performed:**
+- Playwright `getComputedStyle()`/`getBoundingClientRect()` sampling across
+  the full `p = 0.55...0.70` range confirmed the crawl fades in and reaches
+  full opacity while the title is still visible/mid-fade, with no visual
+  double-exposure collision.
+- Screenshot sweep at `p = 0.45/0.60/0.65/0.70` confirms a clean visual
+  handoff: title fully visible with crawl beginning to appear underneath at
+  `0.60-0.65`, then a clean crawl-only frame once the title has fully
+  cleared at `0.70`.
+- Desktop nowrap verified at 1024px/1280px/1440px viewport widths (no
+  horizontal overflow); mobile wrap verified at 375px width.
+- New photo file confirmed identical (same md5) between
+  `public/static/media/about/` and the built `dist/static/media/about/`
+  output after `npm run build`.
