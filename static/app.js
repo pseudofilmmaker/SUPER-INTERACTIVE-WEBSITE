@@ -346,7 +346,12 @@
   }
 
   // header nav links: smooth-scroll to target section
+  // ABOUT ME now points at the standalone /about route (data-nav-target
+  // deliberately omitted on that link in home.html) rather than an
+  // in-page anchor, so it must be allowed to navigate normally instead
+  // of being hijacked into a goToPanel() scroll.
   headerLinks.forEach((a) => {
+    if (a.dataset.navTarget == null) return;
     a.addEventListener('click', (e) => {
       e.preventDefault();
       goToPanel(Number(a.dataset.navTarget));

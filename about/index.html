@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>About Me | June Hong — Be the ONE</title>
+<meta name="description" content="About June Hong — director, videographer and editor. Be the ONE Visual Storyteller Portfolio."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="true"/>
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,100..900;1,9..144,100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css"/>
+<link href="/SUPER-INTERACTIVE-WEBSITE/static/style.css" rel="stylesheet"/>
+</head>
+<body>
+
+<header id="site-header" class="static-header about-header-transparent">
+  <a class="brand" href="/SUPER-INTERACTIVE-WEBSITE/">JUNE HONG</a>
+  <nav class="main-nav" aria-label="primary navigation">
+    <a href="/SUPER-INTERACTIVE-WEBSITE/">HOME</a>
+    <a href="/SUPER-INTERACTIVE-WEBSITE/photos/">PHOTOS</a>
+    <a href="/SUPER-INTERACTIVE-WEBSITE/videos/">VIDEOS</a>
+    <a href="/SUPER-INTERACTIVE-WEBSITE/about/" class="active">ABOUT ME</a>
+  </nav>
+</header>
+
+<!-- ============================================================
+     Fixed background "media player" layer — two clips chained:
+     about-bg-video-1 (campfire pulling back into the Milky Way,
+     8s, scroll-scrubbed exactly like the HOME page's other bg
+     videos) hands off via a DELIBERATE, narrow opacity dissolve
+     (the one explicit exception on this site to the hard-cut-only
+     video-chain convention — see about.js for the full rationale)
+     into about-bg-video-2 (a 4s seamless starfield loop, referencing
+     the pichiworld.co.kr prologue/crawl scenes).
+
+     ROUND 4 ITEM 2 ("차라리 두번째 영상을 룹으로 계속 돌려줘"): video2
+     now simply LOOPS forever as the ambient backdrop for the rest of
+     the pinned sequence (video2.loop = true, set in about.js) instead
+     of playing once and permanently handing off to a coded <canvas>
+     procedural starfield. The old coded-starfield takeover (Round 2
+     item 7) has been removed along with its <canvas> element -- the
+     real starfield-loop footage IS the backdrop now, so a second,
+     synthetic starfield drawn on top of it was redundant. -->
+<div id="about-bg-video-layer" aria-hidden="true">
+  <video class="about-bg-video-el" id="about-bg-video-1" src="/SUPER-INTERACTIVE-WEBSITE/static/media/about/about-bg-01-campfire-to-galaxy.mp4" poster="/SUPER-INTERACTIVE-WEBSITE/static/media/about/about-bg-01-poster.jpg" muted playsinline preload="auto"></video>
+  <video class="about-bg-video-el" id="about-bg-video-2" src="/SUPER-INTERACTIVE-WEBSITE/static/media/about/about-bg-02-starfield-loop.mp4" muted playsinline preload="auto" loop></video>
+  <div class="about-bg-scrim"></div>
+</div>
+
+<!-- Prologue line -- Round 4 item 1 ("No genre holds still long enough
+     to frame it" 선택, 2d 느낌으로 센터에서 고정 -> 우주로 꺼지는 느낌).
+     Replaces the old two-line 3D-perspective/rotateX crawl with a
+     SINGLE flat line: it rises up from below the viewport, holds
+     dead-center (both axes, no tilt -- genuinely flat/"2d" this time,
+     not a perspective plane), then shrinks + fades as if drifting away
+     into deep space. See INTRO_TEXT_* constants in about.js. -->
+<div id="about-intro-crawl-viewport" aria-hidden="true">
+  <div class="about-intro-crawl-text" id="about-intro-crawl-text">
+    <p>No genre holds still long enough to frame it.</p>
+  </div>
+</div>
+
+<!-- Title card -- pichiworld's "PICHI / (subtitle) / STRIKE" two-line
+     logo-reveal pattern, adapted into "JUNE / (role subtitle) / HONG".
+     The subtitle now sits in a fixed-height, flex-centered band
+     between the two title lines (see .about-title-subtitle-band in
+     style.css) so it is centered on the true midpoint between JUNE and
+     HONG regardless of either word's own font ascender/descender box
+     -- fixes the "J" hook visually pulling the subtitle up toward
+     JUNE (Round 3 item 1: "june과 hong사이의 센터에 맞춰주고"). -->
+<div id="about-title-text" aria-hidden="true">
+  <h2 class="about-title-line" id="about-title-june">JUNE</h2>
+  <div class="about-title-subtitle-band">
+    <p class="about-title-subtitle" id="about-title-subtitle">DIRECTOR &middot; VIDEOGRAPHER &middot; PHOTOGRAPHER &middot; EDITOR</p>
+  </div>
+  <h2 class="about-title-line" id="about-title-hong">HONG</h2>
+</div>
+
+<!-- Scroll-interactive profile photo -- appears TOGETHER WITH the
+     JUNE/HONG title, sitting visually BEHIND it via z-index
+     (#about-photo-reveal: 8 < #about-title-text: 11) -- "june hong뒤에
+     배치해줘". Shares the exact same IN/OUT phase window as the title
+     card in about.js so the two always appear/hold/exit in sync.
+
+     ROUND 4 ITEM 4 ("프레임하단에 FEATHER를 먹여... 더 키워줬으면"):
+     wrapped in .about-photo-feather-mask, a CSS mask-image gradient
+     that fades the image's own hard bottom edge to transparent so it
+     blends into the scene instead of showing a flat PNG cutoff, and
+     the image itself has been sized up (see style.css) so it fills
+     more of the space behind JUNE/HONG. -->
+<div id="about-photo-reveal" aria-hidden="true">
+  <div class="about-photo-feather-mask">
+    <img src="/SUPER-INTERACTIVE-WEBSITE/static/media/about/june-hong-profile.png" alt="" loading="eager"/>
+  </div>
+</div>
+
+<!-- Round 5 item 3 ("이 구간은 삭제해줘"): the sequential hero-bio
+     paragraph section (Round 4 item 3) has been fully removed. The
+     bio copy now only appears via the closing Star-Wars-style crawl
+     directly below, which (per Round 5 item 4) has been retimed to
+     start well before JUNE/HONG's title fades away. -->
+
+<!-- Star-Wars-style opening crawl -- 3D perspective paragraph
+     receding upward/backward into the starfield, carrying the exact
+     bio copy. -->
+<div id="about-crawl-viewport" aria-hidden="true">
+  <div class="about-crawl-text" id="about-crawl-text">
+    <p>A director, videographer and editor working across documentary, VR, commercial and narrative film.</p>
+    <p>Comfortable running a full production solo &mdash; concept, shooting, aerial work, editing and color &mdash; with award-winning work in Korea&rsquo;s VR content competitions and film festival selections in Moscow, Bucheon and Thailand.</p>
+  </div>
+</div>
+
+<main id="about-scroll-container">
+
+  <!-- Pinned hero -- drives the whole video-chain + prologue + title +
+       crawl sequence via a single scroll-progress-linked ScrollTrigger
+       (see setupAboutHero() in about.js), same "one dominant pin, many
+       renderers reading the same p" architecture as setupWorkReel() /
+       setupVideosBgVideo() on the HOME page. -->
+  <section class="panel about-panel" id="section-about-hero" data-index="0">
+    <div class="scroll-cue" id="about-scroll-cue"><span></span>SCROLL</div>
+  </section>
+
+  <!-- Extra pinned-scroll runway so the coded starfield handoff, the
+       profile-photo reveal, and the crawl all have room to play out
+       (see PHOTO_IN_*/STARFIELD_* windows in about.js) before the pin
+       releases into the resting profile section below. -->
+
+  <!-- Resting content -- the crawl's dramatic reveal lands here in a
+       normal, readable, non-animated layout: the profile photo (black
+       background already removed) alongside the same bio copy, so the
+       actual content is always accessible even without scroll-linked
+       motion. -->
+  <section class="panel about-panel about-profile-panel" id="section-about-profile" data-index="1">
+    <div class="about-profile-wrap" data-reveal="true">
+      <div class="about-profile-media">
+        <img src="/SUPER-INTERACTIVE-WEBSITE/static/media/about/june-hong-profile.png" alt="June Hong holding a professional cinema camera rig" loading="lazy"/>
+      </div>
+      <div class="about-profile-copy">
+        <p class="about-profile-eyebrow" data-reveal="true">ABOUT ME</p>
+        <h2 class="about-profile-name" data-reveal="true">June Hong</h2>
+        <p class="about-profile-role" data-reveal="true">Director &middot; Videographer &middot; Photographer &middot; Editor</p>
+        <p class="about-profile-bio" data-reveal="true">A director, videographer and editor working across documentary, VR, commercial and narrative film. Comfortable running a full production solo &mdash; concept, shooting, aerial work, editing and color &mdash; with award-winning work in Korea&rsquo;s VR content competitions and film festival selections in Moscow, Bucheon and Thailand.</p>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+<script src="/SUPER-INTERACTIVE-WEBSITE/static/about.js"></script>
+</body>
+</html>

@@ -1883,6 +1883,20 @@ html, body {
 .static-header .main-nav a.active { color: var(--fg); }
 .static-header .main-nav a.active::after { width: 100%; }
 
+/* ---------------- About page header override (Round 3 item 5) ----------------
+   "상단 메뉴바는 '홈'페이지처럼 투명하게 만들어줘" — /about's header uses
+   .static-header (solid dark bar + blur, shared with /photos and /videos,
+   which sit over a plain background and need it), but the About page's
+   hero is a full-bleed video/starfield background exactly like HOME, so
+   it should get HOME's own #site-header treatment instead: fully
+   transparent, no blur, legibility from text-shadow alone (see
+   #site-header .brand/.main-nav a above). Scoped to .about-header-
+   transparent only — /photos and /videos keep their solid bar. */
+.about-header-transparent {
+  background: transparent;
+  backdrop-filter: none;
+}
+
 .detail-page {
   min-height: 100vh;
   padding: 150px 6vw 100px;
@@ -1991,4 +2005,365 @@ html, body {
 @media (max-width: 768px) {
   .detail-page { padding: 120px 5vw 70px; }
   .detail-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px; }
+}
+
+/* ============================================================
+   ABOUT ME page (/about) — scroll-interactive page built to the
+   pichiworld.co.kr reference pattern: (1) a small glowing "prologue"
+   caption over a starfield, (2) a title-card reveal with a subtitle
+   line between the two title words, (3) a Star-Wars-style 3D
+   perspective opening crawl carrying the bio copy, landing on (4) a
+   plain readable profile section (photo + bio) so the content stays
+   fully accessible without relying on the animation.
+
+   COLOR CHOICE (flagged deliberately): the pichiworld reference is
+   purple/neon-pink, but the rest of this site's design tokens
+   (--accent-ember/--accent-flame/--accent-gold) are an explicitly
+   established "fire" palette that itself replaced an earlier purple/
+   pink/blue scheme per prior spec ("보라색 기운은 이제 삭제"). Rather
+   than reintroducing purple site-wide (which would fight that past
+   decision) or forcing the fire palette onto a space/starfield scene
+   (which would look wrong against black sky + stars), this page
+   defines its OWN small set of "cosmic" accent variables, scoped only
+   to #about-* selectors below — a deep violet for the prologue/crawl
+   text (closer to the reference) and a cool ice-white/blue-white for
+   the crawl body copy (closer to the actual Star Wars convention and
+   more legible against a starfield than pure white). Nothing outside
+   these #about-* rules touches these variables, so the site-wide fire
+   palette is completely unaffected.
+   ============================================================ */
+:root {
+  --about-violet: #9d6bff;
+  --about-violet-glow: rgba(157, 107, 255, 0.55);
+  --about-ice: #eef1ff;
+  --about-ice-dim: rgba(238, 241, 255, 0.72);
+}
+
+#about-scroll-container { position: relative; z-index: 2; }
+
+.about-panel { background: transparent; }
+
+/* ---------------- Fixed background video "media player" chain ----------------
+   Same structural pattern as #fixed-bg-video / #videos-bg-video-layer on the
+   HOME page (position:fixed, z-index:0, .about-bg-video-el absolute+cover,
+   opacity driven entirely by JS/scroll — see about.js). The one deliberate
+   difference from every other video-chain layer on this site: the
+   video1->video2 handoff here is allowed a short, real opacity dissolve
+   (see about.js's long comment on DISSOLVE_WIDTH for the explicit
+   rationale) instead of the site's usual zero-width hard cut. */
+#about-bg-video-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  will-change: opacity;
+}
+.about-bg-video-el {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  will-change: opacity;
+}
+.about-bg-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(4,4,10,0) 0%, rgba(4,4,10,0.38) 82%),
+    linear-gradient(180deg, rgba(4,4,10,0.35) 0%, transparent 22%, transparent 76%, rgba(4,4,10,0.4) 100%);
+}
+
+/* ---------------- Prologue line (Round 4 item 1) ----------------
+   "No genre holds still long enough to frame it." Deliberately FLAT/
+   2D -- no perspective, no rotateX, ever ("2d 느낌으로") -- unlike the
+   closing crawl further down. The viewport is a plain flex-centered
+   full-screen box so the text is always pinned dead-center on BOTH
+   axes ("센터에서 고정") while about.js drives only translateY (rise
+   in) and scale (recede out) via inline styles. Kept at the same
+   z-index as the old crawl viewport so it still sits above the video/
+   photo layers and below the title. */
+#about-intro-crawl-viewport {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  will-change: opacity;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8vw;
+}
+.about-intro-crawl-text {
+  /* Round 5 item 2 ("큰화면일때는 한줄로"): on desktop the container must
+     be allowed to grow as wide as the sentence needs (up to the full
+     safe padded viewport), NOT capped at a fixed 760px -- that fixed
+     cap combined with the font-size was what forced a wrap onto 2 lines
+     on common desktop widths (per user's reference screenshot). Using
+     the full padded viewport width (100% of the flex parent, which
+     already has `padding: 0 8vw` in #about-intro-crawl-viewport) plus
+     `white-space: nowrap` on the text below guarantees one line at any
+     desktop width; a fluid font-size (see below) keeps it from ever
+     overflowing that width. Mobile explicitly reverts both in the
+     media query. */
+  width: 100%;
+  text-align: center;
+  will-change: transform, opacity;
+}
+.about-intro-crawl-text p {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  /* More aggressive vw-scaling + lower ceiling than before (was
+     clamp(22px,3.4vw,40px) inside a 760px-capped box) so the full
+     sentence reliably fits one line across common desktop widths
+     without the box needing a fixed max-width at all. */
+  font-size: clamp(18px, 2.6vw, 34px);
+  line-height: 1.4;
+  color: var(--about-violet);
+  text-shadow: 0 0 18px var(--about-violet-glow), 0 0 4px rgba(0,0,0,0.6);
+  white-space: nowrap;
+}
+@media (max-width: 768px) {
+  /* Mobile: explicitly allow wrapping again and re-center/constrain the
+     box, since a nowrap single line at any font size readable on a
+     phone would overflow the screen width -- "모바일로 갈 때는 알아서
+     얼라인먼트를 잡아줘" (auto-align appropriately on mobile). */
+  .about-intro-crawl-text {
+    width: min(560px, 88vw);
+  }
+  .about-intro-crawl-text p {
+    white-space: normal;
+    font-size: clamp(19px, 5.6vw, 26px);
+  }
+}
+
+/* ---------------- Title card (pichiworld "PICHI / subtitle / STRIKE") ---------------- */
+#about-title-text {
+  position: fixed;
+  inset: 0;
+  z-index: 11;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  pointer-events: none;
+  opacity: 0;
+  will-change: opacity;
+}
+/* JUNE/HONG use a large negative-leading display font whose glyph box
+   is visually taller than its line-height, which is what made the
+   subtitle collide with the descenders/ascenders of both words at
+   gap:6px (see user screenshot). Fixed by (a) giving each title line
+   real vertical breathing room via margin instead of relying on the
+   parent flex `gap`, and (b) reserving a fixed min-height band for the
+   subtitle so it never sits inside that breathing room regardless of
+   viewport width.
+
+   ROUND 3 ITEM 1 FIX ("june과 hong사이의 센터에 맞춤"): verified via
+   precise getBoundingClientRect() measurement (not visual estimation)
+   that equal margin-bottom/margin-top on JUNE/HONG (clamp(18,2.8vw,34)
+   each) places the subtitle band's geometric center at the true
+   midpoint between JUNE's bottom edge and HONG's top edge. An earlier
+   attempt used asymmetric margins to compensate for the "J" descender,
+   but that overcorrected (56px gap to JUNE vs 23px gap to HONG at
+   1024px viewport) — reverted to symmetric margins, which measure to
+   ~48px vs ~48px (centered within rounding). The subtitle band itself
+   is also a fixed-height flex-centered container
+   (.about-title-subtitle-band) rather than a bare <p>, so the text is
+   always vertically centered WITHIN that band regardless of its own
+   line-height quirks. */
+.about-title-line {
+  margin: 0;
+  font-family: var(--font-clean);
+  font-weight: 800;
+  text-transform: uppercase;
+  font-size: clamp(56px, 12vw, 160px);
+  line-height: 0.92;
+  letter-spacing: 0.04em;
+  color: transparent;
+  -webkit-text-stroke: 2px var(--about-violet);
+  text-shadow: 0 0 24px var(--about-violet-glow), 0 0 60px var(--about-violet-glow);
+}
+#about-title-june { margin-bottom: clamp(18px, 2.8vw, 34px); }
+#about-title-hong { margin-top: clamp(18px, 2.8vw, 34px); }
+.about-title-subtitle-band {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.4em;
+}
+.about-title-subtitle {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: clamp(10px, 1.3vw, 15px);
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--about-ice-dim);
+  white-space: nowrap;
+}
+@media (max-width: 768px) {
+  .about-title-line { -webkit-text-stroke: 1.4px var(--about-violet); }
+  #about-title-june { margin-bottom: 18px; }
+  #about-title-hong { margin-top: 18px; }
+  .about-title-subtitle { font-size: 9px; letter-spacing: 0.16em; white-space: normal; text-align: center; padding: 0 6vw; }
+}
+
+/* ---------------- Scroll-interactive profile-photo reveal ----------------
+   Same fixed-overlay + phase-window pattern as prologue/title/crawl above
+   (see renderAboutHero() in about.js): fades/scales/rises in right after
+   the JUNE/HONG title settles, so the photo becomes part of the same
+   reactive scroll sequence as the text instead of only appearing in the
+   plain resting section further down. */
+#about-photo-reveal {
+  position: fixed;
+  inset: 0;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0;
+  will-change: opacity, transform;
+}
+/* Round 4 item 4 ("프레임하단에 FEATHER를 먹여 자연스럽게... 더
+   키워줬으면"): the wrapper carries a mask-image gradient that fades
+   the image's own hard bottom edge to fully transparent, so the flat
+   PNG cutout blends into the starfield/title scene instead of
+   showing a visible rectangular edge. -webkit-mask-image is included
+   for Safari; both are kept in sync. Sized noticeably larger than the
+   old 360px cap so it fills much more of the space directly behind
+   JUNE/HONG. */
+.about-photo-feather-mask {
+  width: min(620px, 74vw);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 62%, transparent 96%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 62%, transparent 96%);
+}
+#about-photo-reveal img {
+  width: 100%;
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 0 40px var(--about-violet-glow)) drop-shadow(0 20px 50px rgba(0,0,0,0.6));
+}
+@media (max-width: 768px) {
+  .about-photo-feather-mask { width: min(420px, 84vw); }
+}
+
+/* ---------------- Star-Wars-style 3D opening crawl ---------------- */
+#about-crawl-viewport {
+  position: fixed;
+  inset: 0;
+  z-index: 9;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  will-change: opacity;
+  /* Reference screenshot (pichiworld.co.kr crawl) reads as a much
+     shallower tilt than the original 55deg/420px combo, which folded
+     the text back so hard it became illegible ("우리가 읽을 수가
+     없어"). A longer perspective distance + a much shallower rotation
+     keeps the "receding into the screen" read while leaving each line
+     close to flat/legible, matching the reference angle. */
+  perspective: 1400px;
+  perspective-origin: 50% 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.about-crawl-text {
+  width: min(760px, 82vw);
+  transform-origin: 50% 100%;
+  transform: rotateX(22deg) translateY(0);
+  text-align: center;
+  will-change: transform, opacity;
+}
+.about-crawl-text p {
+  margin: 0 0 1.4em;
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: clamp(20px, 3.4vw, 34px);
+  line-height: 1.5;
+  color: var(--about-ice);
+  text-shadow: 0 0 14px rgba(238,241,255,0.35);
+}
+
+/* ---------------- Pinned hero section (drives the whole sequence) ---------------- */
+#section-about-hero {
+  min-height: 100vh;
+  min-height: calc(var(--vh, 1vh) * 100);
+}
+/* #about-scroll-cue intentionally has NO overrides here — per spec
+   ("홈 페이지의 스크롤과 디자인과 위치를 맞춰줘") it reuses the exact
+   same .scroll-cue / .scroll-cue span / @keyframes scrollcue ruleset
+   the HOME page uses (see top of this file), sharing the "scroll-cue"
+   class directly rather than maintaining a near-duplicate #about-*
+   ruleset that could drift out of sync. See about.html markup. */
+
+/* ---------------- Resting profile section (photo + bio, always legible) ---------------- */
+.about-profile-panel {
+  padding: 100px 6vw 120px;
+}
+.about-profile-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(32px, 6vw, 90px);
+  max-width: 1180px;
+  width: 100%;
+  flex-wrap: wrap;
+}
+.about-profile-media {
+  flex: 0 0 auto;
+  width: min(440px, 88vw);
+}
+.about-profile-media img {
+  width: 100%;
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 30px 60px rgba(0,0,0,0.55));
+}
+.about-profile-copy {
+  flex: 1 1 360px;
+  max-width: 560px;
+}
+.about-profile-eyebrow {
+  margin: 0 0 14px;
+  font-size: 12px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--about-violet);
+}
+.about-profile-name {
+  margin: 0 0 8px;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: clamp(36px, 5vw, 58px);
+  color: var(--fg);
+}
+.about-profile-role {
+  margin: 0 0 26px;
+  font-family: var(--font-clean);
+  font-size: 14px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+}
+.about-profile-bio {
+  margin: 0;
+  font-size: clamp(15px, 1.5vw, 18px);
+  line-height: 1.85;
+  color: var(--fg-dim);
+}
+@media (max-width: 900px) {
+  .about-profile-wrap { flex-direction: column; text-align: center; }
+  .about-profile-copy { max-width: 620px; }
+}
+y { max-width: 620px; }
 }
