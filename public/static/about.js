@@ -262,10 +262,17 @@
   // never drift out of sync with each other.
   const CRAWL_TILT_DEG = 22;
 
-  // Everything (bg layer + all overlays) fades out right before the
-  // pin releases, so the handoff into the plain, non-animated profile
-  // section (photo + bio) below reads as a clean scene change rather
-  // than an abrupt jump.
+  // All the HERO-ONLY overlays (prologue line, title+photo, crawl)
+  // fade out right before this first pin releases, so the handoff
+  // into the plain, non-animated profile section below reads as a
+  // clean scene change rather than an abrupt jump.
+  //
+  // CHAPTERS 2-5 FIX ("두번째 별이 점멸하는 영상이 뒤에 룹으로 깔리는
+  // 거를 잊지 말아줘"): #about-bg-video-layer (which now shows only
+  // the looping starfield, video1 already long since dissolved out)
+  // must stay visible as the persistent backdrop behind ALL of the
+  // new chapters, not just chapter 1 -- so it is NO LONGER faded to 0
+  // here. Only the hero's own foreground overlays fade at OUTRO.
   const OUTRO_START = 0.94;
   const OUTRO_END = 1.0;
 
@@ -290,10 +297,13 @@
     // clip already meant to be showing, so ramping opacity 0->1 over the
     // first 3% of scroll made the page open on a black screen instead of
     // the video's real first frame -- exactly the "검은 화면이 아니라
-    // 영상의 시작점에 맞춰줘" bug report. Only the OUTRO fade (pin
-    // release) still applies.
-    const outroFactor = 1 - easeInOut(Math.max(0, Math.min(1, (p - OUTRO_START) / (OUTRO_END - OUTRO_START))));
-    layer.style.opacity = outroFactor;
+    // 영상의 시작점에 맞춰줘" bug report.
+    //
+    // Chapters 2-5 fix: no more OUTRO fade-to-0 here -- the starfield
+    // loop must persist behind every later chapter (see setupChapterPin
+    // below, which never touches this layer's opacity either). It stays
+    // pinned at 1 once fully faded in and is never faded out again.
+    layer.style.opacity = 1;
 
     // ---- video1 scrub + dissolve handoff into video2 ----
     const local1 = PHASE_V1_END > 0 ? p / PHASE_V1_END : 1;
@@ -433,20 +443,174 @@
     onRefresh: (self) => renderAboutHero(self.progress),
   });
 
-  /* ---------- resting profile section reveal (photo + bio) ---------- */
+  /* ============================================================
+     CHAPTERS 2-5 — Selected Works / Education & Skills / Awards /
+     Professional Experience. Each chapter reuses the exact same
+     "title shrinks + fades away while a flat teaser line rises in
+     and genuinely overlaps it" pattern proven out above on the hero
+     JUNE/HONG + crawl sequence, generalized into one function driven
+     by its own short pinned ScrollTrigger (the chapter's own empty
+     .chapter-pin-panel section) instead of the hero's single giant
+     pin. The persistent starfield backdrop (#about-bg-video-layer)
+     is untouched here -- it now stays visible across every chapter,
+     see the OUTRO fix above.
+     ============================================================ */
+  function setupChapterPin(cfg) {
+    const pinSection = document.getElementById(cfg.pinSectionId);
+    const titleEl = document.getElementById(cfg.titleId);
+    const teaserViewport = document.getElementById(cfg.teaserViewportId);
+    const teaserText = document.getElementById(cfg.teaserTextId);
+    if (!pinSection || !titleEl) return;
+
+    // Title: fades/rises in, holds, then shrinks-while-fading away —
+    // identical shape to the hero JUNE/HONG title's own outScale
+    // treatment (see TITLE_OUT_* / outScale above).
+    const TITLE_IN_START = 0.08;
+    const TITLE_IN_END = 0.26;
+    const TITLE_OUT_START = 0.48;
+    const TITLE_OUT_END = 0.80;
+
+    // Teaser: starts rising in a moment BEFORE the title begins its
+    // exit and is already at full opacity by TITLE_OUT_START — same
+    // "genuine overlap, not a crossfade" fix as CRAWL_IN_START/END
+    // above — then holds through the rest of the pin and only clears
+    // right at the very end, just before release.
+    const TEASER_IN_START = TITLE_OUT_START - 0.05;
+    const TEASER_IN_END = TITLE_OUT_START;
+    const TEASER_OUT_START = 0.93;
+    const TEASER_OUT_END = 1.0;
+    const TEASER_Y_START = 46; // vh, rises up to 0 (on-screen, overlapping title)
+
+    function render(p) {
+      p = Math.max(0, Math.min(1, p));
+
+      const to = windowedOpacity(p, TITLE_IN_START, TITLE_IN_END, TITLE_OUT_START, TITLE_OUT_END);
+      titleEl.style.opacity = to;
+      const outP = Math.max(0, Math.min(1, (p - TITLE_OUT_START) / (TITLE_OUT_END - TITLE_OUT_START)));
+      const outScale = 1 - 0.38 * easeInOut(outP);
+      const inP = Math.max(0, Math.min(1, (p - TITLE_IN_START) / (TITLE_IN_END - TITLE_IN_START)));
+      const riseY = (1 - easeInOut(inP)) * 24; // rises up into place on entry
+      titleEl.style.transform = `translateY(${riseY}px) scale(${outScale})`;
+
+      if (teaserViewport && teaserText) {
+        const co = windowedOpacity(p, TEASER_IN_START, TEASER_IN_END, TEASER_OUT_START, TEASER_OUT_END);
+        teaserViewport.style.opacity = co;
+        const entryP = Math.max(0, Math.min(1, (p - TEASER_IN_START) / (TEASER_IN_END - TEASER_IN_START)));
+        const y = TEASER_Y_START * (1 - easeInOut(entryP));
+        teaserText.style.transform = `translateY(${y}vh)`;
+      }
+    }
+
+    render(0);
+
+    ScrollTrigger.create({
+      id: cfg.pinSectionId + '-pin',
+      trigger: pinSection,
+      start: 'top top',
+      end: '+=180%',
+      pin: true,
+      scrub: 0.5,
+      onUpdate: (self) => render(self.progress),
+      onRefresh: (self) => render(self.progress),
+    });
+  }
+
+  setupChapterPin({
+    pinSectionId: 'section-ch-works-hero',
+    titleId: 'ch-works-title-text',
+    teaserViewportId: 'ch-works-teaser-viewport',
+    teaserTextId: 'ch-works-teaser-text',
+  });
+  setupChapterPin({
+    pinSectionId: 'section-ch-edu-hero',
+    titleId: 'ch-edu-title-text',
+    teaserViewportId: 'ch-edu-teaser-viewport',
+    teaserTextId: 'ch-edu-teaser-text',
+  });
+  setupChapterPin({
+    pinSectionId: 'section-ch-awards-hero',
+    titleId: 'ch-awards-title-text',
+    teaserViewportId: 'ch-awards-teaser-viewport',
+    teaserTextId: 'ch-awards-teaser-text',
+  });
+  setupChapterPin({
+    pinSectionId: 'section-ch-career-hero',
+    titleId: 'ch-career-title-text',
+    teaserViewportId: 'ch-career-teaser-viewport',
+    teaserTextId: 'ch-career-teaser-text',
+  });
+
+  /* ---------- resting content reveal (profile + all 4 chapter detail
+     sections) — generalized from the hero-only .about-profile-wrap
+     wiring to every .chapter-detail-wrap as well, so the filmography
+     list, education+skills grid, awards list and career list all get
+     the same staggered fade/rise-in on scroll. ---------- */
   document.querySelectorAll('.about-panel [data-reveal]').forEach((el) => {
     gsap.set(el, { opacity: 0, y: 28 });
   });
-  const profileWrap = document.querySelector('.about-profile-wrap');
-  if (profileWrap) {
-    const items = profileWrap.querySelectorAll('[data-reveal]');
+  document.querySelectorAll('.about-profile-wrap, .chapter-detail-wrap').forEach((wrap) => {
+    const items = wrap.querySelectorAll('[data-reveal]');
+    if (!items.length) return;
     ScrollTrigger.create({
-      trigger: profileWrap,
+      trigger: wrap,
       start: 'top 80%',
-      onEnter: () => gsap.to(items, { opacity: 1, y: 0, duration: 0.9, stagger: 0.12, ease: 'power3.out' }),
-      onEnterBack: () => gsap.to(items, { opacity: 1, y: 0, duration: 0.9, stagger: 0.12, ease: 'power3.out' }),
+      onEnter: () => gsap.to(items, { opacity: 1, y: 0, duration: 0.9, stagger: 0.08, ease: 'power3.out' }),
+      onEnterBack: () => gsap.to(items, { opacity: 1, y: 0, duration: 0.9, stagger: 0.08, ease: 'power3.out' }),
+    });
+  });
+
+  /* ============================================================
+     Education & Skills — interactive skill tiles. Each tile is a
+     real <button> that flips on hover (desktop, via CSS :hover) or
+     tap/keyboard activation (the click listener below toggles
+     .is-flipped, which the CSS also honors — see .skill-tile.is-
+     flipped rules in style.css) to reveal its percentage on the
+     back face, rather than a static always-visible bar chart
+     ("고정된 바 차트 대신, 좀 더 인터랙티브 하게"). The percentage
+     count-up and bar-fill animation itself plays once, the first
+     time the grid scrolls into view, using each tile's own
+     data-skill value rounded down (Math.floor) — so the back face
+     is already correct by the time a user flips any given tile. ----
+     ============================================================ */
+  function setupSkillTiles() {
+    const grid = document.getElementById('skills-grid');
+    if (!grid) return;
+    const tiles = grid.querySelectorAll('.skill-tile');
+    if (!tiles.length) return;
+
+    tiles.forEach((tile) => {
+      tile.addEventListener('click', () => tile.classList.toggle('is-flipped'));
+    });
+
+    let animated = false;
+    function animateSkills() {
+      if (animated) return;
+      animated = true;
+      tiles.forEach((tile) => {
+        const target = Math.floor(parseFloat(tile.dataset.skill || tile.querySelector('[data-target]')?.dataset.target || '0'));
+        const percentEl = tile.querySelector('.skill-percent');
+        const fillEl = tile.querySelector('.skill-bar-fill');
+        if (fillEl) fillEl.style.width = target + '%';
+        if (percentEl) {
+          const counter = { v: 0 };
+          gsap.to(counter, {
+            v: target,
+            duration: 1.3,
+            ease: 'power2.out',
+            onUpdate: () => { percentEl.textContent = Math.floor(counter.v) + '%'; },
+          });
+        }
+      });
+    }
+
+    ScrollTrigger.create({
+      trigger: grid,
+      start: 'top 85%',
+      onEnter: animateSkills,
+      onEnterBack: animateSkills,
     });
   }
+  setupSkillTiles();
 
   window.addEventListener('load', () => ScrollTrigger.refresh());
 })();
