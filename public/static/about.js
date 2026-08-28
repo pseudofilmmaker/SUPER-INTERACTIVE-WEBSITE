@@ -206,19 +206,17 @@
   // continuous function of p across the WHOLE remaining span so the
   // recede motion reads as one continuous scroll-driven camera move.
   //
-  // Round 5 item 4 ("이 스크롤업되는 문장들이, JUNE HONG이름이 뒤로
-  // 축소되기 전에 나와서 스크롤 업 되야해" -- these scroll-up sentences
-  // need to appear and start scrolling up BEFORE the JUNE HONG name
-  // shrinks/fades away): the standalone sequential hero-bio phase
-  // (Round 4 item 3) has been removed entirely (see Round 5 item 3),
-  // freeing up the scroll-progress span it used to occupy. The crawl
-  // now starts fading in well BEFORE TITLE_OUT_START (0.64) and is
-  // fully visible and already running while the title is still mid
-  // fade-out (0.64-0.68) — so by the time JUNE/HONG has fully
-  // disappeared the crawl is already underway, rather than starting
-  // only after a long gap post-title as before (was 0.87/0.91).
-  const CRAWL_IN_START = 0.60;
-  const CRAWL_IN_END = 0.65;
+  // Round 6 ("June Hong 이름의 페이드아웃 시작점에 두번째 이미지가
+  // 흘러나와야돼" -- the second scene (starfield + crawl copy) must
+  // start flowing in exactly at the moment the JUNE/HONG title begins
+  // its own fade-out, not before it): CRAWL_IN_START/END are now
+  // aliased directly to TITLE_OUT_START/END so the two are driven by
+  // the same p-window and can never drift out of sync with each other
+  // again — as JUNE/HONG fades out, the crawl fades in over the exact
+  // same span (was 0.60-0.65, starting before the title faded at all;
+  // Round 5's "before it shrinks" request is superseded by this one).
+  const CRAWL_IN_START = TITLE_OUT_START;
+  const CRAWL_IN_END = TITLE_OUT_END;
   const CRAWL_RUN_START = CRAWL_IN_START;
   const CRAWL_RUN_END = 0.995;
   const CRAWL_Y_START = 78; // vh, bottom of viewport
