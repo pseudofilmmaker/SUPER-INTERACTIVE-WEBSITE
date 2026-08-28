@@ -542,3 +542,54 @@ closing crawl, which now carries the bio copy on its own.)
 - New photo file confirmed identical (same md5) between
   `public/static/media/about/` and the built `dist/static/media/about/`
   output after `npm run build`.
+
+## About page — Chapters 2-5 (Selected Works / Education & Skills / Awards / Professional Experience) — this turn
+
+Extended `/about` with four new scroll-driven chapters, reusing the exact same
+"title shrinks + fades away while a teaser line rises in and genuinely
+overlaps it" pattern already proven on the hero JUNE/HONG + crawl sequence
+(generalized into a new `setupChapterPin()` helper in `about.js`).
+
+**Chapters added (in order):**
+1. **Selected Works** — filmography list, 19 entries (1999–2022, incl. the
+   2008 Busan Horse Racing Association CM lyrics credit), translated/
+   polished into North American English, each with year / title+format /
+   role / credit.
+2. **Education & Skills** — two-column layout: degree list (years and GPA
+   removed per spec, university entries only) + a 10-tile interactive skill
+   grid (3D flip-card: front = icon + name, back = percentage + fill bar,
+   flips on hover/tap/keyboard focus). Icons sourced from simple-icons /
+   lucide-static / circle-flags CDNs, recolored to the page's ice-white
+   accent. Percentages: 7 verified from the reference screenshot (Premiere
+   Pro 92, Photoshop 85, After Effects 75, Illustrator 65, Storyboarding 58,
+   Korean 100, English 45) + 3 added to reach 10 tiles (DaVinci Resolve 80,
+   Cinematography 90, Aerial Filming 88). Percent count-up + bar-fill
+   animate once on scroll-into-view, using `Math.floor()` of each tile's
+   value.
+3. **Awards** — festival *official selections* stay inline in the
+   filmography credits; this list is scoped to actual prizes only (KIFF
+   Special Award, VROUND Excellence Award, VROUND Grand Prize).
+4. **Professional Experience** — renamed from "Employment History" to the
+   NA-idiomatic heading; the standalone Freelance row removed; the
+   "PARANOI" misspelling fixed to **Paranoi** (matching the site's own
+   existing `paranoi-cinema-lab.svg` asset naming), with the Producer role
+   reinstated on that entry.
+
+**Persistent background:** the starfield loop (`about-bg-video-2`) now stays
+visible behind ALL chapters — `about.js` no longer fades
+`#about-bg-video-layer` to 0 after the hero pin releases (previously
+`OUTRO_START/END` drove that fade; it now only fades the hero's own
+foreground overlays).
+
+**New files:** `public/static/icons/*.svg` (10 skill icons + flags).
+
+**Known follow-ups (not yet done):** live Playwright screenshot verification
+was inconclusive because this page's large `preload="auto"` background
+videos make the browser tool's full-`load`-event wait exceed its timeout
+(confirmed to be a pre-existing characteristic of this page, not a
+regression — reproduced identically on the prior committed version).
+Content/DOM structure was verified instead via direct HTML inspection
+(`curl` + element counts) and a `wait_for_selector`-based Playwright check
+(loaded cleanly, no JS errors beyond the pre-existing harmless
+`/favicon.ico` 404). A real cross-browser visual scroll-through pass is
+still recommended before shipping.
