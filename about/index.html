@@ -10,6 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,100..900;1,9..144,100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css"/>
 <link href="/SUPER-INTERACTIVE-WEBSITE/static/style.css" rel="stylesheet"/>
+<link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet"/>
 </head>
 <body>
 
@@ -105,8 +106,67 @@
      bio copy. -->
 <div id="about-crawl-viewport" aria-hidden="true">
   <div class="about-crawl-text" id="about-crawl-text">
-    <p>A director, videographer and editor working across documentary, VR, commercial and narrative film.</p>
-    <p>Comfortable running a full production solo &mdash; concept, shooting, aerial work, editing and color &mdash; with award-winning work in Korea&rsquo;s VR content competitions and film festival selections in Moscow, Bucheon and Thailand.</p>
+    <p>I tell stories across documentary, VR, commercial and narrative film.</p>
+    <p>Every project is a collaboration &mdash; but when it calls for it, I can carry the full production myself, from concept to color. That range has earned recognition in Korea&rsquo;s VR competitions, with official selections at film festivals in Moscow, Bucheon and Thailand.</p>
+  </div>
+</div>
+
+<!-- ============================================================
+     CHAPTERS 2-5 — reuse the exact same "title shrinks + fades
+     away while a flat teaser line rises in and genuinely overlaps
+     it" pattern proven out on the hero JUNE/HONG + crawl sequence
+     above (see setupChapterPin() in about.js). Each chapter gets
+     its own fixed title/teaser overlay pair here, then a pinned
+     hero section (title beat) followed by a plain, always-legible
+     "detail" resting section (the full data) further down in
+     <main>. The starfield loop (about-bg-video-2) now persists as
+     the backdrop behind ALL of these chapters, not just the hero
+     -- "두번째 별이 점멸하는 영상이 뒤에 룹으로 깔리는 거를 잊지
+     말아줘" -- since about.js no longer fades #about-bg-video-layer
+     out at the end of chapter 1.
+     ============================================================ -->
+
+<!-- ---- Chapter 2: Selected Works ---- -->
+<div id="ch-works-title-text" class="chapter-title-text" aria-hidden="true">
+  <p class="chapter-title-eyebrow">FILMOGRAPHY &middot; 2007&ndash;PRESENT</p>
+  <h2 class="chapter-title-main">Selected Works</h2>
+</div>
+<div id="ch-works-teaser-viewport" class="chapter-teaser-viewport" aria-hidden="true">
+  <div class="chapter-teaser-text" id="ch-works-teaser-text">
+    <p>Since 2023, I&rsquo;ve handled cinematography, aerial filming and editing at JK World Group &mdash; covering brand films, reels, event recaps and photography across the group&rsquo;s family of companies.</p>
+  </div>
+</div>
+
+<!-- ---- Chapter 3: Education & Skills ---- -->
+<div id="ch-edu-title-text" class="chapter-title-text" aria-hidden="true">
+  <p class="chapter-title-eyebrow">BACKGROUND</p>
+  <h2 class="chapter-title-main">Education &amp; Skills</h2>
+</div>
+<div id="ch-edu-teaser-viewport" class="chapter-teaser-viewport" aria-hidden="true">
+  <div class="chapter-teaser-text" id="ch-edu-teaser-text">
+    <p>Two degrees in film, and a decade of sets that taught me the rest.</p>
+  </div>
+</div>
+
+<!-- ---- Chapter 4: Awards ---- -->
+<div id="ch-awards-title-text" class="chapter-title-text" aria-hidden="true">
+  <p class="chapter-title-eyebrow">RECOGNITION</p>
+  <h2 class="chapter-title-main">Awards</h2>
+</div>
+<div id="ch-awards-teaser-viewport" class="chapter-teaser-viewport" aria-hidden="true">
+  <div class="chapter-teaser-text" id="ch-awards-teaser-text">
+    <p>The work speaks first. These are the rooms it&rsquo;s been recognized in.</p>
+  </div>
+</div>
+
+<!-- ---- Chapter 5: Professional Experience ---- -->
+<div id="ch-career-title-text" class="chapter-title-text" aria-hidden="true">
+  <p class="chapter-title-eyebrow">CAREER</p>
+  <h2 class="chapter-title-main">Professional Experience</h2>
+</div>
+<div id="ch-career-teaser-viewport" class="chapter-teaser-viewport" aria-hidden="true">
+  <div class="chapter-teaser-text" id="ch-career-teaser-text">
+    <p>Four companies, one throughline &mdash; always behind the camera, always building something.</p>
   </div>
 </div>
 
@@ -140,8 +200,399 @@
         <p class="about-profile-eyebrow" data-reveal="true">ABOUT ME</p>
         <h2 class="about-profile-name" data-reveal="true">June Hong</h2>
         <p class="about-profile-role" data-reveal="true">Director &middot; Videographer &middot; Photographer &middot; Editor</p>
-        <p class="about-profile-bio" data-reveal="true">A director, videographer and editor working across documentary, VR, commercial and narrative film. Comfortable running a full production solo &mdash; concept, shooting, aerial work, editing and color &mdash; with award-winning work in Korea&rsquo;s VR content competitions and film festival selections in Moscow, Bucheon and Thailand.</p>
+        <p class="about-profile-bio" data-reveal="true">I tell stories across documentary, VR, commercial and narrative film. Every project is a collaboration &mdash; but when it calls for it, I can carry the full production myself, from concept to color. That range has earned recognition in Korea&rsquo;s VR competitions, with official selections at film festivals in Moscow, Bucheon and Thailand.</p>
       </div>
+    </div>
+  </section>
+
+  <!-- ==========================================================
+       Chapter 2 — Selected Works. Pinned title beat (JS-driven,
+       same shrink+fade-away/teaser-overlap pattern as the hero)
+       followed by a plain, always-legible filmography list.
+       ========================================================== -->
+  <section class="panel about-panel chapter-pin-panel" id="section-ch-works-hero" data-index="2"></section>
+
+  <section class="panel about-panel chapter-detail-panel" id="section-ch-works-detail" data-index="3">
+    <div class="chapter-detail-wrap" data-reveal="true">
+      <p class="chapter-detail-eyebrow" data-reveal="true">Filmography</p>
+      <h2 class="chapter-detail-heading" data-reveal="true">Selected <em>Works</em></h2>
+      <p class="chapter-detail-intro" data-reveal="true">Since 2023, I&rsquo;ve handled cinematography, aerial filming and editing at JK World Group &mdash; covering brand films, reels, event recaps and photography across the group&rsquo;s family of companies.</p>
+
+      <ol class="filmography-list">
+        <li class="filmography-item" data-reveal="true">
+          <span class="filmography-year">2022</span>
+          <div class="filmography-body">
+            <h3 class="filmography-title">The Road to Hanti <span class="filmography-format">&middot; Documentary, YouTube</span></h3>
+            <p class="filmography-role">Cinematography, Aerial Filming, Editing</p>
+            <p class="filmography-credit">Hanti Association, in partnership with Chilgok County</p>
+          </div>
+        </li>
+        <li class="filmography-item" data-reveal="true">
+          <span class="filmography-year">2021</span>
+          <div class="filmography-body">
+            <h3 class="filmography-title">Environmental Industry Financing Program <span class="filmography-format">&middot; YouTube</span></h3>
+            <p class="filmography-role">Editing, Motion Graphics</p>
+            <p class="filmography-credit">Korea Environmental Industry &amp; Technology Institute, in partnership with the Ministry of Environment</p>
+          </div>
+        </li>
+        <li class="filmography-item" data-reveal="true">
+          <span class="filmography-year">2021</span>
+          <div class="filmography-body">
+            <h3 class="filmography-title">Wild VR <span class="filmography-format">&middot; YouTube, 37 episodes</span></h3>
+            <p class="filmography-role">Cinematography, Editing, Aerial Filming</p>
+            <p class="filmography-credit">Outstanding Broadcast Content Support Program, with the Korea Creative Content Agency (KOCCA) and the Ministry of Culture, Sports and Tourism</p>
+          </div>
+        </li>
+        <li class="filmography-item" data-reveal="true">
+          <span class="filmography-year">2020</span>
+          <div class="filmography-body">
+            <h3 class="filmography-title">Basement <span class="filmography-format">&middot; Feature Film, 96 min</span></h3>
+            <p class="filmography-role">Screenplay, On-set Editing, Title Design</p>
+            <p class="filmography-credit">Official selection, Moscow International Film Festival &middot; Streamed on SK Wavve</p>
+          </div>
+        </li>
+        <li class="filmography-item" data-reveal="true">
+          <span class="filmography-year">2020</span>
+          <div class="filmography-body">
+            <h3 class="filmography-title">Daelim Acro <span class="filmography-format">&middot; Commercial, 1 min 49 sec</span></h3>
+            <p class="filmography-role">Direction, Cinematography, Editing, Motion Graphics</p>
+            <p class="filmography-credit">Sales gallery media wall, powered by ScreenX</p>
+          </div>
+        </li>
+        <li class="filmography-item" data-reveal="true">
+          <span class="filmography-year">2019</span>
+          <div class="filmography-body">
+            <h3 class="filmography-title">Seoul Through Quantum Physics <span class="filmography-format">&middot; Documentary, VR, 12 min</span></h3>
+            <p class="filmography-role">Direction, Cinematography, Editing, Motion Graphics</p>
+            <p class="filmography-credit">VR Content Competition, with NAVER, KOCCA and the Ministry of Culture, Sports and Tourism</p>
+          </div>
+        </li>
+        <li class="filmography-item" data-reveal="true">
+          <span class="filmography-year">2019</span>
+          <div class="filmography-body">
+            <h3 class="filmography-title">Legend of the Fox Woman <span class="filmography-format">&middot; Narrative Short, VR, 8 min</span></h3>
+            <p class="filmography-role">Cinematography, Editing</p>
+            <p class="filmography-credit">VR Content Competition, with NAVER, KOCCA and the Ministry of Culture, Sports and Tourism</p>
+          </div>
+        </li>
+        <li class="filmography-item" data-reveal="true">
+          <span class="filmography-year">2018</span>
+          <div class="filmography-body">
+            <h3 class="filmography-title">Love Is <span class="filmography-format">&middot; Feature Film, 81 min</span></h3>
+            <p class="filmography-role">Direction, Screenplay, Aerial Filming, Editing</p>
+            <p class="filmography-credit">Culture Technology R&amp;D Support Program, with KOCCA</p>
+          </div>
+        </li>
+        <li class="filmography-item" data-reveal="true">
+          <span class="filmography-year">2018</span>
+          <div class="filmography-body">
+            <h3 class="filmography-title">Tower the Most <span class="filmography-format">&middot; Commercial, 2 min 20 sec</span></h3>
+            <p class="filmography-role">Direction, Cinematography, Editing</p>
+            <p class="filmography-credit">Sales gallery media wall, powered by ScreenX</p>
+          </div>
+        </li>
+        <li class="filmography-item" data-reveal="true">
+          <span class="filmography-year">2018</span>
+          <div class="filmography-body">
+            <h3 class="filmography-title">Hollow <span class="filmography-format">&middot; Short Film, 26 min</span> &middot; A Birthday Gift for Dad <span class="filmography-format">&middot; Short Film</span> <span class="filmography-format">&middot; and others</span></h3>
+            <p class="filmography-role">Editing</p>
+          </div>
+        </li>
+        <li class="filmography-item" data-reveal="true">
+          <span class="filmography-year">2017</span>
+          <div class="filmography-body">
+            <h3 class="filmography-title">King Jeongjo&rsquo;s Dream, Hwaseong Fortress <span class="filmography-format">&middot; Documentary, 3D, 14 min</span></h3>
+            <p class="filmography-role">Direction, Aerial Filming</p>
+            <p class="filmography-credit">In partnership with the Cultural Heritage Administration</p>
+          </div>
+        </li>
+        <li class="filmography-item" data-reveal="true">
+          <span class="filmography-year">2017</span>
+          <div class="filmography-body">
+            <h3 class="filmography-title">ASEAN Culture House <span class="filmography-format">&middot; Media Wall</span></h3>
+            <p class="filmography-role">Direction, Cinematography &mdash; Cambodia, Myanmar &amp; Indonesia episodes</p>
+            <p class="filmography-credit">With the Ministry of Foreign Affairs, the Korea Foundation and the ASEAN Culture House</p>
+          </div>
+        </li>
+        <li class="filmography-item" data-reveal="true">
+          <span class="filmography-year">2016&ndash;17</span>
+          <div class="filmography-body">
+            <h3 class="filmography-title">Bicycle Road <span class="filmography-format">&middot; Documentary, 4 episodes</span></h3>
+            <p class="filmography-role">Direction, Editing &mdash; Japan &amp; Taiwan episodes</p>
+            <p class="filmography-credit">With the Korea Independent Broadcasters Association, Contents Square and Paranoi Films</p>
+          </div>
+        </li>
+        <li class="filmography-item" data-reveal="true">
+          <span class="filmography-year">2016</span>
+          <div class="filmography-body">
+            <h3 class="filmography-title">TV Cello <span class="filmography-format">&middot; Feature Film, ScreenX</span></h3>
+            <p class="filmography-role">Screenplay, Producer</p>
+            <p class="filmography-credit">KAFA Film, with CGV ScreenX &middot; Official selection, Bucheon International Fantastic Film Festival (BIFAN)</p>
+          </div>
+        </li>
+        <li class="filmography-item" data-reveal="true">
+          <span class="filmography-year">2016</span>
+          <div class="filmography-body">
+            <h3 class="filmography-title">Amado Annual Nale &mdash; Currently in Progress <span class="filmography-format">&middot; Group Exhibition, 8 Artists</span></h3>
+            <p class="filmography-role">Participating Artist</p>
+            <p class="filmography-credit">&ldquo;Jouissance,&rdquo; with artist Sang-jin Kim &middot; 3-channel media installation</p>
+          </div>
+        </li>
+        <li class="filmography-item" data-reveal="true">
+          <span class="filmography-year">2015</span>
+          <div class="filmography-body">
+            <h3 class="filmography-title">Future Is Mine <span class="filmography-format">&middot; Feature Film, 3D</span></h3>
+            <p class="filmography-role">Direction, Screenplay, Editing</p>
+          </div>
+        </li>
+        <li class="filmography-item" data-reveal="true">
+          <span class="filmography-year">2014</span>
+          <div class="filmography-body">
+            <h3 class="filmography-title">29cm Shopping Video <span class="filmography-format">&middot; Commercial</span> &middot; Most Sweetest <span class="filmography-format">&middot; Short Film</span></h3>
+            <p class="filmography-role">Producer &middot; Direction</p>
+            <p class="filmography-credit">Official selection, International Thailand Film Festival</p>
+          </div>
+        </li>
+        <li class="filmography-item" data-reveal="true">
+          <span class="filmography-year">2008</span>
+          <div class="filmography-body">
+            <h3 class="filmography-title">Busan Horse Racing Association <span class="filmography-format">&middot; CM</span></h3>
+            <p class="filmography-role">Lyrics, CM Song</p>
+          </div>
+        </li>
+        <li class="filmography-item" data-reveal="true">
+          <span class="filmography-year">1999&ndash;2013</span>
+          <div class="filmography-body">
+            <h3 class="filmography-title">Feature Film Script Doctoring &amp; Additional Work</h3>
+            <p class="filmography-role">Direction, Cinematography, Art Direction, Music, Editing, Sound Recording across numerous features</p>
+          </div>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ==========================================================
+       Chapter 3 — Education & Skills. Skills are shown as an
+       interactive 10-tile grid: each tile reveals its proficiency
+       on hover/tap (desktop hover, mobile tap-to-flip via CSS
+       :focus/.is-active), rather than a static bar chart.
+       ========================================================== -->
+  <section class="panel about-panel chapter-pin-panel" id="section-ch-edu-hero" data-index="4"></section>
+
+  <section class="panel about-panel chapter-detail-panel" id="section-ch-edu-detail" data-index="5">
+    <div class="chapter-detail-wrap chapter-detail-wrap--split" data-reveal="true">
+      <div class="edu-education-col">
+        <p class="chapter-detail-eyebrow" data-reveal="true">Background</p>
+        <h2 class="chapter-detail-heading" data-reveal="true">Education <em>&amp; Skills</em></h2>
+
+        <ul class="education-list">
+          <li class="education-item" data-reveal="true">
+            <h3 class="education-school">Seoul Institute of the Arts</h3>
+            <p class="education-degree">B.A., Film &mdash; Dept. of Media Creation</p>
+          </li>
+          <li class="education-item" data-reveal="true">
+            <h3 class="education-school">Seoul Institute of the Arts</h3>
+            <p class="education-degree">Associate Degree, Directing &mdash; Dept. of Film</p>
+          </li>
+        </ul>
+      </div>
+
+      <div class="edu-skills-col">
+        <p class="skills-hint" data-reveal="true"><i class="fa-solid fa-hand-pointer"></i> Hover or tap a skill</p>
+        <div class="skills-grid" id="skills-grid" data-reveal="true">
+          <button type="button" class="skill-tile" data-skill="92" style="--skill-delay:0">
+            <span class="skill-tile-face skill-tile-face--front">
+              <img src="/SUPER-INTERACTIVE-WEBSITE/static/icons/premiere-pro.svg" alt="" class="skill-icon"/>
+              <span class="skill-name">Premiere Pro</span>
+            </span>
+            <span class="skill-tile-face skill-tile-face--back">
+              <span class="skill-percent" data-target="92">0%</span>
+              <span class="skill-bar"><span class="skill-bar-fill" data-fill="92"></span></span>
+            </span>
+          </button>
+          <button type="button" class="skill-tile" data-skill="85" style="--skill-delay:1">
+            <span class="skill-tile-face skill-tile-face--front">
+              <img src="/SUPER-INTERACTIVE-WEBSITE/static/icons/photoshop.svg" alt="" class="skill-icon"/>
+              <span class="skill-name">Photoshop</span>
+            </span>
+            <span class="skill-tile-face skill-tile-face--back">
+              <span class="skill-percent" data-target="85">0%</span>
+              <span class="skill-bar"><span class="skill-bar-fill" data-fill="85"></span></span>
+            </span>
+          </button>
+          <button type="button" class="skill-tile" data-skill="75" style="--skill-delay:2">
+            <span class="skill-tile-face skill-tile-face--front">
+              <img src="/SUPER-INTERACTIVE-WEBSITE/static/icons/after-effects.svg" alt="" class="skill-icon"/>
+              <span class="skill-name">After Effects</span>
+            </span>
+            <span class="skill-tile-face skill-tile-face--back">
+              <span class="skill-percent" data-target="75">0%</span>
+              <span class="skill-bar"><span class="skill-bar-fill" data-fill="75"></span></span>
+            </span>
+          </button>
+          <button type="button" class="skill-tile" data-skill="80" style="--skill-delay:3">
+            <span class="skill-tile-face skill-tile-face--front">
+              <img src="/SUPER-INTERACTIVE-WEBSITE/static/icons/davinci-resolve.svg" alt="" class="skill-icon"/>
+              <span class="skill-name">DaVinci Resolve</span>
+            </span>
+            <span class="skill-tile-face skill-tile-face--back">
+              <span class="skill-percent" data-target="80">0%</span>
+              <span class="skill-bar"><span class="skill-bar-fill" data-fill="80"></span></span>
+            </span>
+          </button>
+          <button type="button" class="skill-tile" data-skill="65" style="--skill-delay:4">
+            <span class="skill-tile-face skill-tile-face--front">
+              <img src="/SUPER-INTERACTIVE-WEBSITE/static/icons/illustrator.svg" alt="" class="skill-icon"/>
+              <span class="skill-name">Illustrator</span>
+            </span>
+            <span class="skill-tile-face skill-tile-face--back">
+              <span class="skill-percent" data-target="65">0%</span>
+              <span class="skill-bar"><span class="skill-bar-fill" data-fill="65"></span></span>
+            </span>
+          </button>
+          <button type="button" class="skill-tile" data-skill="58" style="--skill-delay:5">
+            <span class="skill-tile-face skill-tile-face--front">
+              <img src="/SUPER-INTERACTIVE-WEBSITE/static/icons/storyboard.svg" alt="" class="skill-icon"/>
+              <span class="skill-name">Storyboarding</span>
+            </span>
+            <span class="skill-tile-face skill-tile-face--back">
+              <span class="skill-percent" data-target="58">0%</span>
+              <span class="skill-bar"><span class="skill-bar-fill" data-fill="58"></span></span>
+            </span>
+          </button>
+          <button type="button" class="skill-tile" data-skill="90" style="--skill-delay:6">
+            <span class="skill-tile-face skill-tile-face--front">
+              <img src="/SUPER-INTERACTIVE-WEBSITE/static/icons/camera.svg" alt="" class="skill-icon"/>
+              <span class="skill-name">Cinematography</span>
+            </span>
+            <span class="skill-tile-face skill-tile-face--back">
+              <span class="skill-percent" data-target="90">0%</span>
+              <span class="skill-bar"><span class="skill-bar-fill" data-fill="90"></span></span>
+            </span>
+          </button>
+          <button type="button" class="skill-tile" data-skill="80" style="--skill-delay:7">
+            <span class="skill-tile-face skill-tile-face--front">
+              <img src="/SUPER-INTERACTIVE-WEBSITE/static/icons/dji.svg" alt="" class="skill-icon"/>
+              <span class="skill-name">Aerial Filming</span>
+            </span>
+            <span class="skill-tile-face skill-tile-face--back">
+              <span class="skill-percent" data-target="80">0%</span>
+              <span class="skill-bar"><span class="skill-bar-fill" data-fill="80"></span></span>
+            </span>
+          </button>
+          <button type="button" class="skill-tile" data-skill="100" style="--skill-delay:8">
+            <span class="skill-tile-face skill-tile-face--front">
+              <img src="/SUPER-INTERACTIVE-WEBSITE/static/icons/flag-kr.svg" alt="" class="skill-icon skill-icon--flag"/>
+              <span class="skill-name">Korean</span>
+            </span>
+            <span class="skill-tile-face skill-tile-face--back">
+              <span class="skill-percent" data-target="100">0%</span>
+              <span class="skill-bar"><span class="skill-bar-fill" data-fill="100"></span></span>
+            </span>
+          </button>
+          <button type="button" class="skill-tile" data-skill="45" style="--skill-delay:9">
+            <span class="skill-tile-face skill-tile-face--front">
+              <img src="/SUPER-INTERACTIVE-WEBSITE/static/icons/flag-us.svg" alt="" class="skill-icon skill-icon--flag"/>
+              <span class="skill-name">English</span>
+            </span>
+            <span class="skill-tile-face skill-tile-face--back">
+              <span class="skill-percent" data-target="45">0%</span>
+              <span class="skill-bar"><span class="skill-bar-fill" data-fill="45"></span></span>
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================================
+       Chapter 4 — Awards. Festival OFFICIAL SELECTIONS already
+       live in the filmography list above (each credited inline),
+       so this list is scoped to actual prizes/awards only, per
+       spec ("영화제 참여는 따로 기재됐기 때문에, 수상내역만 기재").
+       ========================================================== -->
+  <section class="panel about-panel chapter-pin-panel" id="section-ch-awards-hero" data-index="6"></section>
+
+  <section class="panel about-panel chapter-detail-panel" id="section-ch-awards-detail" data-index="7">
+    <div class="chapter-detail-wrap" data-reveal="true">
+      <p class="chapter-detail-eyebrow" data-reveal="true">Recognition</p>
+      <h2 class="chapter-detail-heading" data-reveal="true">Awards</h2>
+      <p class="chapter-detail-intro" data-reveal="true">Festival selections are credited alongside each project in Selected Works above &mdash; this list is reserved for actual prizes.</p>
+
+      <ol class="awards-list">
+        <li class="awards-item" data-reveal="true">
+          <span class="awards-year">2016</span>
+          <div class="awards-body">
+            <h3 class="awards-title">8th 3D KIFF (3D International Film Festival) &mdash; Special Award</h3>
+            <p class="awards-project">Future Is Mine (2016, 3D) &mdash; Direction</p>
+          </div>
+        </li>
+        <li class="awards-item" data-reveal="true">
+          <span class="awards-year">2019</span>
+          <div class="awards-body">
+            <h3 class="awards-title">1st VROUND VR Content Competition &mdash; Excellence Award</h3>
+            <p class="awards-project">Seoul Through Quantum Physics (2019, VR) &mdash; Cinematography, Direction</p>
+          </div>
+        </li>
+        <li class="awards-item" data-reveal="true">
+          <span class="awards-year">2019</span>
+          <div class="awards-body">
+            <h3 class="awards-title">1st VROUND VR Content Competition &mdash; Grand Prize</h3>
+            <p class="awards-project">Legend of the Fox Woman (2019, VR) &mdash; Cinematography, Editing</p>
+          </div>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ==========================================================
+       Chapter 5 — Professional Experience. "Employment History"
+       renamed to the NA-idiomatic "Professional Experience"
+       heading; the standalone Freelance row has been removed per
+       spec, and the PARANOI misspelling fixed to Paranoi.
+       ========================================================== -->
+  <section class="panel about-panel chapter-pin-panel" id="section-ch-career-hero" data-index="8"></section>
+
+  <section class="panel about-panel chapter-detail-panel" id="section-ch-career-detail" data-index="9">
+    <div class="chapter-detail-wrap" data-reveal="true">
+      <div class="career-heading-row">
+        <div>
+          <p class="chapter-detail-eyebrow" data-reveal="true">Career</p>
+          <h2 class="chapter-detail-heading" data-reveal="true">Professional <em>Experience</em></h2>
+        </div>
+        <p class="career-heading-note" data-reveal="true">Employment history, most recent first</p>
+      </div>
+
+      <ol class="career-list">
+        <li class="career-item" data-reveal="true">
+          <span class="career-year">2023 &mdash; Present</span>
+          <div class="career-body">
+            <h3 class="career-role">JK World Group <span class="career-title">&middot; Videographer / Video Editor</span> <span class="career-badge">Current</span></h3>
+            <p class="career-desc">In-house video and photo production for the group&rsquo;s brand and marketing content.</p>
+          </div>
+        </li>
+        <li class="career-item" data-reveal="true">
+          <span class="career-year">2016.12 &mdash; 2022.12</span>
+          <div class="career-body">
+            <h3 class="career-role">Paranoi Co., Ltd. <span class="career-title">&middot; Producer, Content Development Team</span></h3>
+            <p class="career-desc">Direction, cinematography, editing and immersive-media production. All projects in progress were paused due to COVID-19.</p>
+          </div>
+        </li>
+        <li class="career-item" data-reveal="true">
+          <span class="career-year">2009.12 &mdash; 2012.12</span>
+          <div class="career-body">
+            <h3 class="career-role">DNAdvertising <span class="career-title">&middot; Team Lead, Content Development (Co-founder)</span></h3>
+            <p class="career-desc">Sales, planning and production for advertising and building-facade signage.</p>
+          </div>
+        </li>
+        <li class="career-item" data-reveal="true">
+          <span class="career-year">2007.09 &mdash; 2009.02</span>
+          <div class="career-body">
+            <h3 class="career-role">Yoo Si-min Editing Studio <span class="career-title">&middot; Video Editor</span></h3>
+            <p class="career-desc">Filming, editing and CG for web and video content production.</p>
+          </div>
+        </li>
+      </ol>
     </div>
   </section>
 

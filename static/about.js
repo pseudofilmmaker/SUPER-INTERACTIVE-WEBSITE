@@ -190,7 +190,17 @@
   const TITLE_IN_START = 0.53;
   const TITLE_IN_END = 0.59;
   const TITLE_OUT_START = 0.64;
-  const TITLE_OUT_END = 0.68;
+  // Round 8 ("축소되면서 사라져서, 아래 텍스트가 더 겹치는 구간이 있을
+  // 수 있게" -- the title+photo group should shrink away as it exits,
+  // not just fade, AND the exit should take longer so there's more
+  // sustained overlap time with the crawl text underneath). Widened
+  // from 0.68 to 0.76 -- nearly doubles the OUT window's duration,
+  // giving far more scroll distance during which JUNE/HONG (now also
+  // scaling down, see the titleScale block in renderAboutHero) is
+  // still at least partially visible on top of the already-fully-
+  // opaque crawl text (see CRAWL_IN_END, still pinned to
+  // TITLE_OUT_START so the crawl's own entrance timing is unaffected).
+  const TITLE_OUT_END = 0.76;
 
   // Profile-photo reveal — Round 3 item 2: now LAYERED behind the
   // title (same IN/OUT window, stacked underneath via z-index in
@@ -206,22 +216,44 @@
   // continuous function of p across the WHOLE remaining span so the
   // recede motion reads as one continuous scroll-driven camera move.
   //
-  // Round 5 item 4 ("이 스크롤업되는 문장들이, JUNE HONG이름이 뒤로
-  // 축소되기 전에 나와서 스크롤 업 되야해" -- these scroll-up sentences
-  // need to appear and start scrolling up BEFORE the JUNE HONG name
-  // shrinks/fades away): the standalone sequential hero-bio phase
-  // (Round 4 item 3) has been removed entirely (see Round 5 item 3),
-  // freeing up the scroll-progress span it used to occupy. The crawl
-  // now starts fading in well BEFORE TITLE_OUT_START (0.64) and is
-  // fully visible and already running while the title is still mid
-  // fade-out (0.64-0.68) — so by the time JUNE/HONG has fully
-  // disappeared the crawl is already underway, rather than starting
-  // only after a long gap post-title as before (was 0.87/0.91).
-  const CRAWL_IN_START = 0.60;
-  const CRAWL_IN_END = 0.65;
+  // Round 7 ("자막과 june hong이 겹쳐야된다" -- the crawl copy and the
+  // JUNE/HONG title must actually OVERLAP on screen together, not just
+  // cross paths in a symmetric linear crossfade). Round 6's version
+  // aliased CRAWL_IN_START/END to TITLE_OUT_START/END directly, which
+  // made the two opacities sum to ~1 the whole time (a pure dissolve
+  // handoff) -- both are only ever "visible" at a diminished, blended
+  // opacity at any given instant, which does not read as a real
+  // overlap. Fixed by making the crawl fade in FASTER, finishing
+  // BEFORE the title's own fade-out completes: the crawl starts
+  // rising a moment before TITLE_OUT_START and is already at FULL
+  // opacity (1) by TITLE_OUT_START, so for the entire
+  // TITLE_OUT_START -> TITLE_OUT_END span the crawl sits fully visible
+  // UNDERNEATH the title while the title itself gradually fades away
+  // on top of it -- a genuine, sustained overlap window, not a
+  // transient crossfade point.
+  const CRAWL_IN_START = TITLE_OUT_START - 0.03;
+  const CRAWL_IN_END = TITLE_OUT_START;
   const CRAWL_RUN_START = CRAWL_IN_START;
   const CRAWL_RUN_END = 0.995;
-  const CRAWL_Y_START = 78; // vh, bottom of viewport
+  const CRAWL_Y_START = 78; // vh, bottom of viewport (fully hidden)
+  // ROUND 7 FOLLOW-UP FIX: opacity reaching 1 by CRAWL_IN_END is not
+  // enough on its own -- the translateY sweep from CRAWL_Y_START(78vh)
+  // to CRAWL_Y_END(-60vh) used to run linearly across the ENTIRE
+  // remaining span (CRAWL_RUN_START -> CRAWL_RUN_END, i.e. all the way
+  // to 0.995), so at CRAWL_IN_END the text was still barely off its
+  // 78vh starting point -- fully opaque but still sitting off-screen
+  // below the viewport, so no visual overlap actually occurred despite
+  // the opacity math being correct. Fixed by splitting the Y motion
+  // into two legs: an ENTRY leg (CRAWL_RUN_START -> CRAWL_ENTRY_END,
+  // the same window as the opacity fade-in) that quickly carries the
+  // text from 78vh up to CRAWL_Y_VISIBLE -- a position that is
+  // genuinely on-screen and overlaps the lower half of the JUNE/HONG
+  // title -- followed by the original slow RECEDE leg (CRAWL_ENTRY_END
+  // -> CRAWL_RUN_END) continuing on from CRAWL_Y_VISIBLE up to
+  // CRAWL_Y_END. This guarantees "fully opaque" and "actually on
+  // screen, overlapping the title" happen at the same moment.
+  const CRAWL_ENTRY_END = CRAWL_IN_END;
+  const CRAWL_Y_VISIBLE = 26; // vh -- on-screen, overlapping lower title
   const CRAWL_Y_END = -60; // vh, receded up past the top
   // Shallow, legible tilt matching the pichiworld reference screenshot
   // (was 55deg — far too steep to read, per user feedback). Kept as a
@@ -230,10 +262,17 @@
   // never drift out of sync with each other.
   const CRAWL_TILT_DEG = 22;
 
-  // Everything (bg layer + all overlays) fades out right before the
-  // pin releases, so the handoff into the plain, non-animated profile
-  // section (photo + bio) below reads as a clean scene change rather
-  // than an abrupt jump.
+  // All the HERO-ONLY overlays (prologue line, title+photo, crawl)
+  // fade out right before this first pin releases, so the handoff
+  // into the plain, non-animated profile section below reads as a
+  // clean scene change rather than an abrupt jump.
+  //
+  // CHAPTERS 2-5 FIX ("두번째 별이 점멸하는 영상이 뒤에 룹으로 깔리는
+  // 거를 잊지 말아줘"): #about-bg-video-layer (which now shows only
+  // the looping starfield, video1 already long since dissolved out)
+  // must stay visible as the persistent backdrop behind ALL of the
+  // new chapters, not just chapter 1 -- so it is NO LONGER faded to 0
+  // here. Only the hero's own foreground overlays fade at OUTRO.
   const OUTRO_START = 0.94;
   const OUTRO_END = 1.0;
 
@@ -258,10 +297,13 @@
     // clip already meant to be showing, so ramping opacity 0->1 over the
     // first 3% of scroll made the page open on a black screen instead of
     // the video's real first frame -- exactly the "검은 화면이 아니라
-    // 영상의 시작점에 맞춰줘" bug report. Only the OUTRO fade (pin
-    // release) still applies.
-    const outroFactor = 1 - easeInOut(Math.max(0, Math.min(1, (p - OUTRO_START) / (OUTRO_END - OUTRO_START))));
-    layer.style.opacity = outroFactor;
+    // 영상의 시작점에 맞춰줘" bug report.
+    //
+    // Chapters 2-5 fix: no more OUTRO fade-to-0 here -- the starfield
+    // loop must persist behind every later chapter (see setupChapterPin
+    // below, which never touches this layer's opacity either). It stays
+    // pinned at 1 once fully faded in and is never faded out again.
+    layer.style.opacity = 1;
 
     // ---- video1 scrub + dissolve handoff into video2 ----
     const local1 = PHASE_V1_END > 0 ? p / PHASE_V1_END : 1;
@@ -326,10 +368,18 @@
     }
 
     // ---- title card ----
+    // Round 8: on the way OUT, the group now SHRINKS (scale 1 -> 0.62)
+    // as it fades, reading as if it's receding away from camera into
+    // the starfield -- rather than a flat opacity dissolve in place --
+    // which combined with the widened TITLE_OUT window above gives the
+    // crawl text underneath a longer, more legible overlap window.
     if (titleEl) {
       const to = windowedOpacity(p, TITLE_IN_START, TITLE_IN_END, TITLE_OUT_START, TITLE_OUT_END);
       titleEl.style.opacity = to;
       const rise = 1 - Math.max(0, Math.min(1, (p - TITLE_IN_START) / (TITLE_IN_END - TITLE_IN_START)));
+      const outP = Math.max(0, Math.min(1, (p - TITLE_OUT_START) / (TITLE_OUT_END - TITLE_OUT_START)));
+      const outScale = 1 - 0.38 * easeInOut(outP);
+      titleEl.style.transform = `scale(${outScale})`;
       if (titleJune) titleJune.style.transform = `translateY(${rise * -18}px)`;
       if (titleHong) titleHong.style.transform = `translateY(${rise * 18}px)`;
       if (titleSubtitle) titleSubtitle.style.letterSpacing = (0.32 + (1 - rise) * 0.1) + 'em';
@@ -339,22 +389,38 @@
     // its exact IN/OUT window (see PHOTO_IN_*/PHOTO_OUT_* above,
     // aliased directly to TITLE_IN_*/TITLE_OUT_*). Stacking order
     // (behind vs. in front) is handled purely by z-index in style.css;
-    // sizing/feathering (Round 4 item 4) is handled purely in CSS too. ----
+    // sizing/feathering (Round 4 item 4) is handled purely in CSS too.
+    // Round 8: shrinks in sync with the title on the way out (same
+    // outScale factor) so the photo recedes together with JUNE/HONG
+    // as one visual group, instead of the photo staying full-size
+    // while only the title text shrinks around it. ----
     if (photoEl) {
       const po = windowedOpacity(p, PHOTO_IN_START, PHOTO_IN_END, PHOTO_OUT_START, PHOTO_OUT_END);
       photoEl.style.opacity = po;
       const riseP = Math.max(0, Math.min(1, (p - PHOTO_IN_START) / (PHOTO_IN_END - PHOTO_IN_START)));
-      const scale = 0.88 + 0.12 * easeInOut(riseP);
+      const photoOutP = Math.max(0, Math.min(1, (p - PHOTO_OUT_START) / (PHOTO_OUT_END - PHOTO_OUT_START)));
+      const photoOutScale = 1 - 0.38 * easeInOut(photoOutP);
+      const scale = (0.88 + 0.12 * easeInOut(riseP)) * photoOutScale;
       const rise = (1 - easeInOut(riseP)) * 26;
       photoEl.style.transform = `translateY(${rise}px) scale(${scale})`;
     }
 
     // ---- opening crawl (3D perspective, continuous recede) ----
+    // Round 7 follow-up: Y motion now runs in two legs (see the long
+    // comment on CRAWL_ENTRY_END above) so the text is genuinely
+    // ON SCREEN — not just opaque — by the time it needs to overlap
+    // the fading-out JUNE/HONG title.
     if (crawlViewport && crawlText) {
       const co = windowedOpacity(p, CRAWL_IN_START, CRAWL_IN_END, OUTRO_START, OUTRO_END);
       crawlViewport.style.opacity = co;
-      const runP = Math.max(0, Math.min(1, (p - CRAWL_RUN_START) / (CRAWL_RUN_END - CRAWL_RUN_START)));
-      const y = CRAWL_Y_START + (CRAWL_Y_END - CRAWL_Y_START) * runP;
+      let y;
+      if (p < CRAWL_ENTRY_END) {
+        const entryP = Math.max(0, Math.min(1, (p - CRAWL_RUN_START) / (CRAWL_ENTRY_END - CRAWL_RUN_START)));
+        y = CRAWL_Y_START + (CRAWL_Y_VISIBLE - CRAWL_Y_START) * easeInOut(entryP);
+      } else {
+        const recedeP = Math.max(0, Math.min(1, (p - CRAWL_ENTRY_END) / (CRAWL_RUN_END - CRAWL_ENTRY_END)));
+        y = CRAWL_Y_VISIBLE + (CRAWL_Y_END - CRAWL_Y_VISIBLE) * recedeP;
+      }
       crawlText.style.transform = `rotateX(${CRAWL_TILT_DEG}deg) translateY(${y}vh)`;
     }
 
@@ -377,20 +443,174 @@
     onRefresh: (self) => renderAboutHero(self.progress),
   });
 
-  /* ---------- resting profile section reveal (photo + bio) ---------- */
+  /* ============================================================
+     CHAPTERS 2-5 — Selected Works / Education & Skills / Awards /
+     Professional Experience. Each chapter reuses the exact same
+     "title shrinks + fades away while a flat teaser line rises in
+     and genuinely overlaps it" pattern proven out above on the hero
+     JUNE/HONG + crawl sequence, generalized into one function driven
+     by its own short pinned ScrollTrigger (the chapter's own empty
+     .chapter-pin-panel section) instead of the hero's single giant
+     pin. The persistent starfield backdrop (#about-bg-video-layer)
+     is untouched here -- it now stays visible across every chapter,
+     see the OUTRO fix above.
+     ============================================================ */
+  function setupChapterPin(cfg) {
+    const pinSection = document.getElementById(cfg.pinSectionId);
+    const titleEl = document.getElementById(cfg.titleId);
+    const teaserViewport = document.getElementById(cfg.teaserViewportId);
+    const teaserText = document.getElementById(cfg.teaserTextId);
+    if (!pinSection || !titleEl) return;
+
+    // Title: fades/rises in, holds, then shrinks-while-fading away —
+    // identical shape to the hero JUNE/HONG title's own outScale
+    // treatment (see TITLE_OUT_* / outScale above).
+    const TITLE_IN_START = 0.08;
+    const TITLE_IN_END = 0.26;
+    const TITLE_OUT_START = 0.48;
+    const TITLE_OUT_END = 0.80;
+
+    // Teaser: starts rising in a moment BEFORE the title begins its
+    // exit and is already at full opacity by TITLE_OUT_START — same
+    // "genuine overlap, not a crossfade" fix as CRAWL_IN_START/END
+    // above — then holds through the rest of the pin and only clears
+    // right at the very end, just before release.
+    const TEASER_IN_START = TITLE_OUT_START - 0.05;
+    const TEASER_IN_END = TITLE_OUT_START;
+    const TEASER_OUT_START = 0.93;
+    const TEASER_OUT_END = 1.0;
+    const TEASER_Y_START = 46; // vh, rises up to 0 (on-screen, overlapping title)
+
+    function render(p) {
+      p = Math.max(0, Math.min(1, p));
+
+      const to = windowedOpacity(p, TITLE_IN_START, TITLE_IN_END, TITLE_OUT_START, TITLE_OUT_END);
+      titleEl.style.opacity = to;
+      const outP = Math.max(0, Math.min(1, (p - TITLE_OUT_START) / (TITLE_OUT_END - TITLE_OUT_START)));
+      const outScale = 1 - 0.38 * easeInOut(outP);
+      const inP = Math.max(0, Math.min(1, (p - TITLE_IN_START) / (TITLE_IN_END - TITLE_IN_START)));
+      const riseY = (1 - easeInOut(inP)) * 24; // rises up into place on entry
+      titleEl.style.transform = `translateY(${riseY}px) scale(${outScale})`;
+
+      if (teaserViewport && teaserText) {
+        const co = windowedOpacity(p, TEASER_IN_START, TEASER_IN_END, TEASER_OUT_START, TEASER_OUT_END);
+        teaserViewport.style.opacity = co;
+        const entryP = Math.max(0, Math.min(1, (p - TEASER_IN_START) / (TEASER_IN_END - TEASER_IN_START)));
+        const y = TEASER_Y_START * (1 - easeInOut(entryP));
+        teaserText.style.transform = `translateY(${y}vh)`;
+      }
+    }
+
+    render(0);
+
+    ScrollTrigger.create({
+      id: cfg.pinSectionId + '-pin',
+      trigger: pinSection,
+      start: 'top top',
+      end: '+=180%',
+      pin: true,
+      scrub: 0.5,
+      onUpdate: (self) => render(self.progress),
+      onRefresh: (self) => render(self.progress),
+    });
+  }
+
+  setupChapterPin({
+    pinSectionId: 'section-ch-works-hero',
+    titleId: 'ch-works-title-text',
+    teaserViewportId: 'ch-works-teaser-viewport',
+    teaserTextId: 'ch-works-teaser-text',
+  });
+  setupChapterPin({
+    pinSectionId: 'section-ch-edu-hero',
+    titleId: 'ch-edu-title-text',
+    teaserViewportId: 'ch-edu-teaser-viewport',
+    teaserTextId: 'ch-edu-teaser-text',
+  });
+  setupChapterPin({
+    pinSectionId: 'section-ch-awards-hero',
+    titleId: 'ch-awards-title-text',
+    teaserViewportId: 'ch-awards-teaser-viewport',
+    teaserTextId: 'ch-awards-teaser-text',
+  });
+  setupChapterPin({
+    pinSectionId: 'section-ch-career-hero',
+    titleId: 'ch-career-title-text',
+    teaserViewportId: 'ch-career-teaser-viewport',
+    teaserTextId: 'ch-career-teaser-text',
+  });
+
+  /* ---------- resting content reveal (profile + all 4 chapter detail
+     sections) — generalized from the hero-only .about-profile-wrap
+     wiring to every .chapter-detail-wrap as well, so the filmography
+     list, education+skills grid, awards list and career list all get
+     the same staggered fade/rise-in on scroll. ---------- */
   document.querySelectorAll('.about-panel [data-reveal]').forEach((el) => {
     gsap.set(el, { opacity: 0, y: 28 });
   });
-  const profileWrap = document.querySelector('.about-profile-wrap');
-  if (profileWrap) {
-    const items = profileWrap.querySelectorAll('[data-reveal]');
+  document.querySelectorAll('.about-profile-wrap, .chapter-detail-wrap').forEach((wrap) => {
+    const items = wrap.querySelectorAll('[data-reveal]');
+    if (!items.length) return;
     ScrollTrigger.create({
-      trigger: profileWrap,
+      trigger: wrap,
       start: 'top 80%',
-      onEnter: () => gsap.to(items, { opacity: 1, y: 0, duration: 0.9, stagger: 0.12, ease: 'power3.out' }),
-      onEnterBack: () => gsap.to(items, { opacity: 1, y: 0, duration: 0.9, stagger: 0.12, ease: 'power3.out' }),
+      onEnter: () => gsap.to(items, { opacity: 1, y: 0, duration: 0.9, stagger: 0.08, ease: 'power3.out' }),
+      onEnterBack: () => gsap.to(items, { opacity: 1, y: 0, duration: 0.9, stagger: 0.08, ease: 'power3.out' }),
+    });
+  });
+
+  /* ============================================================
+     Education & Skills — interactive skill tiles. Each tile is a
+     real <button> that flips on hover (desktop, via CSS :hover) or
+     tap/keyboard activation (the click listener below toggles
+     .is-flipped, which the CSS also honors — see .skill-tile.is-
+     flipped rules in style.css) to reveal its percentage on the
+     back face, rather than a static always-visible bar chart
+     ("고정된 바 차트 대신, 좀 더 인터랙티브 하게"). The percentage
+     count-up and bar-fill animation itself plays once, the first
+     time the grid scrolls into view, using each tile's own
+     data-skill value rounded down (Math.floor) — so the back face
+     is already correct by the time a user flips any given tile. ----
+     ============================================================ */
+  function setupSkillTiles() {
+    const grid = document.getElementById('skills-grid');
+    if (!grid) return;
+    const tiles = grid.querySelectorAll('.skill-tile');
+    if (!tiles.length) return;
+
+    tiles.forEach((tile) => {
+      tile.addEventListener('click', () => tile.classList.toggle('is-flipped'));
+    });
+
+    let animated = false;
+    function animateSkills() {
+      if (animated) return;
+      animated = true;
+      tiles.forEach((tile) => {
+        const target = Math.floor(parseFloat(tile.dataset.skill || tile.querySelector('[data-target]')?.dataset.target || '0'));
+        const percentEl = tile.querySelector('.skill-percent');
+        const fillEl = tile.querySelector('.skill-bar-fill');
+        if (fillEl) fillEl.style.width = target + '%';
+        if (percentEl) {
+          const counter = { v: 0 };
+          gsap.to(counter, {
+            v: target,
+            duration: 1.3,
+            ease: 'power2.out',
+            onUpdate: () => { percentEl.textContent = Math.floor(counter.v) + '%'; },
+          });
+        }
+      });
+    }
+
+    ScrollTrigger.create({
+      trigger: grid,
+      start: 'top 85%',
+      onEnter: animateSkills,
+      onEnterBack: animateSkills,
     });
   }
+  setupSkillTiles();
 
   window.addEventListener('load', () => ScrollTrigger.refresh());
 })();

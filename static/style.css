@@ -2365,5 +2365,470 @@ html, body {
   .about-profile-wrap { flex-direction: column; text-align: center; }
   .about-profile-copy { max-width: 620px; }
 }
-y { max-width: 620px; }
+
+/* ============================================================
+   CHAPTERS 2-5 — Selected Works / Education & Skills / Awards /
+   Professional Experience. Reuses the exact same fixed-overlay +
+   scroll-progress-driven shrink/fade + teaser-overlap pattern as
+   the hero JUNE/HONG + crawl above (see setupChapterPin() in
+   about.js), generalized into shared .chapter-* classes so all
+   four chapters share one ruleset instead of four near-duplicates.
+   The starfield backdrop (#about-bg-video-layer / about-bg-video-2)
+   now stays visible + looping behind all of this — about.js no
+   longer fades that layer to 0 after chapter 1.
+   ============================================================ */
+
+/* ---------------- Chapter title + teaser fixed overlays ---------------- */
+.chapter-title-text {
+  position: fixed;
+  inset: 0;
+  z-index: 11;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(10px, 1.6vw, 18px);
+  text-align: center;
+  padding: 0 8vw;
+  pointer-events: none;
+  opacity: 0;
+  will-change: opacity, transform;
+}
+.chapter-title-eyebrow {
+  margin: 0;
+  font-family: var(--font-clean);
+  font-weight: 600;
+  font-size: clamp(11px, 1.3vw, 14px);
+  letter-spacing: 0.36em;
+  text-transform: uppercase;
+  color: var(--about-ice-dim);
+}
+.chapter-title-main {
+  margin: 0;
+  font-family: var(--font-clean);
+  font-weight: 800;
+  text-transform: uppercase;
+  font-size: clamp(40px, 8vw, 96px);
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: transparent;
+  -webkit-text-stroke: 2px var(--about-violet);
+  text-shadow: 0 0 24px var(--about-violet-glow), 0 0 60px var(--about-violet-glow);
+}
+.chapter-teaser-viewport {
+  position: fixed;
+  inset: 0;
+  z-index: 9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8vw;
+  pointer-events: none;
+  opacity: 0;
+  will-change: opacity;
+}
+.chapter-teaser-text {
+  width: min(760px, 82vw);
+  text-align: center;
+  will-change: transform, opacity;
+}
+.chapter-teaser-text p {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: clamp(19px, 3vw, 30px);
+  line-height: 1.55;
+  color: var(--about-ice);
+  text-shadow: 0 0 14px rgba(238,241,255,0.35);
+}
+@media (max-width: 768px) {
+  .chapter-title-main { -webkit-text-stroke: 1.4px var(--about-violet); }
+}
+
+/* ---------------- Pinned title-beat panels (empty stubs driving the pin) ---------------- */
+.chapter-pin-panel {
+  min-height: 100vh;
+  min-height: calc(var(--vh, 1vh) * 100);
+}
+
+/* ---------------- Resting detail panels (always-legible content) ---------------- */
+.chapter-detail-panel {
+  padding: 100px 6vw 120px;
+  align-items: flex-start;
+}
+.chapter-detail-wrap {
+  max-width: 900px;
+  width: 100%;
+  margin: 0 auto;
+}
+.chapter-detail-eyebrow {
+  margin: 0 0 14px;
+  font-family: var(--font-clean);
+  font-size: 12px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--about-violet);
+}
+.chapter-detail-heading {
+  margin: 0 0 20px;
+  font-family: var(--font-serif);
+  font-weight: 700;
+  font-size: clamp(32px, 4.6vw, 52px);
+  color: var(--fg);
+}
+.chapter-detail-heading em {
+  font-style: italic;
+  color: var(--about-ice);
+}
+.chapter-detail-intro {
+  margin: 0 0 40px;
+  max-width: 720px;
+  font-size: clamp(15px, 1.5vw, 18px);
+  line-height: 1.8;
+  color: var(--fg-dim);
+}
+.chapter-detail-wrap--split {
+  max-width: 1180px;
+  display: grid;
+  grid-template-columns: minmax(240px, 360px) 1fr;
+  gap: clamp(40px, 6vw, 90px);
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .chapter-detail-wrap--split { grid-template-columns: 1fr; }
+}
+
+/* ---------------- Selected Works — filmography list ---------------- */
+.filmography-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+.filmography-item {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 20px;
+  padding-bottom: 26px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.filmography-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.filmography-year {
+  font-family: var(--font-clean);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  color: var(--about-violet);
+  padding-top: 3px;
+}
+.filmography-title {
+  margin: 0 0 6px;
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: clamp(17px, 1.9vw, 21px);
+  color: var(--fg);
+  line-height: 1.4;
+}
+.filmography-format {
+  font-family: var(--font-sans);
+  font-weight: 400;
+  font-size: 0.72em;
+  letter-spacing: 0.02em;
+  color: var(--fg-faint);
+}
+.filmography-role {
+  margin: 0 0 4px;
+  font-size: 13.5px;
+  letter-spacing: 0.02em;
+  color: var(--fg-dim);
+}
+.filmography-credit {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--fg-faint);
+}
+@media (max-width: 560px) {
+  .filmography-item { grid-template-columns: 1fr; gap: 4px; }
+  .filmography-year { padding-top: 0; }
+}
+
+/* ---------------- Education & Skills ---------------- */
+.education-list {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.education-item {
+  padding: 18px 20px;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.02);
+}
+.education-school {
+  margin: 0 0 6px;
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 18px;
+  color: var(--fg);
+}
+.education-degree {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--fg-dim);
+}
+.skills-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 18px;
+  font-family: var(--font-clean);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+}
+.skills-hint i { color: var(--about-violet); }
+
+/* 3D flip-card skill tiles: front face = icon + name, back face =
+   percent + fill bar. Flips on hover (desktop) or tap/focus
+   (touch/keyboard), per spec ("고정된 바 차트 대신, 좀 더 인터랙티브
+   하게 표현해줘"). */
+.skills-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+@media (min-width: 560px) {
+  .skills-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (min-width: 1100px) {
+  .skills-grid { grid-template-columns: repeat(5, 1fr); }
+}
+.skill-tile {
+  appearance: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  background: none;
+  cursor: pointer;
+  aspect-ratio: 1 / 1;
+  perspective: 900px;
+  font: inherit;
+  color: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+/* Flip mechanism: .skill-tile is the shared 3D perspective host
+   (position:relative, set above); each face is absolutely
+   positioned inside it and pre-rotated to its resting angle (front
+   0deg facing the viewer, back 180deg facing away). Hovering/
+   focusing/tapping the tile rotates BOTH faces forward by +180deg
+   together, so the front spins away exactly as the back spins into
+   view -- a standard single-hinge flip-card, not two independent
+   flips. */
+.skill-tile {
+  position: relative;
+}
+.skill-tile-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 14px;
+  border: 1px solid var(--border-soft);
+  background: rgba(255,255,255,0.03);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1), border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.skill-tile-face--front { transform: rotateY(0deg); }
+.skill-tile-face--back { transform: rotateY(180deg); }
+.skill-tile:hover .skill-tile-face--front,
+.skill-tile:focus-visible .skill-tile-face--front,
+.skill-tile.is-flipped .skill-tile-face--front {
+  transform: rotateY(180deg);
+}
+.skill-tile:hover .skill-tile-face--back,
+.skill-tile:focus-visible .skill-tile-face--back,
+.skill-tile.is-flipped .skill-tile-face--back {
+  transform: rotateY(360deg);
+}
+.skill-tile:hover .skill-tile-face,
+.skill-tile:focus-visible .skill-tile-face,
+.skill-tile.is-flipped .skill-tile-face {
+  border-color: var(--about-violet);
+  box-shadow: 0 0 22px var(--about-violet-glow);
+}
+.skill-icon {
+  width: clamp(30px, 4vw, 42px);
+  height: clamp(30px, 4vw, 42px);
+  object-fit: contain;
+  filter: drop-shadow(0 0 8px rgba(238,241,255,0.25));
+}
+.skill-icon--flag {
+  border-radius: 50%;
+  filter: drop-shadow(0 0 6px rgba(0,0,0,0.3));
+}
+.skill-name {
+  font-family: var(--font-clean);
+  font-size: clamp(10.5px, 1.15vw, 12.5px);
+  letter-spacing: 0.03em;
+  text-align: center;
+  color: var(--fg-dim);
+}
+.skill-percent {
+  font-family: var(--font-serif);
+  font-weight: 700;
+  font-size: clamp(22px, 2.6vw, 30px);
+  color: var(--about-ice);
+  text-shadow: 0 0 12px rgba(238,241,255,0.35);
+}
+.skill-bar {
+  width: 70%;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.1);
+  overflow: hidden;
+}
+.skill-bar-fill {
+  display: block;
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--about-violet), var(--about-ice));
+  transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ---------------- Awards ---------------- */
+.awards-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.awards-item {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 20px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.awards-item:last-child { border-bottom: none; padding-bottom: 0; }
+.awards-year {
+  font-family: var(--font-clean);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--about-violet);
+  padding-top: 3px;
+}
+.awards-title {
+  margin: 0 0 6px;
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: clamp(16px, 1.8vw, 19px);
+  color: var(--fg);
+  line-height: 1.4;
+}
+.awards-project {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--fg-dim);
+}
+@media (max-width: 560px) {
+  .awards-item { grid-template-columns: 1fr; gap: 4px; }
+}
+
+/* ---------------- Professional Experience ---------------- */
+.career-heading-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 40px;
+}
+.career-heading-row .chapter-detail-heading,
+.career-heading-row .chapter-detail-eyebrow { margin-bottom: 0; }
+.career-heading-row .chapter-detail-eyebrow { margin-bottom: 14px; }
+.career-heading-note {
+  margin: 0 0 4px;
+  font-size: 12.5px;
+  letter-spacing: 0.05em;
+  color: var(--fg-faint);
+}
+.career-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.career-item {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 20px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.career-item:last-child { border-bottom: none; padding-bottom: 0; }
+.career-year {
+  font-family: var(--font-clean);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  color: var(--about-violet);
+  padding-top: 3px;
+}
+.career-role {
+  margin: 0 0 6px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: clamp(17px, 1.9vw, 21px);
+  color: var(--fg);
+}
+.career-title {
+  font-family: var(--font-sans);
+  font-weight: 400;
+  font-size: 0.68em;
+  color: var(--fg-faint);
+}
+.career-badge {
+  font-family: var(--font-clean);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--about-ice);
+  border: 1px solid var(--about-violet);
+  border-radius: 999px;
+  padding: 3px 10px;
+  box-shadow: 0 0 12px var(--about-violet-glow);
+}
+.career-desc {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--fg-dim);
+}
+@media (max-width: 640px) {
+  .career-item { grid-template-columns: 1fr; gap: 6px; }
+  .career-heading-row { flex-direction: column; align-items: flex-start; }
 }
