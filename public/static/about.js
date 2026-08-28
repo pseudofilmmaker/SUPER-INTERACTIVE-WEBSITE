@@ -206,20 +206,44 @@
   // continuous function of p across the WHOLE remaining span so the
   // recede motion reads as one continuous scroll-driven camera move.
   //
-  // Round 6 ("June Hong 이름의 페이드아웃 시작점에 두번째 이미지가
-  // 흘러나와야돼" -- the second scene (starfield + crawl copy) must
-  // start flowing in exactly at the moment the JUNE/HONG title begins
-  // its own fade-out, not before it): CRAWL_IN_START/END are now
-  // aliased directly to TITLE_OUT_START/END so the two are driven by
-  // the same p-window and can never drift out of sync with each other
-  // again — as JUNE/HONG fades out, the crawl fades in over the exact
-  // same span (was 0.60-0.65, starting before the title faded at all;
-  // Round 5's "before it shrinks" request is superseded by this one).
-  const CRAWL_IN_START = TITLE_OUT_START;
-  const CRAWL_IN_END = TITLE_OUT_END;
+  // Round 7 ("자막과 june hong이 겹쳐야된다" -- the crawl copy and the
+  // JUNE/HONG title must actually OVERLAP on screen together, not just
+  // cross paths in a symmetric linear crossfade). Round 6's version
+  // aliased CRAWL_IN_START/END to TITLE_OUT_START/END directly, which
+  // made the two opacities sum to ~1 the whole time (a pure dissolve
+  // handoff) -- both are only ever "visible" at a diminished, blended
+  // opacity at any given instant, which does not read as a real
+  // overlap. Fixed by making the crawl fade in FASTER, finishing
+  // BEFORE the title's own fade-out completes: the crawl starts
+  // rising a moment before TITLE_OUT_START and is already at FULL
+  // opacity (1) by TITLE_OUT_START, so for the entire
+  // TITLE_OUT_START -> TITLE_OUT_END span the crawl sits fully visible
+  // UNDERNEATH the title while the title itself gradually fades away
+  // on top of it -- a genuine, sustained overlap window, not a
+  // transient crossfade point.
+  const CRAWL_IN_START = TITLE_OUT_START - 0.03;
+  const CRAWL_IN_END = TITLE_OUT_START;
   const CRAWL_RUN_START = CRAWL_IN_START;
   const CRAWL_RUN_END = 0.995;
-  const CRAWL_Y_START = 78; // vh, bottom of viewport
+  const CRAWL_Y_START = 78; // vh, bottom of viewport (fully hidden)
+  // ROUND 7 FOLLOW-UP FIX: opacity reaching 1 by CRAWL_IN_END is not
+  // enough on its own -- the translateY sweep from CRAWL_Y_START(78vh)
+  // to CRAWL_Y_END(-60vh) used to run linearly across the ENTIRE
+  // remaining span (CRAWL_RUN_START -> CRAWL_RUN_END, i.e. all the way
+  // to 0.995), so at CRAWL_IN_END the text was still barely off its
+  // 78vh starting point -- fully opaque but still sitting off-screen
+  // below the viewport, so no visual overlap actually occurred despite
+  // the opacity math being correct. Fixed by splitting the Y motion
+  // into two legs: an ENTRY leg (CRAWL_RUN_START -> CRAWL_ENTRY_END,
+  // the same window as the opacity fade-in) that quickly carries the
+  // text from 78vh up to CRAWL_Y_VISIBLE -- a position that is
+  // genuinely on-screen and overlaps the lower half of the JUNE/HONG
+  // title -- followed by the original slow RECEDE leg (CRAWL_ENTRY_END
+  // -> CRAWL_RUN_END) continuing on from CRAWL_Y_VISIBLE up to
+  // CRAWL_Y_END. This guarantees "fully opaque" and "actually on
+  // screen, overlapping the title" happen at the same moment.
+  const CRAWL_ENTRY_END = CRAWL_IN_END;
+  const CRAWL_Y_VISIBLE = 26; // vh -- on-screen, overlapping lower title
   const CRAWL_Y_END = -60; // vh, receded up past the top
   // Shallow, legible tilt matching the pichiworld reference screenshot
   // (was 55deg — far too steep to read, per user feedback). Kept as a
@@ -348,11 +372,21 @@
     }
 
     // ---- opening crawl (3D perspective, continuous recede) ----
+    // Round 7 follow-up: Y motion now runs in two legs (see the long
+    // comment on CRAWL_ENTRY_END above) so the text is genuinely
+    // ON SCREEN — not just opaque — by the time it needs to overlap
+    // the fading-out JUNE/HONG title.
     if (crawlViewport && crawlText) {
       const co = windowedOpacity(p, CRAWL_IN_START, CRAWL_IN_END, OUTRO_START, OUTRO_END);
       crawlViewport.style.opacity = co;
-      const runP = Math.max(0, Math.min(1, (p - CRAWL_RUN_START) / (CRAWL_RUN_END - CRAWL_RUN_START)));
-      const y = CRAWL_Y_START + (CRAWL_Y_END - CRAWL_Y_START) * runP;
+      let y;
+      if (p < CRAWL_ENTRY_END) {
+        const entryP = Math.max(0, Math.min(1, (p - CRAWL_RUN_START) / (CRAWL_ENTRY_END - CRAWL_RUN_START)));
+        y = CRAWL_Y_START + (CRAWL_Y_VISIBLE - CRAWL_Y_START) * easeInOut(entryP);
+      } else {
+        const recedeP = Math.max(0, Math.min(1, (p - CRAWL_ENTRY_END) / (CRAWL_RUN_END - CRAWL_ENTRY_END)));
+        y = CRAWL_Y_VISIBLE + (CRAWL_Y_END - CRAWL_Y_VISIBLE) * recedeP;
+      }
       crawlText.style.transform = `rotateX(${CRAWL_TILT_DEG}deg) translateY(${y}vh)`;
     }
 
