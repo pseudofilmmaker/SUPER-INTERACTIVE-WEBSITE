@@ -190,7 +190,17 @@
   const TITLE_IN_START = 0.53;
   const TITLE_IN_END = 0.59;
   const TITLE_OUT_START = 0.64;
-  const TITLE_OUT_END = 0.68;
+  // Round 8 ("축소되면서 사라져서, 아래 텍스트가 더 겹치는 구간이 있을
+  // 수 있게" -- the title+photo group should shrink away as it exits,
+  // not just fade, AND the exit should take longer so there's more
+  // sustained overlap time with the crawl text underneath). Widened
+  // from 0.68 to 0.76 -- nearly doubles the OUT window's duration,
+  // giving far more scroll distance during which JUNE/HONG (now also
+  // scaling down, see the titleScale block in renderAboutHero) is
+  // still at least partially visible on top of the already-fully-
+  // opaque crawl text (see CRAWL_IN_END, still pinned to
+  // TITLE_OUT_START so the crawl's own entrance timing is unaffected).
+  const TITLE_OUT_END = 0.76;
 
   // Profile-photo reveal — Round 3 item 2: now LAYERED behind the
   // title (same IN/OUT window, stacked underneath via z-index in
@@ -348,10 +358,18 @@
     }
 
     // ---- title card ----
+    // Round 8: on the way OUT, the group now SHRINKS (scale 1 -> 0.62)
+    // as it fades, reading as if it's receding away from camera into
+    // the starfield -- rather than a flat opacity dissolve in place --
+    // which combined with the widened TITLE_OUT window above gives the
+    // crawl text underneath a longer, more legible overlap window.
     if (titleEl) {
       const to = windowedOpacity(p, TITLE_IN_START, TITLE_IN_END, TITLE_OUT_START, TITLE_OUT_END);
       titleEl.style.opacity = to;
       const rise = 1 - Math.max(0, Math.min(1, (p - TITLE_IN_START) / (TITLE_IN_END - TITLE_IN_START)));
+      const outP = Math.max(0, Math.min(1, (p - TITLE_OUT_START) / (TITLE_OUT_END - TITLE_OUT_START)));
+      const outScale = 1 - 0.38 * easeInOut(outP);
+      titleEl.style.transform = `scale(${outScale})`;
       if (titleJune) titleJune.style.transform = `translateY(${rise * -18}px)`;
       if (titleHong) titleHong.style.transform = `translateY(${rise * 18}px)`;
       if (titleSubtitle) titleSubtitle.style.letterSpacing = (0.32 + (1 - rise) * 0.1) + 'em';
@@ -361,12 +379,18 @@
     // its exact IN/OUT window (see PHOTO_IN_*/PHOTO_OUT_* above,
     // aliased directly to TITLE_IN_*/TITLE_OUT_*). Stacking order
     // (behind vs. in front) is handled purely by z-index in style.css;
-    // sizing/feathering (Round 4 item 4) is handled purely in CSS too. ----
+    // sizing/feathering (Round 4 item 4) is handled purely in CSS too.
+    // Round 8: shrinks in sync with the title on the way out (same
+    // outScale factor) so the photo recedes together with JUNE/HONG
+    // as one visual group, instead of the photo staying full-size
+    // while only the title text shrinks around it. ----
     if (photoEl) {
       const po = windowedOpacity(p, PHOTO_IN_START, PHOTO_IN_END, PHOTO_OUT_START, PHOTO_OUT_END);
       photoEl.style.opacity = po;
       const riseP = Math.max(0, Math.min(1, (p - PHOTO_IN_START) / (PHOTO_IN_END - PHOTO_IN_START)));
-      const scale = 0.88 + 0.12 * easeInOut(riseP);
+      const photoOutP = Math.max(0, Math.min(1, (p - PHOTO_OUT_START) / (PHOTO_OUT_END - PHOTO_OUT_START)));
+      const photoOutScale = 1 - 0.38 * easeInOut(photoOutP);
+      const scale = (0.88 + 0.12 * easeInOut(riseP)) * photoOutScale;
       const rise = (1 - easeInOut(riseP)) * 26;
       photoEl.style.transform = `translateY(${rise}px) scale(${scale})`;
     }
