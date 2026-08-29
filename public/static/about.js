@@ -468,7 +468,7 @@
      shown in .chapter-detail-wrap) should itself play the Star-Wars-
      crawl motion as it scrolls naturally into view.
      setupChapterPin() (the pinned duplicate-overlay approach) and its
-     TITLE_ / TEASER_ timing constants are removed entirely, replaced
+     TITLE_ and TEASER_ timing constants are removed entirely, replaced
      by setupChapterCrawlHeading() below: a plain (non-pinned) scrub
      ScrollTrigger attached directly to the real .chapter-crawl-heading
      wrapper, tied to its own natural top-of-viewport scroll position.
