@@ -2459,6 +2459,14 @@ html, body {
   .chapter-title-card-heading { -webkit-text-stroke: 1.1px var(--about-violet); }
   .chapter-title-card-heading em { -webkit-text-stroke: 1.1px var(--about-ice); }
 }
+.chapter-title-card-intro {
+  margin: 8px 0 0;
+  max-width: 640px;
+  font-family: var(--font-clean);
+  font-size: clamp(14px, 1.4vw, 17px);
+  line-height: 1.8;
+  color: var(--about-ice-dim);
+}
 
 /* ---------------- Resting detail panels (always-legible content) ---------------- */
 .chapter-detail-panel {
