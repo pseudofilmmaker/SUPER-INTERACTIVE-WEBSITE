@@ -2479,25 +2479,38 @@ html, body {
   -webkit-text-stroke: 2px var(--about-violet);
   text-shadow: 0 0 24px var(--about-violet-glow), 0 0 60px var(--about-violet-glow);
 }
+/* ROUND 10 FIX ("두번째, 세번째 이미지 구간처럼 스타워즈 스크롤처럼
+   만들어줘야지" — the chapter teaser body text should use the same
+   Star-Wars-crawl treatment as the hero's own closing crawl, not a
+   flat dead-center block). Converted to the exact same fixed-overlay
+   shape as #about-crawl-viewport / .about-crawl-text: bottom-anchored
+   (align-items:flex-end) + a shallow 3D perspective/rotateX tilt, so
+   the teaser now visibly RECEDES UP from below the viewport like the
+   hero's crawl instead of just fading in place. */
 .chapter-teaser-viewport {
   position: fixed;
   inset: 0;
   z-index: 9;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 8vw;
+  overflow: hidden;
   pointer-events: none;
   opacity: 0;
   will-change: opacity;
+  perspective: 1400px;
+  perspective-origin: 50% 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0 8vw;
 }
 .chapter-teaser-text {
   width: min(760px, 82vw);
+  transform-origin: 50% 100%;
+  transform: rotateX(22deg) translateY(0);
   text-align: center;
   will-change: transform, opacity;
 }
 .chapter-teaser-text p {
-  margin: 0;
+  margin: 0 0 1.4em;
   font-family: var(--font-serif);
   font-weight: 600;
   font-size: clamp(19px, 3vw, 30px);
@@ -2505,6 +2518,7 @@ html, body {
   color: var(--about-ice);
   text-shadow: 0 0 14px rgba(238,241,255,0.35);
 }
+.chapter-teaser-text p:last-child { margin-bottom: 0; }
 @media (max-width: 768px) {
   .chapter-title-main { -webkit-text-stroke: 1.4px var(--about-violet); }
 }

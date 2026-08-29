@@ -494,14 +494,37 @@
     const TITLE_OUT_START = 0.38;
     const TITLE_OUT_END = 0.56;
 
-    // Teaser now only starts fading in once the title has fully cleared
-    // (TEASER_IN_START === TITLE_OUT_END), so there is no shared on-screen
-    // instant where both are above 0 opacity.
-    const TEASER_IN_START = TITLE_OUT_END;
-    const TEASER_IN_END = TEASER_IN_START + 0.08;
-    const TEASER_OUT_START = 0.93;
-    const TEASER_OUT_END = 1.0;
-    const TEASER_Y_START = 26; // vh, rises up to 0 (on-screen, below where the title sat)
+    // ROUND 10 FIX ("스타워즈 스크롤처럼 만들어줘야지" — the teaser body
+    // text should use the same Star-Wars-crawl motion as the hero's own
+    // closing crawl, not a flat fade-in-place). Same two-leg Y motion as
+    // renderAboutHero()'s crawl block: an ENTRY leg carries the text up
+    // from below the viewport (TEASER_Y_START) to an on-screen resting
+    // position (TEASER_Y_VISIBLE) while it fades in, then a slower RECEDE
+    // leg continues carrying it further up (toward TEASER_Y_END) while it
+    // holds fully opaque, exactly mirroring CRAWL_Y_START/VISIBLE/END +
+    // CRAWL_TILT_DEG above (see .chapter-teaser-viewport/-text in
+    // style.css, now using the identical perspective/rotateX(22deg)
+    // treatment as .about-crawl-viewport/-text).
+    //
+    // ROUND 10 FIX 2 ("두번째 이미지" ghosting bug): the teaser's fade-out
+    // previously ran all the way to TEASER_OUT_END = 1.0 (the very last
+    // instant of the pin). Because this ScrollTrigger uses scrub:0.5 (a
+    // smoothed, lagging tween of real scroll position), a fast scroll can
+    // release the pin before the lagging opacity tween has actually
+    // caught up to 0 — leaving a fading "ghost" of the teaser fixed on
+    // top of the next (now-visible, unpinned) detail-list content, which
+    // is exactly the bug in the user's screenshot. Fixed by finishing the
+    // fade-out well BEFORE the pin's own end (TEASER_OUT_END = 0.86,
+    // leaving a 14%-of-pin buffer for the scrub tween to fully settle at
+    // opacity 0 while still safely inside the pinned window).
+    const TEASER_IN_START = TITLE_OUT_END; // 0.56 — only after title fully clears
+    const TEASER_IN_END = TEASER_IN_START + 0.08; // 0.64 — entry + fade-in done
+    const TEASER_OUT_START = 0.80;
+    const TEASER_OUT_END = 0.86;
+    const TEASER_RUN_END = 0.90; // Y motion finishes just after opacity hits 0
+    const TEASER_Y_START = 60; // vh, fully hidden below the viewport
+    const TEASER_Y_VISIBLE = 20; // vh, on-screen resting position
+    const TEASER_Y_END = -50; // vh, fully receded up past the top
 
     function render(p) {
       p = Math.max(0, Math.min(1, p));
@@ -517,9 +540,15 @@
       if (teaserViewport && teaserText) {
         const co = windowedOpacity(p, TEASER_IN_START, TEASER_IN_END, TEASER_OUT_START, TEASER_OUT_END);
         teaserViewport.style.opacity = co;
-        const entryP = Math.max(0, Math.min(1, (p - TEASER_IN_START) / (TEASER_IN_END - TEASER_IN_START)));
-        const y = TEASER_Y_START * (1 - easeInOut(entryP));
-        teaserText.style.transform = `translateY(${y}vh)`;
+        let y;
+        if (p < TEASER_IN_END) {
+          const entryP = Math.max(0, Math.min(1, (p - TEASER_IN_START) / (TEASER_IN_END - TEASER_IN_START)));
+          y = TEASER_Y_START + (TEASER_Y_VISIBLE - TEASER_Y_START) * easeInOut(entryP);
+        } else {
+          const recedeP = Math.max(0, Math.min(1, (p - TEASER_IN_END) / (TEASER_RUN_END - TEASER_IN_END)));
+          y = TEASER_Y_VISIBLE + (TEASER_Y_END - TEASER_Y_VISIBLE) * recedeP;
+        }
+        teaserText.style.transform = `rotateX(${CRAWL_TILT_DEG}deg) translateY(${y}vh)`;
       }
     }
 
