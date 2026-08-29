@@ -2432,133 +2432,46 @@ html, body {
 
 /* ============================================================
    CHAPTERS 2-5 — Selected Works / Education & Skills / Awards /
-   Professional Experience. Reuses the exact same fixed-overlay +
-   scroll-progress-driven shrink/fade + teaser-overlap pattern as
-   the hero JUNE/HONG + crawl above (see setupChapterPin() in
-   about.js), generalized into shared .chapter-* classes so all
-   four chapters share one ruleset instead of four near-duplicates.
-   The starfield backdrop (#about-bg-video-layer / about-bg-video-2)
-   now stays visible + looping behind all of this — about.js no
-   longer fades that layer to 0 after chapter 1.
+   Professional Experience.
+
+   ROUND 11 REWRITE ("첫번째 이미지, 제거해줘야지... 두번째 이미지가
+   스타워즈 스크롤 스크립트처럼 나와야한다는 거야" — remove the
+   separate fixed-overlay title/teaser screen entirely; instead the
+   REAL heading + intro text of each chapter's resting detail panel
+   should itself perform the Star-Wars-crawl entrance).
+
+   Rounds 9-10 had each chapter play a duplicate title+teaser screen
+   (position:fixed, its own copy of the heading/intro text) BEFORE
+   the real content, driven by a dedicated pinned ScrollTrigger. That
+   whole approach is removed: no more .chapter-title-text /
+   .chapter-teaser-viewport fixed overlays, no more .chapter-pin-panel
+   pin stub, no more setupChapterPin()/CHAPTER_PIN_DISTANCE pin in
+   about.js. There is now only ONE copy of each chapter's heading +
+   intro text in the DOM (inside .chapter-detail-wrap below), so the
+   entire class of "duplicate text ghosting through from behind" bugs
+   these rounds were fighting is structurally impossible now.
+
+   .chapter-crawl-heading wraps that real heading+intro. It is laid
+   out completely normally (in-flow, static position) — the crawl
+   illusion comes entirely from a NON-pinned ScrollTrigger in
+   about.js (setupChapterCrawlHeading()) that, while this element's
+   own natural scroll-into-view window plays out, tweens it from
+   "tilted back via rotateX + lifted below its resting spot + faded
+   out" to "flat, in place, fully opaque" — the same rotateX(22deg)
+   tilt + perspective treatment as the hero's own #about-crawl-text,
+   just applied in-place to the real content instead of to a separate
+   fixed duplicate. The starfield backdrop (#about-bg-video-layer /
+   about-bg-video-2) still stays visible + looping behind all of this.
    ============================================================ */
 
-/* ---------------- Chapter title + teaser fixed overlays ---------------- */
-.chapter-title-text {
-  position: fixed;
-  inset: 0;
-  z-index: 11;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: clamp(10px, 1.6vw, 18px);
-  text-align: center;
-  padding: 0 8vw;
-  pointer-events: none;
-  opacity: 0;
-  will-change: opacity, transform;
-}
-.chapter-title-eyebrow {
-  margin: 0;
-  font-family: var(--font-clean);
-  font-weight: 600;
-  font-size: clamp(11px, 1.3vw, 14px);
-  letter-spacing: 0.36em;
-  text-transform: uppercase;
-  color: var(--about-ice-dim);
-}
-.chapter-title-main {
-  margin: 0;
-  font-family: var(--font-clean);
-  font-weight: 800;
-  text-transform: uppercase;
-  font-size: clamp(40px, 8vw, 96px);
-  line-height: 1;
-  letter-spacing: 0.02em;
-  color: transparent;
-  -webkit-text-stroke: 2px var(--about-violet);
-  text-shadow: 0 0 24px var(--about-violet-glow), 0 0 60px var(--about-violet-glow);
-}
-/* ROUND 10 FIX ("두번째, 세번째 이미지 구간처럼 스타워즈 스크롤처럼
-   만들어줘야지" — the chapter teaser body text should use the same
-   Star-Wars-crawl treatment as the hero's own closing crawl, not a
-   flat dead-center block). Converted to the exact same fixed-overlay
-   shape as #about-crawl-viewport / .about-crawl-text: bottom-anchored
-   (align-items:flex-end) + a shallow 3D perspective/rotateX tilt, so
-   the teaser now visibly RECEDES UP from below the viewport like the
-   hero's crawl instead of just fading in place. */
-.chapter-teaser-viewport {
-  position: fixed;
-  inset: 0;
-  z-index: 9;
-  overflow: hidden;
-  pointer-events: none;
-  opacity: 0;
-  will-change: opacity;
+/* ---------------- Star-Wars-crawl entrance for the real heading+intro ---------------- */
+.chapter-crawl-heading {
   perspective: 1400px;
   perspective-origin: 50% 100%;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding: 0 8vw;
 }
-.chapter-teaser-text {
-  width: min(760px, 82vw);
+.chapter-crawl-heading-inner {
   transform-origin: 50% 100%;
-  transform: rotateX(22deg) translateY(0);
-  text-align: center;
   will-change: transform, opacity;
-}
-.chapter-teaser-text p {
-  margin: 0 0 1.4em;
-  font-family: var(--font-serif);
-  font-weight: 600;
-  font-size: clamp(19px, 3vw, 30px);
-  line-height: 1.55;
-  color: var(--about-ice);
-  text-shadow: 0 0 14px rgba(238,241,255,0.35);
-}
-.chapter-teaser-text p:last-child { margin-bottom: 0; }
-@media (max-width: 768px) {
-  .chapter-title-main { -webkit-text-stroke: 1.4px var(--about-violet); }
-}
-
-/* ---------------- Pinned title-beat panels (empty stubs driving the pin) ----------------
-   ROUND 9 originally shrunk this to min-height:0, copying the fix that was
-   actually needed for #section-about-hero (which had a genuine trailing-
-   dead-scroll bug). That copy was a mistake: it introduced a NEW, more
-   severe bug caught in Round 10 testing ("두번째 이미지" ghosting screenshot,
-   later shown by measurement to be much bigger than mere scrub-lag).
-
-   ROOT CAUSE (confirmed via Playwright geometry probe): GSAP's pin-spacer
-   height = thisBox'sOwnHeight + CHAPTER_PIN_DISTANCE. With this box shrunk
-   to ~120px (just its padding), the pin-spacer's trailing slack was far
-   SHORTER than one viewport height, which means the very NEXT section in
-   the document flow (.chapter-detail-panel, containing the plain filmography
-   /education/awards/career list) started entering the bottom of the
-   viewport at only ~52% of the chapter's own pin progress (peekP = 1 +
-   (panelHeight-vh)/CHAPTER_PIN_DISTANCE ≈ 0.52 for every chapter) — i.e.
-   HALFWAY through the title+teaser sequence, well before the title had
-   even finished fading out (TITLE_OUT_END=0.56 at the time). Since both
-   the title/teaser fixed overlays AND the detail panel behind them are
-   opaque-background-less, this produced a severe, sustained double-
-   exposure of the teaser paragraph directly over the (identical, by
-   design) intro paragraph + list items underneath — not a brief end-of-
-   pin flicker.
-
-   FIX: restore the base .panel 100vh height for this box specifically.
-   That pushes the peek-through point back out to exactly p=1.0 (the very
-   end of the pin), so the ENTIRE title+teaser sequence below in
-   setupChapterPin() has the full [0,1] progress range to complete safely
-   before any of the resting detail content can possibly be visible. This
-   box has no visible content either way (title/teaser are separate
-   position:fixed overlays elsewhere in the DOM) so growing it back to
-   100vh does not resurrect the original hero-specific dead-scroll bug —
-   it only affects how much of the chapter's OWN pin distance is "spent"
-   before the detail list is allowed to appear. */
-.chapter-pin-panel {
-  min-height: 100vh;
-  min-height: calc(var(--vh, 1vh) * 100);
 }
 
 /* ---------------- Resting detail panels (always-legible content) ---------------- */

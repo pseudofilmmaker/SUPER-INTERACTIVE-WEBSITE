@@ -456,147 +456,73 @@
 
   /* ============================================================
      CHAPTERS 2-5 — Selected Works / Education & Skills / Awards /
-     Professional Experience. Each chapter reuses the exact same
-     "title shrinks + fades away while a flat teaser line rises in
-     and genuinely overlaps it" pattern proven out above on the hero
-     JUNE/HONG + crawl sequence, generalized into one function driven
-     by its own short pinned ScrollTrigger (the chapter's own empty
-     .chapter-pin-panel section) instead of the hero's single giant
-     pin. The persistent starfield backdrop (#about-bg-video-layer)
-     is untouched here -- it now stays visible across every chapter,
-     see the OUTRO fix above.
+     Professional Experience.
+
+     ROUND 11 REWRITE ("첫번째 이미지, 제거해줘야지... 두번째 이미지가
+     스타워즈 스크롤 스크립트처럼 나와야한다는 거야"). Rounds 9-10 had
+     each chapter play a SEPARATE, duplicate title+teaser screen
+     (fixed overlay, its own copy of the heading/intro text) driven by
+     its own pinned ScrollTrigger, BEFORE the real content scrolled
+     into view below it. The user pointed out that whole extra screen
+     is unwanted — instead, the REAL heading+intro (the actual content
+     shown in .chapter-detail-wrap) should itself play the Star-Wars-
+     crawl motion as it scrolls naturally into view.
+     setupChapterPin() (the pinned duplicate-overlay approach) and its
+     TITLE_ / TEASER_ timing constants are removed entirely, replaced
+     by setupChapterCrawlHeading() below: a plain (non-pinned) scrub
+     ScrollTrigger attached directly to the real .chapter-crawl-heading
+     wrapper, tied to its own natural top-of-viewport scroll position.
+     Because there is now only ONE copy of this text in the DOM (no
+     fixed duplicate sitting on top of anything), the entire class of
+     "duplicate text ghosting through from behind" bug that Rounds 9-10
+     were fighting cannot occur here — nothing else can ever render
+     underneath this text, because nothing else is drawn twice.
      ============================================================ */
-  function setupChapterPin(cfg) {
-    const pinSection = document.getElementById(cfg.pinSectionId);
-    const titleEl = document.getElementById(cfg.titleId);
-    const teaserViewport = document.getElementById(cfg.teaserViewportId);
-    const teaserText = document.getElementById(cfg.teaserTextId);
-    if (!pinSection || !titleEl) return;
+  function setupChapterCrawlHeading(cfg) {
+    const headingEl = document.getElementById(cfg.headingId);
+    const innerEl = headingEl ? headingEl.querySelector('.chapter-crawl-heading-inner') : null;
+    if (!headingEl || !innerEl) return;
 
-    // ROUND 9 FIX ("제목과 본문이 겹쳐 보여" — the title and teaser body
-    // text visibly collide in every chapter). Previously the teaser was
-    // timed to reach full opacity WHILE the title was still fading out
-    // (a deliberate "genuine overlap" trick borrowed from the hero's own
-    // JUNE/HONG-title + closing-crawl sequence). That trick only reads
-    // cleanly on the hero because the crawl sits in a DIFFERENT screen
-    // position (bottom-anchored + 3D tilt via .about-crawl-viewport's
-    // align-items:flex-end) than the dead-center title. The chapter
-    // title and teaser are BOTH dead-center (.chapter-title-text /
-    // .chapter-teaser-viewport both use align-items:center) with no such
-    // offset, so the same overlap trick just stacks two blocks of text on
-    // top of each other. Fixed by making the two phases fully SEQUENTIAL
-    // instead: the title completely fades out (opacity -> 0) before the
-    // teaser begins fading in, matching the clean "title, then body" flow
-    // the user pointed to (their reference images of the hero's own
-    // JUNE/HONG title card followed by the clean bio-copy screen).
-    const TITLE_IN_START = 0.04;
-    const TITLE_IN_END = 0.20;
-    const TITLE_OUT_START = 0.38;
-    const TITLE_OUT_END = 0.56;
-
-    // ROUND 10 FIX ("스타워즈 스크롤처럼 만들어줘야지" — the teaser body
-    // text should use the same Star-Wars-crawl motion as the hero's own
-    // closing crawl, not a flat fade-in-place). Same two-leg Y motion as
-    // renderAboutHero()'s crawl block: an ENTRY leg carries the text up
-    // from below the viewport (TEASER_Y_START) to an on-screen resting
-    // position (TEASER_Y_VISIBLE) while it fades in, then a slower RECEDE
-    // leg continues carrying it further up (toward TEASER_Y_END) while it
-    // holds fully opaque, exactly mirroring CRAWL_Y_START/VISIBLE/END +
-    // CRAWL_TILT_DEG above (see .chapter-teaser-viewport/-text in
-    // style.css, now using the identical perspective/rotateX(22deg)
-    // treatment as .about-crawl-viewport/-text).
-    //
-    // ROUND 10 FIX 2 ("두번째 이미지" ghosting bug): the teaser's fade-out
-    // previously ran all the way to TEASER_OUT_END = 1.0 (the very last
-    // instant of the pin). Because this ScrollTrigger uses scrub:0.5 (a
-    // smoothed, lagging tween of real scroll position), a fast scroll can
-    // release the pin before the lagging opacity tween has actually
-    // caught up to 0 — leaving a fading "ghost" of the teaser fixed on
-    // top of the next (now-visible, unpinned) detail-list content, which
-    // is exactly the bug in the user's screenshot. Fixed by finishing the
-    // fade-out well BEFORE the pin's own end (TEASER_OUT_END = 0.86,
-    // leaving a 14%-of-pin buffer for the scrub tween to fully settle at
-    // opacity 0 while still safely inside the pinned window).
-    const TEASER_IN_START = TITLE_OUT_END; // 0.56 — only after title fully clears
-    const TEASER_IN_END = TEASER_IN_START + 0.08; // 0.64 — entry + fade-in done
-    const TEASER_OUT_START = 0.80;
-    const TEASER_OUT_END = 0.86;
-    const TEASER_RUN_END = 0.90; // Y motion finishes just after opacity hits 0
-    const TEASER_Y_START = 60; // vh, fully hidden below the viewport
-    const TEASER_Y_VISIBLE = 20; // vh, on-screen resting position
-    const TEASER_Y_END = -50; // vh, fully receded up past the top
+    // Starts tilted back at the same angle as the hero's own crawl
+    // (CRAWL_TILT_DEG, shared constant so the two treatments can never
+    // drift out of sync) and lifted slightly below its resting spot,
+    // fully transparent; eases to flat (rotateX 0), in its natural
+    // position and fully opaque as the heading scrolls into view. A
+    // modest lift (not a full off-screen sweep, since this text stays
+    // in-flow and permanent rather than receding away again) keeps the
+    // "rising up out of the starfield" read without disturbing layout.
+    const TILT_START_DEG = CRAWL_TILT_DEG;
+    const LIFT_START_VH = 7;
 
     function render(p) {
       p = Math.max(0, Math.min(1, p));
-
-      const to = windowedOpacity(p, TITLE_IN_START, TITLE_IN_END, TITLE_OUT_START, TITLE_OUT_END);
-      titleEl.style.opacity = to;
-      const outP = Math.max(0, Math.min(1, (p - TITLE_OUT_START) / (TITLE_OUT_END - TITLE_OUT_START)));
-      const outScale = 1 - 0.38 * easeInOut(outP);
-      const inP = Math.max(0, Math.min(1, (p - TITLE_IN_START) / (TITLE_IN_END - TITLE_IN_START)));
-      const riseY = (1 - easeInOut(inP)) * 24; // rises up into place on entry
-      titleEl.style.transform = `translateY(${riseY}px) scale(${outScale})`;
-
-      if (teaserViewport && teaserText) {
-        const co = windowedOpacity(p, TEASER_IN_START, TEASER_IN_END, TEASER_OUT_START, TEASER_OUT_END);
-        teaserViewport.style.opacity = co;
-        let y;
-        if (p < TEASER_IN_END) {
-          const entryP = Math.max(0, Math.min(1, (p - TEASER_IN_START) / (TEASER_IN_END - TEASER_IN_START)));
-          y = TEASER_Y_START + (TEASER_Y_VISIBLE - TEASER_Y_START) * easeInOut(entryP);
-        } else {
-          const recedeP = Math.max(0, Math.min(1, (p - TEASER_IN_END) / (TEASER_RUN_END - TEASER_IN_END)));
-          y = TEASER_Y_VISIBLE + (TEASER_Y_END - TEASER_Y_VISIBLE) * recedeP;
-        }
-        teaserText.style.transform = `rotateX(${CRAWL_TILT_DEG}deg) translateY(${y}vh)`;
-      }
+      const e = easeInOut(p);
+      innerEl.style.opacity = e;
+      innerEl.style.transform = `rotateX(${TILT_START_DEG * (1 - e)}deg) translateY(${LIFT_START_VH * (1 - e)}vh)`;
     }
 
     render(0);
 
-    // ROUND 9 FIX: same pixel-distance fix as the hero pin above — this
-    // stub's own CSS box height has been shrunk to ~0 (see .chapter-pin-panel
-    // in style.css), so '+=180%' (which resolved against that box's height)
-    // is replaced with an equivalent fixed pixel distance (180% of 100vh)
-    // computed from the actual viewport height, keeping this chapter's own
-    // animation pacing identical to before.
-    const CHAPTER_PIN_DISTANCE = Math.round(window.innerHeight * 1.8);
+    // Non-pinned: the heading scrolls normally, this ScrollTrigger only
+    // reads its own top-of-viewport progress to drive the tween. Window
+    // chosen so the motion completes well before the heading reaches
+    // its natural resting read position (top 42% of viewport), rather
+    // than continuing to animate while the user is already reading it.
     ScrollTrigger.create({
-      id: cfg.pinSectionId + '-pin',
-      trigger: pinSection,
-      start: 'top top',
-      end: '+=' + CHAPTER_PIN_DISTANCE,
-      pin: true,
+      id: cfg.headingId + '-crawl',
+      trigger: headingEl,
+      start: 'top 88%',
+      end: 'top 42%',
       scrub: 0.5,
       onUpdate: (self) => render(self.progress),
       onRefresh: (self) => render(self.progress),
     });
   }
 
-  setupChapterPin({
-    pinSectionId: 'section-ch-works-hero',
-    titleId: 'ch-works-title-text',
-    teaserViewportId: 'ch-works-teaser-viewport',
-    teaserTextId: 'ch-works-teaser-text',
-  });
-  setupChapterPin({
-    pinSectionId: 'section-ch-edu-hero',
-    titleId: 'ch-edu-title-text',
-    teaserViewportId: 'ch-edu-teaser-viewport',
-    teaserTextId: 'ch-edu-teaser-text',
-  });
-  setupChapterPin({
-    pinSectionId: 'section-ch-awards-hero',
-    titleId: 'ch-awards-title-text',
-    teaserViewportId: 'ch-awards-teaser-viewport',
-    teaserTextId: 'ch-awards-teaser-text',
-  });
-  setupChapterPin({
-    pinSectionId: 'section-ch-career-hero',
-    titleId: 'ch-career-title-text',
-    teaserViewportId: 'ch-career-teaser-viewport',
-    teaserTextId: 'ch-career-teaser-text',
-  });
+  setupChapterCrawlHeading({ headingId: 'ch-works-crawl-heading' });
+  setupChapterCrawlHeading({ headingId: 'ch-edu-crawl-heading' });
+  setupChapterCrawlHeading({ headingId: 'ch-awards-crawl-heading' });
+  setupChapterCrawlHeading({ headingId: 'ch-career-crawl-heading' });
 
   /* ---------- resting content reveal (profile + all 4 chapter detail
      sections) — generalized from the hero-only .about-profile-wrap

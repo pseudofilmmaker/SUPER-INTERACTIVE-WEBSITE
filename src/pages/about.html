@@ -112,63 +112,26 @@
 </div>
 
 <!-- ============================================================
-     CHAPTERS 2-5 — reuse the exact same "title shrinks + fades
-     away while a flat teaser line rises in and genuinely overlaps
-     it" pattern proven out on the hero JUNE/HONG + crawl sequence
-     above (see setupChapterPin() in about.js). Each chapter gets
-     its own fixed title/teaser overlay pair here, then a pinned
-     hero section (title beat) followed by a plain, always-legible
-     "detail" resting section (the full data) further down in
-     <main>. The starfield loop (about-bg-video-2) now persists as
-     the backdrop behind ALL of these chapters, not just the hero
-     -- "두번째 별이 점멸하는 영상이 뒤에 룹으로 깔리는 거를 잊지
-     말아줘" -- since about.js no longer fades #about-bg-video-layer
-     out at the end of chapter 1.
-     ============================================================ -->
-
-<!-- ---- Chapter 2: Selected Works ---- -->
-<div id="ch-works-title-text" class="chapter-title-text" aria-hidden="true">
-  <p class="chapter-title-eyebrow">FILMOGRAPHY &middot; 2007&ndash;PRESENT</p>
-  <h2 class="chapter-title-main">Selected Works</h2>
-</div>
-<div id="ch-works-teaser-viewport" class="chapter-teaser-viewport" aria-hidden="true">
-  <div class="chapter-teaser-text" id="ch-works-teaser-text">
-    <p>Since 2023, I&rsquo;ve handled cinematography, aerial filming and editing at JK World Group &mdash; covering brand films, reels, event recaps and photography across the group&rsquo;s family of companies.</p>
-  </div>
-</div>
-
-<!-- ---- Chapter 3: Education & Skills ---- -->
-<div id="ch-edu-title-text" class="chapter-title-text" aria-hidden="true">
-  <p class="chapter-title-eyebrow">BACKGROUND</p>
-  <h2 class="chapter-title-main">Education &amp; Skills</h2>
-</div>
-<div id="ch-edu-teaser-viewport" class="chapter-teaser-viewport" aria-hidden="true">
-  <div class="chapter-teaser-text" id="ch-edu-teaser-text">
-    <p>Two degrees in film, and a decade of sets that taught me the rest.</p>
-  </div>
-</div>
-
-<!-- ---- Chapter 4: Awards ---- -->
-<div id="ch-awards-title-text" class="chapter-title-text" aria-hidden="true">
-  <p class="chapter-title-eyebrow">RECOGNITION</p>
-  <h2 class="chapter-title-main">Awards</h2>
-</div>
-<div id="ch-awards-teaser-viewport" class="chapter-teaser-viewport" aria-hidden="true">
-  <div class="chapter-teaser-text" id="ch-awards-teaser-text">
-    <p>The work speaks first. These are the rooms it&rsquo;s been recognized in.</p>
-  </div>
-</div>
-
-<!-- ---- Chapter 5: Professional Experience ---- -->
-<div id="ch-career-title-text" class="chapter-title-text" aria-hidden="true">
-  <p class="chapter-title-eyebrow">CAREER</p>
-  <h2 class="chapter-title-main">Professional Experience</h2>
-</div>
-<div id="ch-career-teaser-viewport" class="chapter-teaser-viewport" aria-hidden="true">
-  <div class="chapter-teaser-text" id="ch-career-teaser-text">
-    <p>Four companies, one throughline &mdash; always behind the camera, always building something.</p>
-  </div>
-</div>
+     ROUND 11 FIX ("첫번째 이미지, 제거해줘야지... 두번째 이미지가
+     스타워즈 스크롤 스크립트처럼 나와야한다는 거야" — the separate
+     pinned title/teaser overlay screen shown BEFORE each chapter's
+     real content (a duplicate of the content's own heading+intro
+     text, fixed centered on the starfield) must be removed entirely.
+     Instead, the REAL "Selected Works" / "Education & Skills" /
+     "Awards" / "Professional Experience" heading + intro paragraph
+     — the actual content, further down in <main> — should itself
+     rise into view with the hero's own Star-Wars-crawl motion
+     (tilted 3D perspective, receding up from below) as the user
+     scrolls to it, then settle flat and fully legible in place.
+     There is no longer a separate pinned "title beat" section per
+     chapter; setupChapterCrawlHeading() in about.js instead attaches
+     a normal (non-pinned) ScrollTrigger directly to each chapter's
+     .chapter-crawl-heading wrapper (see the detail sections below)
+     that only tilts/lifts the heading + intro while it enters,
+     leaving the rest of the list to fade in exactly as before. This
+     removes the whole class of "duplicate text peeking through from
+     behind" ghosting bugs since there is now only ONE copy of this
+     text in the DOM. -->
 
 <main id="about-scroll-container">
 
@@ -206,17 +169,21 @@
   </section>
 
   <!-- ==========================================================
-       Chapter 2 — Selected Works. Pinned title beat (JS-driven,
-       same shrink+fade-away/teaser-overlap pattern as the hero)
-       followed by a plain, always-legible filmography list.
+       Chapter 2 — Selected Works. ROUND 11: no separate pinned
+       title-beat section anymore — the real heading+intro below
+       (wrapped in .chapter-crawl-heading) plays the Star-Wars-crawl
+       entrance itself as it scrolls into view, then the filmography
+       list fades in as before.
        ========================================================== -->
-  <section class="panel about-panel chapter-pin-panel" id="section-ch-works-hero" data-index="2"></section>
-
-  <section class="panel about-panel chapter-detail-panel" id="section-ch-works-detail" data-index="3">
+  <section class="panel about-panel chapter-detail-panel" id="section-ch-works-detail" data-index="2">
     <div class="chapter-detail-wrap">
-      <p class="chapter-detail-eyebrow" data-reveal="true">Filmography</p>
-      <h2 class="chapter-detail-heading" data-reveal="true">Selected <em>Works</em></h2>
-      <p class="chapter-detail-intro" data-reveal="true">Since 2023, I&rsquo;ve handled cinematography, aerial filming and editing at JK World Group &mdash; covering brand films, reels, event recaps and photography across the group&rsquo;s family of companies.</p>
+      <div class="chapter-crawl-heading" id="ch-works-crawl-heading">
+        <div class="chapter-crawl-heading-inner">
+          <p class="chapter-detail-eyebrow">Filmography</p>
+          <h2 class="chapter-detail-heading">Selected <em>Works</em></h2>
+          <p class="chapter-detail-intro">Since 2023, I&rsquo;ve handled cinematography, aerial filming and editing at JK World Group &mdash; covering brand films, reels, event recaps and photography across the group&rsquo;s family of companies.</p>
+        </div>
+      </div>
 
       <ol class="filmography-list">
         <li class="filmography-item" data-reveal="true">
@@ -377,13 +344,15 @@
        on hover/tap (desktop hover, mobile tap-to-flip via CSS
        :focus/.is-active), rather than a static bar chart.
        ========================================================== -->
-  <section class="panel about-panel chapter-pin-panel" id="section-ch-edu-hero" data-index="4"></section>
-
-  <section class="panel about-panel chapter-detail-panel" id="section-ch-edu-detail" data-index="5">
+  <section class="panel about-panel chapter-detail-panel" id="section-ch-edu-detail" data-index="3">
     <div class="chapter-detail-wrap chapter-detail-wrap--split">
       <div class="edu-education-col">
-        <p class="chapter-detail-eyebrow" data-reveal="true">Background</p>
-        <h2 class="chapter-detail-heading" data-reveal="true">Education <em>&amp; Skills</em></h2>
+        <div class="chapter-crawl-heading" id="ch-edu-crawl-heading">
+          <div class="chapter-crawl-heading-inner">
+            <p class="chapter-detail-eyebrow">Background</p>
+            <h2 class="chapter-detail-heading">Education <em>&amp; Skills</em></h2>
+          </div>
+        </div>
 
         <ul class="education-list">
           <li class="education-item" data-reveal="true">
@@ -511,13 +480,15 @@
        so this list is scoped to actual prizes/awards only, per
        spec ("영화제 참여는 따로 기재됐기 때문에, 수상내역만 기재").
        ========================================================== -->
-  <section class="panel about-panel chapter-pin-panel" id="section-ch-awards-hero" data-index="6"></section>
-
-  <section class="panel about-panel chapter-detail-panel" id="section-ch-awards-detail" data-index="7">
+  <section class="panel about-panel chapter-detail-panel" id="section-ch-awards-detail" data-index="4">
     <div class="chapter-detail-wrap">
-      <p class="chapter-detail-eyebrow" data-reveal="true">Recognition</p>
-      <h2 class="chapter-detail-heading" data-reveal="true">Awards</h2>
-      <p class="chapter-detail-intro" data-reveal="true">Festival selections are credited alongside each project in Selected Works above &mdash; this list is reserved for actual prizes.</p>
+      <div class="chapter-crawl-heading" id="ch-awards-crawl-heading">
+        <div class="chapter-crawl-heading-inner">
+          <p class="chapter-detail-eyebrow">Recognition</p>
+          <h2 class="chapter-detail-heading">Awards</h2>
+          <p class="chapter-detail-intro">Festival selections are credited alongside each project in Selected Works above &mdash; this list is reserved for actual prizes.</p>
+        </div>
+      </div>
 
       <ol class="awards-list">
         <li class="awards-item" data-reveal="true">
@@ -551,14 +522,14 @@
        heading; the standalone Freelance row has been removed per
        spec, and the PARANOI misspelling fixed to Paranoi.
        ========================================================== -->
-  <section class="panel about-panel chapter-pin-panel" id="section-ch-career-hero" data-index="8"></section>
-
-  <section class="panel about-panel chapter-detail-panel" id="section-ch-career-detail" data-index="9">
+  <section class="panel about-panel chapter-detail-panel" id="section-ch-career-detail" data-index="5">
     <div class="chapter-detail-wrap">
       <div class="career-heading-row">
-        <div>
-          <p class="chapter-detail-eyebrow" data-reveal="true">Career</p>
-          <h2 class="chapter-detail-heading" data-reveal="true">Professional <em>Experience</em></h2>
+        <div class="chapter-crawl-heading" id="ch-career-crawl-heading">
+          <div class="chapter-crawl-heading-inner">
+            <p class="chapter-detail-eyebrow">Career</p>
+            <h2 class="chapter-detail-heading">Professional <em>Experience</em></h2>
+          </div>
         </div>
         <p class="career-heading-note" data-reveal="true">Employment history, most recent first</p>
       </div>
