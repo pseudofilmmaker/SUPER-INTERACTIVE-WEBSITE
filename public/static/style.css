@@ -1620,6 +1620,24 @@ html, body {
 .thumb-item img, .thumb-item video {
   width: 100%; height: 100%; object-fit: cover;
 }
+/* PHOTOS cards only (.thumb-frame--card, section-4): the source photos
+   span a wide range of native aspect ratios (0.667 portrait up to 1.49
+   landscape) while the polaroid card box is a fixed 220:300 portrait
+   shape -- with `object-fit: cover` (the default above, still correct
+   for the VIDEOS landscape/reel carousels where the source media's own
+   ratio already matches its frame), any photo whose ratio doesn't match
+   220:300 gets cropped, worst for the landscape "places" and square
+   "product"/"fashion" shots (reported by the user: thumbnails "아직도
+   크롭되고" -- still cropped, on large screens). `contain` shows the
+   WHOLE photo unscaled/uncropped inside the card, letting the cream mat
+   background (see the polaroid override below) show through as an even
+   margin on whichever sides don't fill the box -- same idea as the mat's
+   existing padding, just now sized per-photo instead of assuming every
+   photo is already 220:300. */
+.thumb-frame--card .thumb-item img,
+.thumb-frame--card .thumb-item video {
+  object-fit: contain;
+}
 
 /* dots row (~14px) + gap (18px) + panel's own vertical padding (60px) =
    ~92px of non-frame content inside the safe area (no carousel-label on
@@ -1693,8 +1711,20 @@ html, body {
   border: 1px solid rgba(0,0,0,0.06);
   border-radius: 3px;
   padding: 14px 14px 46px;
+  /* Was `0 25px 60px rgba(0,0,0,0.55)` -- a 60px blur radius at that
+     offset/opacity paints a soft dark rectangle reaching WAY past the
+     card's own edges, which reads as a clearly visible tinted box
+     against this section's bright torch/flame background (reported by
+     the user: "사진 뒤 배경이 완전 투명이 아니야" -- the area behind the
+     photo isn't fully transparent). There is no separate overlay
+     element causing this -- it's purely this shadow. Shrinking the
+     blur radius and offset keeps the shadow tightly hugging the card
+     itself (still reads as "floating" up close) while area even a
+     short distance away from the card is left untouched/transparent;
+     the lower alpha keeps what remains from re-forming a visible tint
+     against the bright background. */
   box-shadow:
-    0 25px 60px rgba(0,0,0,0.55),
+    0 6px 16px rgba(0,0,0,0.3),
     0 2px 0 rgba(255,255,255,0.5) inset;
 }
 .thumb-frame--card .thumb-item .face-placeholder {
