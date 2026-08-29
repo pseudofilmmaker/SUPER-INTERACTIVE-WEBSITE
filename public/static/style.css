@@ -2149,11 +2149,15 @@ html, body {
   margin: 0;
   font-family: var(--font-sans);
   font-weight: 700;
-  /* More aggressive vw-scaling + lower ceiling than before (was
-     clamp(22px,3.4vw,40px) inside a 760px-capped box) so the full
-     sentence reliably fits one line across common desktop widths
-     without the box needing a fixed max-width at all. */
-  font-size: clamp(18px, 2.6vw, 34px);
+  /* Round 6 ("여기서 글자를 더 키워줘, 꽉찬 화면 기준으로"): sized for a full
+     large desktop viewport, not a phone-scale ceiling. Validated with a
+     canvas measureText() pass (not live DOM scrollWidth, which is unreliable
+     here since the <p> fills its 100%-width flex parent) across 900px-3000px+
+     viewport widths -- clamp(28px, 3.8vw, 92px) stays comfortably inside the
+     padded width (viewport - 2*8vw) at every width, so `white-space: nowrap`
+     below still guarantees the pre-existing Round 5 "큰화면일때는 한줄로"
+     single-line requirement while roughly doubling the old 34px ceiling. */
+  font-size: clamp(28px, 3.8vw, 92px);
   line-height: 1.4;
   color: var(--about-violet);
   text-shadow: 0 0 18px var(--about-violet-glow), 0 0 4px rgba(0,0,0,0.6);
@@ -2163,13 +2167,20 @@ html, body {
   /* Mobile: explicitly allow wrapping again and re-center/constrain the
      box, since a nowrap single line at any font size readable on a
      phone would overflow the screen width -- "모바일로 갈 때는 알아서
-     얼라인먼트를 잡아줘" (auto-align appropriately on mobile). */
+     얼라인먼트를 잡아줘" (auto-align appropriately on mobile). Round 6 also
+     bumps the mobile ceiling up (was 26px) and widens the box slightly
+     (was 560px/88vw) to give `text-wrap: balance` more room to spread the
+     9 words across evenly-weighted lines instead of default greedy
+     wrapping, which produced a lopsided split (e.g. "...long enough" /
+     "to frame it."). `text-wrap: balance` degrades gracefully to normal
+     wrap on any browser that doesn't support it. */
   .about-intro-crawl-text {
-    width: min(560px, 88vw);
+    width: min(620px, 90vw);
   }
   .about-intro-crawl-text p {
     white-space: normal;
-    font-size: clamp(19px, 5.6vw, 26px);
+    text-wrap: balance;
+    font-size: clamp(23px, 7.2vw, 40px);
   }
 }
 
