@@ -165,26 +165,18 @@
   <!-- Extra pinned-scroll runway so the coded starfield handoff, the
        profile-photo reveal, and the crawl all have room to play out
        (see PHOTO_IN_*/STARFIELD_* windows in about.js) before the pin
-       releases into the resting profile section below. -->
+       releases directly into Chapter 2 below. -->
 
-  <!-- Resting content -- the crawl's dramatic reveal lands here in a
-       normal, readable, non-animated layout: the profile photo (black
-       background already removed) alongside the same bio copy, so the
-       actual content is always accessible even without scroll-linked
-       motion. -->
-  <section class="panel about-panel about-profile-panel" id="section-about-profile" data-index="1">
-    <div class="about-profile-wrap">
-      <div class="about-profile-media">
-        <img src="/static/media/about/june-hong-profile.png" alt="June Hong holding a professional cinema camera rig" loading="lazy"/>
-      </div>
-      <div class="about-profile-copy">
-        <p class="about-profile-eyebrow" data-reveal="true">ABOUT ME</p>
-        <h2 class="about-profile-name" data-reveal="true">June Hong</h2>
-        <p class="about-profile-role" data-reveal="true">Director &middot; Videographer &middot; Photographer &middot; Editor</p>
-        <p class="about-profile-bio" data-reveal="true">I tell stories across documentary, VR, commercial and narrative film. Every project is a collaboration &mdash; but when it calls for it, I can carry the full production myself, from concept to color. That range has earned recognition in Korea&rsquo;s VR competitions, with official selections at film festivals in Moscow, Bucheon and Thailand.</p>
-      </div>
-    </div>
-  </section>
+  <!-- ROUND 15 ("이 구간은 삭제해줘"): the static, non-animated resting
+       "ABOUT ME / June Hong / ... bio" profile panel that used to sit
+       here (repeating the exact same photo + name + role + bio copy
+       the hero's own crawl had just finished showing) has been removed
+       outright. The hero's pinned crawl sequence above is now the ONLY
+       place this photo/bio content appears -- once its pin releases,
+       scroll goes directly into Chapter 2 (Selected Works) below. See
+       about.js: HERO_PIN_DISTANCE/OUTRO_* no longer need to keep a
+       safety margin against this panel's old peek-in point, since it
+       no longer exists to ghost against. -->
 
   <!-- ==========================================================
        Chapter 2 — Selected Works. ROUND 12: a short pinned host

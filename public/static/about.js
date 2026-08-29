@@ -217,22 +217,36 @@
   // 본문의 구간을 명확히 분리하고, 본문은 화면의 위까지 스크롤업되서
   // 사라지는 걸 유의"). Rounds 7-8-13 all iterated on a design where
   // this crawl was DELIBERATELY made to overlap the fading JUNE/HONG
-  // title on screen at the same time. The user has now reversed that
-  // call outright: title and body must be two CLEARLY SEPARATE beats
-  // with a clean starfield-only gap between them, and the body's own
-  // exit must still be a genuine continued upward scroll off the top
-  // of the screen (not an opacity fade), per Round 13.
+  // title on screen at the same time, fully opaque and legible for a
+  // long stretch. Round 14's fix moved the crawl to start only AFTER
+  // TITLE_OUT_END plus a deliberate no-text gap (CRAWL_GAP), so the
+  // handoff read as two totally separate scenes.
   //
-  // CRAWL_GAP: a deliberate no-text buffer right after TITLE_OUT_END
-  // — nothing (title or crawl) is on screen here, just the starfield,
-  // so the handoff reads as two distinct scenes, not a cross-dissolve.
-  const CRAWL_GAP = 0.05;
-  const CRAWL_IN_START = TITLE_OUT_END + CRAWL_GAP;
+  // ROUND 15 REFINEMENT ("제목이 페이드 될 때, 본문이 이미 올라오고
+  // 있어야지" — while the title is still fading, the crawl body should
+  // ALREADY be rising). Round 14's clean gap over-corrected: for the
+  // whole TITLE_OUT_START..TITLE_OUT_END+CRAWL_GAP span, NOTHING at all
+  // was on screen but bare starfield, which read as dead air rather
+  // than a deliberate scene change. Fixed by starting the crawl's
+  // entrance (rise + fade-in) EARLIER, right as the title's own
+  // fade-out begins (CRAWL_IN_START == TITLE_OUT_START) — a genuine
+  // cross-dissolve. This is NOT a return to the Round 7-8 design:
+  // there, the crawl was already FULLY opaque and static while it
+  // overlapped the title. Here, the crawl's fade-in is stretched to a
+  // full 0.08 (vs. the old 0.05), so at the exact instant the title
+  // hits opacity 0 (p = TITLE_OUT_END), the crawl itself is only
+  // ~50% opaque and still visibly rising from below — the two cross
+  // through each other mid-fade instead of ever both sitting at full
+  // opacity at once.
+  const CRAWL_OVERLAP = TITLE_OUT_END - TITLE_OUT_START; // = 0.04
+  const CRAWL_IN_START = TITLE_OUT_END - CRAWL_OVERLAP; // = TITLE_OUT_START = 0.64
   // Entry leg: fades in while rising from off-screen-bottom
   // (CRAWL_Y_START) up to a genuinely on-screen, comfortably legible
-  // resting spot (CRAWL_Y_VISIBLE) — this is now the crawl's OWN
-  // dedicated entrance, no longer timed against the title at all.
-  const CRAWL_IN_END = CRAWL_IN_START + 0.05;
+  // resting spot (CRAWL_Y_VISIBLE). Widened to 0.08 (was 0.05) so the
+  // fade-in is gradual enough to still be mid-fade (not yet fully
+  // opaque) once the title has fully cleared -- see CRAWL_OVERLAP note
+  // above.
+  const CRAWL_IN_END = CRAWL_IN_START + 0.08;
   const CRAWL_RUN_START = CRAWL_IN_START;
   const CRAWL_ENTRY_END = CRAWL_IN_END;
   const CRAWL_Y_START = 78; // vh, bottom of viewport (fully hidden)
@@ -255,8 +269,8 @@
 
   // All the HERO-ONLY overlays (prologue line, title+photo, crawl)
   // fade out right before this first pin releases, so the handoff
-  // into the plain, non-animated profile section below reads as a
-  // clean scene change rather than an abrupt jump.
+  // into Chapter 2 (Selected Works) below reads as a clean scene
+  // change rather than an abrupt jump.
   //
   // CHAPTERS 2-5 FIX ("두번째 별이 점멸하는 영상이 뒤에 룹으로 깔리는
   // 거를 잊지 말아줘"): #about-bg-video-layer (which now shows only
@@ -267,23 +281,11 @@
   //
   // ROUND 12 FIX ("사진도 이름도 모두, 위에 겹치는 걸 없애줘야되는
   // 거야" -- the hero's own fixed-position crawl text was still fully
-  // opaque and ghosting on top of the real .about-profile-wrap
-  // content -- same photo, same name, same tagline -- once that
-  // section had already scrolled into view underneath it). ROOT
-  // CAUSE: OUTRO_START/END (0.94 -> 1.0) fire far too late relative
-  // to the pin's own scroll distance -- measured live via Playwright
-  // across a range of viewport heights, the real #section-about-
-  // profile content already scrolls into the visible viewport at
-  // roughly progress ≈ 0.85-0.87 (varies slightly with viewport
-  // height/HERO_PIN_DISTANCE ratio), i.e. a full ~0.07-0.09 of
-  // progress BEFORE the crawl (still at opacity 1) even starts to
-  // fade. Since every hero overlay is `position:fixed` (stacked
-  // above the normal document flow via z-index), that whole window
-  // rendered as two full copies of the photo/name/tagline visible
-  // and overlapping at once. Fixed by moving the fade window much
-  // earlier -- safely before the earliest measured peek-in point
-  // (~0.848) with a comfortable margin across all tested viewport
-  // heights (600px-2000px).
+  // opaque and ghosting on top of the real, then-still-existing
+  // .about-profile-wrap resting section -- same photo, same name,
+  // same tagline -- once that section had already scrolled into view
+  // underneath it). Fixed at the time by moving this fade window
+  // earlier, well before that section's measured peek-in point.
   //
   // ROUND 13 ADJUSTMENT ("위쪽까지 스크롤되다가 사라져야지"): the
   // crawl's own upward recede (CRAWL_Y_END=-150vh) now finishes
@@ -294,15 +296,19 @@
   // already-off-screen opacity cleanup, not the thing doing the
   // visible "disappearing" anymore.
   //
-  // ROUND 14 NOTE: CRAWL_RUN_END moved out to 0.90 (see above, to make
-  // room for the now-separated, no-longer-overlapping title/gap/crawl
-  // beats within the same total hero pin length) which pushes this
-  // window later too. HERO_PIN_DISTANCE below was widened accordingly
-  // (6.2 -> 7.4 * viewport height) so the real #section-about-profile
-  // content's own measured peek-in point is pushed out in lockstep,
-  // preserving the same comfortable safety margin verified in Round
-  // 12 (peek-in stayed at ~0.848 of the OLD, shorter pin; widening the
-  // pin distance itself moves that peek-in fraction later too).
+  // ROUND 14 NOTE: CRAWL_RUN_END moved out to 0.90 to make room for
+  // the separated title/gap/crawl beats within the same total hero
+  // pin length, which pushed this window later too; HERO_PIN_DISTANCE
+  // below was widened (6.2 -> 7.4 * viewport height) in lockstep.
+  //
+  // ROUND 15 NOTE: the .about-profile-wrap section this ghosting fix
+  // originally guarded against has since been deleted outright ("이
+  // 구간은 삭제해줘" -- see about.html/style.css), so that specific
+  // safety-margin rationale no longer applies. HERO_PIN_DISTANCE is
+  // left at 7.4x regardless -- it still exists to give the hero's own
+  // internal beats (title fade, overlapping crawl entrance, crawl
+  // hold, crawl recede) comfortable scroll runway, which is unrelated
+  // to the now-removed section and still holds.
   const OUTRO_START = CRAWL_RUN_END;
   const OUTRO_END = 0.94;
 
@@ -436,12 +442,12 @@
     }
 
     // ---- opening crawl (3D perspective, continuous recede) ----
-    // Round 14: Y motion runs in two legs — an ENTRY leg (rise from
-    // off-screen-bottom to the on-screen resting spot, matched to the
-    // opacity fade-in) followed by a RECEDE leg (continue rising all
-    // the way past the top edge, well after the title has already
-    // fully cleared with its own gap — see CRAWL_GAP/CRAWL_IN_START
-    // above; the two no longer share any timing relationship).
+    // Y motion runs in two legs — an ENTRY leg (rise from off-screen-
+    // bottom to the on-screen resting spot, matched to the opacity
+    // fade-in, and per Round 15 now starting WHILE the title is still
+    // fading out — see CRAWL_IN_START/CRAWL_OVERLAP above) followed by
+    // a RECEDE leg (continue rising all the way past the top edge,
+    // well after the title has fully cleared).
     if (crawlViewport && crawlText) {
       const co = windowedOpacity(p, CRAWL_IN_START, CRAWL_IN_END, OUTRO_START, OUTRO_END);
       crawlViewport.style.opacity = co;
@@ -640,15 +646,17 @@
   }
   setupFilmographyCrawl();
 
-  /* ---------- resting content reveal (profile + all 4 chapter detail
-     sections) — generalized from the hero-only .about-profile-wrap
-     wiring to every .chapter-detail-wrap as well, so the filmography
-     list, education+skills grid, awards list and career list all get
-     the same staggered fade/rise-in on scroll. ---------- */
+  /* ---------- resting content reveal (all 4 chapter detail sections)
+     — staggered fade/rise-in for the filmography list, education+
+     skills grid, awards list and career list content as each scrolls
+     into view. (ROUND 15: the hero-only .about-profile-wrap panel this
+     wiring used to also cover has been deleted outright per "이 구간은
+     삭제해줘" -- see about.html/style.css -- so this now only targets
+     .chapter-detail-wrap.) ---------- */
   document.querySelectorAll('.about-panel [data-reveal]').forEach((el) => {
     gsap.set(el, { opacity: 0, y: 28 });
   });
-  document.querySelectorAll('.about-profile-wrap, .chapter-detail-wrap').forEach((wrap) => {
+  document.querySelectorAll('.chapter-detail-wrap').forEach((wrap) => {
     const items = wrap.querySelectorAll('[data-reveal]');
     if (!items.length) return;
     ScrollTrigger.create({

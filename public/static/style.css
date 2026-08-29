@@ -2358,77 +2358,14 @@ html, body {
    class directly rather than maintaining a near-duplicate #about-*
    ruleset that could drift out of sync. See about.html markup. */
 
-/* ---------------- Resting profile section (photo + bio, always legible) ----------------
-   ROUND 9 FIX ("둘 사이에 갭을 없애줘" — remove the gap between the hero's
-   crawl fading out and Chapter 2's title appearing): this panel repeats the
-   SAME bio copy the hero's own closing crawl just showed, in a plain static
-   layout. Because it lives on the shared `.panel` class it used to force a
-   full `min-height:100vh` scroll span (plus a large 440px-wide photo makes
-   its natural content height comparable anyway) between the hero pin's
-   release and Chapter 2's own pin start — i.e. a long stretch of scroll
-   where nothing NEW happens, which reads exactly like the "gap" the user
-   flagged. Overridden here to size to its own (now smaller) content instead
-   of a forced full screen, so the transition into Chapter 2 arrives far
-   sooner. Content itself is unchanged — still fully legible/accessible. */
-.about-profile-panel {
-  min-height: 0;
-  padding: 56px 6vw 64px;
-}
-.about-profile-wrap {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: clamp(32px, 6vw, 90px);
-  max-width: 1180px;
-  width: 100%;
-  flex-wrap: wrap;
-}
-.about-profile-media {
-  flex: 0 0 auto;
-  width: min(300px, 74vw);
-}
-.about-profile-media img {
-  width: 100%;
-  height: auto;
-  display: block;
-  filter: drop-shadow(0 30px 60px rgba(0,0,0,0.55));
-}
-.about-profile-copy {
-  flex: 1 1 360px;
-  max-width: 560px;
-}
-.about-profile-eyebrow {
-  margin: 0 0 14px;
-  font-size: 12px;
-  letter-spacing: 0.3em;
-  text-transform: uppercase;
-  color: var(--about-violet);
-}
-.about-profile-name {
-  margin: 0 0 8px;
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: clamp(36px, 5vw, 58px);
-  color: var(--fg);
-}
-.about-profile-role {
-  margin: 0 0 26px;
-  font-family: var(--font-clean);
-  font-size: 14px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--fg-dim);
-}
-.about-profile-bio {
-  margin: 0;
-  font-size: clamp(15px, 1.5vw, 18px);
-  line-height: 1.85;
-  color: var(--fg-dim);
-}
-@media (max-width: 900px) {
-  .about-profile-wrap { flex-direction: column; text-align: center; }
-  .about-profile-copy { max-width: 620px; }
-}
+/* ---------------- Resting profile section — REMOVED (Round 15) ----------------
+   ROUND 15 ("이 구간은 삭제해줘"): the static "ABOUT ME / June Hong / role /
+   bio" resting panel this ruleset used to style (#section-about-profile in
+   about.html) has been deleted outright — it repeated the exact same photo
+   and bio copy the hero's own closing crawl had just shown, immediately
+   below it, in a plain non-animated layout. The .about-profile-* classes
+   are no longer referenced by any markup; this ruleset is intentionally
+   left removed rather than kept dead in the stylesheet. */
 
 /* ============================================================
    CHAPTERS 2-5 — Selected Works / Education & Skills / Awards /
