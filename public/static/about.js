@@ -224,29 +224,38 @@
   //
   // ROUND 15 REFINEMENT ("제목이 페이드 될 때, 본문이 이미 올라오고
   // 있어야지" — while the title is still fading, the crawl body should
-  // ALREADY be rising). Round 14's clean gap over-corrected: for the
-  // whole TITLE_OUT_START..TITLE_OUT_END+CRAWL_GAP span, NOTHING at all
-  // was on screen but bare starfield, which read as dead air rather
-  // than a deliberate scene change. Fixed by starting the crawl's
-  // entrance (rise + fade-in) EARLIER, right as the title's own
-  // fade-out begins (CRAWL_IN_START == TITLE_OUT_START) — a genuine
-  // cross-dissolve. This is NOT a return to the Round 7-8 design:
-  // there, the crawl was already FULLY opaque and static while it
-  // overlapped the title. Here, the crawl's fade-in is stretched to a
-  // full 0.08 (vs. the old 0.05), so at the exact instant the title
-  // hits opacity 0 (p = TITLE_OUT_END), the crawl itself is only
-  // ~50% opaque and still visibly rising from below — the two cross
-  // through each other mid-fade instead of ever both sitting at full
-  // opacity at once.
-  const CRAWL_OVERLAP = TITLE_OUT_END - TITLE_OUT_START; // = 0.04
-  const CRAWL_IN_START = TITLE_OUT_END - CRAWL_OVERLAP; // = TITLE_OUT_START = 0.64
+  // ALREADY be rising). First attempt at this (CRAWL_IN_START ==
+  // TITLE_OUT_START, 0.08-wide fade-in) was still WRONG per follow-up
+  // feedback ("겹치는 구간이 하나도 없잖아?" — there is NO overlapping
+  // segment at all): starting the crawl's fade-in exactly when the
+  // title starts fading meant the crawl was still only ~0-30% opaque
+  // AND still positioned far below the visible viewport for most of
+  // the title's own fade window — technically nonzero opacity, but not
+  // actually VISIBLE on screen at the same time as the title, so it
+  // never read as a real overlap.
+  //
+  // ROUND 15 FIX (v2): the crawl's entrance now starts BEFORE the
+  // title even begins fading (CRAWL_LEAD) and finishes shortly AFTER
+  // (CRAWL_IN_END = TITLE_OUT_START + CRAWL_LEAD), so it is centered
+  // on TITLE_OUT_START rather than starting there. That guarantees
+  // that at the exact moment the title starts to disappear, the crawl
+  // is already ~50% opaque and roughly halfway risen into view, and
+  // by TITLE_OUT_START + CRAWL_LEAD (still inside the title's own
+  // fade-out window) the crawl has finished rising to its fully
+  // visible resting spot — so for the back half of the title's own
+  // fade, both the (dimming) title and the (now fully up) crawl are
+  // genuinely on screen together, a real crossfade rather than a
+  // same-instant coincidence of two invisible-to-each-other windows.
+  const CRAWL_LEAD = 0.02;
+  const CRAWL_IN_START = TITLE_OUT_START - CRAWL_LEAD; // = 0.62
   // Entry leg: fades in while rising from off-screen-bottom
   // (CRAWL_Y_START) up to a genuinely on-screen, comfortably legible
-  // resting spot (CRAWL_Y_VISIBLE). Widened to 0.08 (was 0.05) so the
-  // fade-in is gradual enough to still be mid-fade (not yet fully
-  // opaque) once the title has fully cleared -- see CRAWL_OVERLAP note
-  // above.
-  const CRAWL_IN_END = CRAWL_IN_START + 0.08;
+  // resting spot (CRAWL_Y_VISIBLE) — finishes at TITLE_OUT_START +
+  // CRAWL_LEAD (0.66), i.e. still inside the title's own 0.64->0.68
+  // fade-out window, so the crawl is fully up and legible while the
+  // title is still visibly (if dimly) on screen for the last stretch
+  // of its own fade.
+  const CRAWL_IN_END = TITLE_OUT_START + CRAWL_LEAD; // = 0.66
   const CRAWL_RUN_START = CRAWL_IN_START;
   const CRAWL_ENTRY_END = CRAWL_IN_END;
   const CRAWL_Y_START = 78; // vh, bottom of viewport (fully hidden)
@@ -444,10 +453,11 @@
     // ---- opening crawl (3D perspective, continuous recede) ----
     // Y motion runs in two legs — an ENTRY leg (rise from off-screen-
     // bottom to the on-screen resting spot, matched to the opacity
-    // fade-in, and per Round 15 now starting WHILE the title is still
-    // fading out — see CRAWL_IN_START/CRAWL_OVERLAP above) followed by
-    // a RECEDE leg (continue rising all the way past the top edge,
-    // well after the title has fully cleared).
+    // fade-in, and per Round 15 now straddling the title's own
+    // fade-out window (see CRAWL_LEAD/CRAWL_IN_START above) so there
+    // is a real, visible overlap between the two rather than a clean
+    // handoff) followed by a RECEDE leg (continue rising all the way
+    // past the top edge, well after the title has fully cleared).
     if (crawlViewport && crawlText) {
       const co = windowedOpacity(p, CRAWL_IN_START, CRAWL_IN_END, OUTRO_START, OUTRO_END);
       crawlViewport.style.opacity = co;
