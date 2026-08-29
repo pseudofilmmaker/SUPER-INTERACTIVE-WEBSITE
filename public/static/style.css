@@ -1,1 +1,2834 @@
-h1 { font-family: Arial, Helvetica, sans-serif; }
+/* ============================================================
+   Be the ONE — Visual Storyteller Portfolio
+   Dark cinematic scroll-interactive theme
+   ============================================================ */
+
+:root {
+  --bg: #050506;
+  --bg-soft: #0a0a0c;
+  --fg: #f5f5f7;
+  --fg-dim: rgba(245, 245, 247, 0.6);
+  --fg-faint: rgba(245, 245, 247, 0.35);
+  /* Fire palette (replaces the former purple/pink/blue cool-tone accents —
+     "보라색 기운은 이제 삭제" per explicit spec). Sweep reads as an actual
+     flame gradient bottom-to-top: deep ember red-orange -> vivid flame
+     orange -> warm gold, matching the matchstick/torch footage's own
+     dominant colors (black / warm-yellow / dark-red per content analysis). */
+  --accent-ember: #ff4d1c;
+  --accent-flame: #ff8a00;
+  --accent-gold: #ffc94d;
+  --accent-deepred: #c1121f;
+  --border-soft: rgba(255, 255, 255, 0.12);
+  --font-serif: 'Playfair Display', 'Noto Serif KR', serif;
+  --font-sans: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-clean: 'Jost', 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  --vh: 1vh; /* set by JS for mobile */
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection { background: var(--accent-flame); color: #fff; }
+
+/* ---------------- Progress bar ---------------- */
+#progress-bar {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%;
+  height: 3px;
+  background: rgba(255,255,255,0.08);
+  z-index: 200;
+}
+#progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent-ember), var(--accent-flame), var(--accent-gold));
+  transition: width 0.05s linear;
+}
+
+/* ---------------- Fixed site header (JUNE HONG / HOME·PHOTOS·VIDEOS·ABOUT ME) ---------------- */
+/* ROOT-CAUSE FIX (explicit user spec, this turn -- first pass added a
+   dedicated #header-feather gradient layer beneath the header, but over
+   bright/high-contrast content (fire, starry sky) its own fade-out edge
+   itself read as an awkward visible band/seam: "차라리 그냥 투명하게
+   처리하는 게 나을 거 같은데?" i.e. "wouldn't it be better to just make it
+   fully transparent instead?"). FIX: removed both #site-header's own
+   background gradient AND the separate #header-feather layer entirely --
+   the header is now fully transparent, with legibility over any
+   background (bright or dark) provided purely by a text-shadow on the
+   brand/nav labels (same technique already used elsewhere on this page,
+   e.g. #ignite-gate-cta), so there is no overlay band of any kind to
+   look awkward against. */
+#site-header {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%;
+  height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+  z-index: 300;
+  background: transparent;
+  pointer-events: none;
+}
+#site-header .brand,
+#site-header .main-nav a {
+  pointer-events: auto;
+}
+#site-header .brand {
+  font-family: var(--font-clean);
+  font-style: normal;
+  font-weight: 600;
+  font-size: 17px;
+  letter-spacing: 0.24em;
+  color: var(--fg);
+  text-decoration: none;
+  text-transform: uppercase;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.85), 0 0 16px rgba(0,0,0,0.6);
+}
+#site-header .main-nav {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+}
+#site-header .main-nav a {
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  color: var(--fg-dim);
+  text-decoration: none;
+  text-transform: uppercase;
+  position: relative;
+  padding-bottom: 4px;
+  transition: color 0.3s ease;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.85), 0 0 16px rgba(0,0,0,0.6);
+}
+#site-header .main-nav a::after {
+  content: '';
+  position: absolute;
+  left: 0; bottom: 0;
+  width: 0%;
+  height: 1px;
+  background: var(--accent-flame);
+  transition: width 0.3s ease;
+}
+#site-header .main-nav a:hover { color: var(--fg); }
+#site-header .main-nav a.active {
+  color: var(--fg);
+}
+#site-header .main-nav a.active::after { width: 100%; }
+
+@media (max-width: 768px) {
+  #site-header { height: 60px; padding: 0 18px; }
+  #site-header .brand { font-size: 15px; }
+  #site-header .main-nav { gap: 14px; }
+  #site-header .main-nav a { font-size: 9.5px; letter-spacing: 0.1em; }
+}
+@media (max-width: 420px) {
+  #site-header .main-nav { gap: 10px; }
+}
+
+/* ---------------- PHOTOS / VIDEOS fixed panel-nav: vertical category
+   list + Details/Photos|Videos pill pair, anchored just above the
+   scroll cue. Stays fixed/visible for as long as ANY of that group's
+   sections (PHOTOS: 3-4, VIDEOS: 5-7) are in view, i.e. until every
+   thumbnail in the group has fully conveyor-belted past. ---------------- */
+.panel-nav {
+  /* Bug 3 fix: centering here used to be `left:50%; transform:translateX(-50%)`,
+     which requires the browser to resolve the transform's `-50%` against this
+     element's OWN rendered width every frame. Because .panel-nav-list li.active
+     applies `transform: scale(1.06)` and the whole nav is continuously
+     opacity/y-scrubbed by setupPanelNavFrameIn() during scroll, its width is
+     never perfectly stable -- and at certain viewport widths (768/834/1000px
+     measured) and on real mobile viewports (iPhone 13 emulation) Chromium was
+     observed resolving that self-referential percentage against a stale
+     width, silently shifting the whole block left of true center (confirmed
+     via getBoundingClientRect() + screenshots). Spanning the full width with
+     left:0/right:0 and centering children via flexbox instead removes the
+     dependency on the element's own width entirely -- true, robust centering
+     regardless of content width or animation state. */
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 68px;
+  z-index: 210;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+/* Container-level switch: instantly gates whether THIS group's nav is the
+   active one at all (swapping between photos/videos groups, or hiding
+   entirely between groups). The actual entrance motion/opacity of each
+   child row + pill button is layered on top via setupPanelNavReveal() in
+   app.js, which scroll-scrubs them in as the group's intro section comes
+   into view -- giving a true scroll-linked "frame-in" rather than a flat
+   fade, while this class still handles the coarse show/hide + pointer-events. */
+.panel-nav.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+.panel-nav-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.panel-nav-list li {
+  font-family: var(--font-clean);
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+  cursor: pointer;
+  transition: color 0.3s ease, transform 0.3s ease;
+}
+.panel-nav-list li:hover { color: var(--fg-dim); }
+.panel-nav-list li.active {
+  color: #fff;
+  font-weight: 600;
+  transform: scale(1.06);
+}
+.panel-nav-actions {
+  display: flex;
+  gap: 10px;
+}
+.panel-pill {
+  appearance: none;
+  border: none;
+  border-radius: 999px;
+  padding: 9px 22px;
+  font-family: var(--font-clean);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: all 0.25s ease;
+}
+.pill-outline {
+  color: var(--fg-dim);
+  background: transparent;
+  border: 1px solid var(--border-soft);
+}
+.pill-outline:hover {
+  color: #fff;
+  border-color: rgba(255,255,255,0.4);
+}
+.pill-solid {
+  color: #fff;
+  background: linear-gradient(90deg, var(--accent-ember), var(--accent-flame));
+  box-shadow: 0 4px 16px rgba(255,138,0,0.35);
+  cursor: default;
+}
+@media (max-width: 768px) {
+  .panel-nav { bottom: 56px; gap: 8px; }
+  .panel-nav-list { gap: 4px; }
+  .panel-nav-list li { font-size: 10px; }
+  .panel-pill { font-size: 10px; padding: 6px 15px; }
+}
+
+/* ---------------- Dot navigation ---------------- */
+#dot-nav {
+  position: fixed;
+  right: 22px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+#dot-nav .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1px solid var(--border-soft);
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.35s ease;
+}
+#dot-nav .dot.active {
+  background: var(--accent-flame);
+  border-color: var(--accent-flame);
+  box-shadow: 0 0 12px var(--accent-flame);
+  transform: scale(1.4);
+}
+@media (max-width: 768px) {
+  #dot-nav { right: 12px; gap: 10px; }
+}
+
+/* ---------------- Scroll container / panels ---------------- */
+#scroll-container {
+  position: relative;
+  width: 100%;
+}
+
+/* Reserves extra scrollable distance below the last panel so the final
+   section's own ScrollTrigger (end: 'bottom top') can reach progress
+   1.0. Without this, the document's maximum scroll position is exactly
+   the last panel's own bottom edge minus one viewport height, so
+   'bottom top' (which requires scrolling a FULL extra viewport height
+   past that) can never actually be reached -- the last conveyor
+   (Reels) would visibly stop short of framing its final thumbnail out. */
+#scroll-tail-spacer {
+  height: 100vh;
+  height: calc(var(--vh, 1vh) * 100);
+}
+
+.panel {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  min-height: calc(var(--vh, 1vh) * 100);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 60px 24px;
+}
+
+/* Ambient glow blobs */
+.glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.55;
+  pointer-events: none;
+  z-index: 0;
+}
+.glow-ember {
+  width: 520px; height: 520px;
+  background: radial-gradient(circle, var(--accent-ember), transparent 70%);
+  top: -10%; right: -10%;
+}
+.glow-gold {
+  width: 560px; height: 560px;
+  background: radial-gradient(circle, var(--accent-gold), transparent 70%);
+  bottom: -15%; left: -10%;
+}
+/* generic reveal state, animated via JS/ScrollTrigger */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(28px);
+}
+
+/* ============================================================
+   FIXED BACKGROUND VIDEO LAYER — persistent "media player"
+   position:fixed to the viewport (NOT inside any .panel), sitting
+   behind the ENTIRE section-1 -> work-reel -> section-2 span and
+   never itself scrolling/moving, no matter which of those sections
+   is currently pinned or in normal document flow (only their own
+   foreground content -- hero text, tagline, logo wall -- scrolls on
+   top of it). Four <video> elements are stacked and hard-cut (no
+   crossfade) in sequence by scroll progress (setupFixedBgVideo() in
+   app.js): bg-video-1a (matches fall/settle/hand-grab, cube section)
+   -> bg-video-1b (held static match) -> bg-video-2 (match ignites)
+   -> bg-video-4 (lit match approaches an unlit torch) -- the whole
+   4-clip chain always finishes before section-2 (WORKED WITH) comes
+   into view. The whole layer fades out once section-3 (PHOTOS) takes
+   over, handing off to that group's own existing per-section
+   .title-bg-media pattern.
+   z-index: 0 keeps it below every panel's own content (which has
+   no explicit background any more for sections 1-2, see below) but
+   above <body>'s own flat --bg color.
+   ============================================================ */
+#fixed-bg-video {
+  position: fixed;
+  inset: 0;
+  /* MUST NOT be negative: <body> paints its own flat background color
+     ABOVE any negative-z-index descendant in real browser behavior, so a
+     negative value here (the previous bug) rendered this layer completely
+     invisible, hidden behind <body>'s solid --bg color, even though every
+     computed style (opacity/display/visibility) looked correct.
+     z-index: 0 (stack level 0, same as .panel's implicit z-index:auto)
+     combined with DOM source order (#fixed-bg-video comes BEFORE <main> in
+     index.tsx) is what actually keeps it painted behind every panel's own
+     content while still being above <body>'s background. Do not change
+     this back to a negative value. */
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  will-change: opacity;
+}
+.fixed-bg-video-el {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  will-change: opacity;
+}
+#bg-video-1a { opacity: 1; }
+/* Scrim: matches the dark-vignette treatment used elsewhere (.title-overlay/
+   .work-reel-vignette) so foreground text stays legible over the brighter
+   matchstick/flame footage regardless of which frame is showing.
+   ROOT-CAUSE FIX (this turn's "영상연결부 opacity/밝기 차이" bug, found via
+   uploaded 6.mp4/7.mp4 forensics): this scrim used to be MUCH darker
+   (radial 0.25->0.72, linear up to 0.65) than #photos-bg-video-layer's own
+   .photos-bg-video-scrim (radial 0->0.32, linear up to 0.3) just below.
+   The two raw source clips (section2-torch-blaze.mp4 / photos-intro-07.mp4)
+   are near-identical in brightness at the exact section-2->section-3 cut
+   point (mean gray 15.66 vs 15.93, confirmed via frame-accurate ffmpeg
+   extraction) -- the visible brightness jump the user reported was NOT in
+   either video file, it was this layer's own much-heavier vignette making
+   the v6 side look artificially dim right up until the instant it hard-cuts
+   to the far-lighter-scrimmed v7 side (composited screenshot mean: 14.0
+   before the cut vs 22.0 after, a ~57% jump). Fix: match this scrim's alpha
+   stops to .photos-bg-video-scrim's exact values so sections 1-2 and
+   sections 3-4 share the same vignette weight and the cut no longer reads
+   as a brightness change. */
+.fixed-bg-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(5,3,2,0) 0%, rgba(5,3,2,0.32) 82%),
+    linear-gradient(180deg, rgba(5,3,2,0.22) 0%, transparent 22%, transparent 78%, rgba(5,3,2,0.3) 100%);
+}
+
+/* ============================================================
+   PHOTOS BACKGROUND VIDEO -- a second persistent "media player"
+   layer, same pattern as #fixed-bg-video above but scoped to the
+   PHOTOS group (sections 3-4) instead of the intro/work-reel/logo-
+   wall run. Per this turn's explicit spec: "Photos가 시작될 때는
+   7번 영상이 나와야하고, 비디오스로 넘어가기 전에 8번 영상 재생이
+   끝나야해" -- video-7 (uploaded 7.mp4, re-encoded to
+   photos-intro-07.mp4) plays as PHOTOS begins, hard-cutting to
+   video-8 (photos-outro-08.mp4) partway through, which must finish
+   its own full playthrough before section-5 (VIDEOS) takes over.
+   Kept as its OWN separate fixed layer (rather than appended to
+   #fixed-bg-video's own videos[] array) because #fixed-bg-video
+   ALREADY fades fully to opacity:0 by the time section-3 begins
+   (see FADE_OUT_START in renderLayerOpacity, app.js) -- reusing that
+   layer would mean fading it back in for PHOTOS then back out again
+   for VIDEOS, undoing its own existing "done after section-2" fade
+   contract. A second independent fixed layer avoids that conflict:
+   #fixed-bg-video owns sections 1-2, #photos-bg-video-layer owns
+   sections 3-4 exclusively, and only one of the two is ever visible
+   at a time (see setupPhotosBgVideo() in app.js).
+   ============================================================ */
+#photos-bg-video-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  will-change: opacity;
+}
+.photos-bg-video-el {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  will-change: opacity;
+}
+#photos-bg-video-7 { opacity: 1; }
+/* Kept deliberately much lighter than #fixed-bg-video's own
+   .fixed-bg-scrim (sections 1-2): that layer's video is a mostly-black
+   match-strike/ignite clip where a heavy scrim barely registers, but
+   here video-7/8 is a bright, fully-lit torch flame filling most of the
+   frame -- the old values (radial 0.25->0.72, linear up to 0.65) measured
+   ~38-40% average brightness loss across the flame itself (confirmed via
+   canvas drawImage() readback of the raw decoded frame vs the final
+   composited screenshot), reading as a dull/muddy/"opaque" haze rather
+   than a crisp flame. Cut all alpha stops so only a light vignette
+   remains at the very edges (for title-text legibility) while the
+   flame's own brightness/saturation stays close to the source clip. */
+.photos-bg-video-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(5,3,2,0) 0%, rgba(5,3,2,0.32) 82%),
+    linear-gradient(180deg, rgba(5,3,2,0.22) 0%, transparent 22%, transparent 78%, rgba(5,3,2,0.3) 100%);
+}
+
+/* ============================================================
+   VIDEOS BACKGROUND VIDEO -- a third persistent "media player"
+   layer, same exact pattern as #photos-bg-video-layer above but
+   scoped to the VIDEOS group (sections 5-7) plus its own new outro
+   section-8. Per this turn's spec: "비디오 관련 배경영상을 차례대로
+   로딩에 최적화되게끔 생성해줘" -- three uploaded clips (9/10/11.mp4,
+   re-encoded from 4K to 1080p/H.264 for web) play in sequence 9->10->11,
+   hard-cut at each handoff, one per VIDEOS sub-section (9: section-5
+   intro, 10: section-6 landscape carousel, 11: section-7 reels
+   carousel through the new section-8 outro). Kept as its own
+   independent fixed layer for the same reason #photos-bg-video-layer
+   is separate from #fixed-bg-video: each group's layer has its own
+   fade contract, and only one of the three layers is ever visible at
+   a time (see setupVideosBgVideo() + setupPhotosVideosLayerHandoff()
+   in app.js).
+   ============================================================ */
+#videos-bg-video-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  will-change: opacity;
+}
+.videos-bg-video-el {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  will-change: opacity, transform;
+}
+#videos-bg-video-9 { opacity: 1; }
+.videos-bg-video-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(5,3,2,0) 0%, rgba(5,3,2,0.32) 82%),
+    linear-gradient(180deg, rgba(5,3,2,0.22) 0%, transparent 22%, transparent 78%, rgba(5,3,2,0.3) 100%);
+}
+
+/* ============================================================
+   IGNITE GATE — "횃불에 불이 붙기 전에 재생을 스크롤다운에도 반응없이,
+   고정된 화면에서 첨부한 이미지의 원처럼 점멸하는 원 옆에 불을
+   붙여주세요를 영어로 점멸하게끔". Reference image (torch, unlit,
+   white glow orb + thin outer ring centered on the torch head) was
+   analyzed via understand_images: circle center sits at 49.6%/30.6%
+   of that 1024x576 reference frame, inner-circle radius ~32px (6.25%
+   of frame width), outer ring radius ~60px (11.7% of frame width).
+   The ACTUAL on-screen torch head in videos-bg-12.mp4 (1920x1080,
+   object-fit:cover) was independently pinpointed via pixel-brightness
+   blob detection (PIL + scipy.ndimage, threshold>30, largest connected
+   component, top 22% of its bbox = the head): centered at x=49.74%,
+   y=18.94% of the frame -- stable across t=0..1s (the fully-unlit
+   pre-ignition hold window). Positioned here at that same x/y via
+   left/top percentages of the fixed full-viewport video layer so it
+   visually sits right on the torch head regardless of viewport size
+   (object-fit:cover keeps the horizontal center fixed; vertical crop
+   only trims top/bottom edges on unusual aspect ratios, which this
+   upper-third placement comfortably tolerates).
+   Shown/hidden entirely by JS (setupIgniteGate() in app.js) -- opacity
+   here starts at 0 so nothing is visible until the gate is actually
+   armed (i.e. scroll has reached video-12's phase for the first time).
+   ============================================================ */
+/* ROOT-CAUSE FIX (explicit user spec -- "첫번째 이미지, 컷 투로 바로 붙는
+   게 아니고, 토치도 화면 아래서부터 스크롤다운에 반응하면서 올라와야지"):
+   v11->v12's handoff used to be a pure opacity hard-cut (v12 simply
+   appears at opacity:1 in its resting position the instant v11 ends),
+   which reads as exactly the "컷 투로 바로 붙는" instant-cut the user is
+   now asking to remove. The torch (v12) itself must physically enter
+   the frame by rising up from below, continuously tied to scroll-down
+   (NOT a timer, NOT a one-shot animation -- reversible on scroll-up
+   like every other scroll-tied effect on this page). #ignite-gate's own
+   opacity/lock/CTA sequence is UNCHANGED (still a true opacity fade for
+   the flickering-circle UI chrome, not the video itself) -- see
+   RISE_START/RISE_END + the videos-bg-video-12 transform block in
+   app.js's renderVideosChain() for the new translateY logic. */
+#ignite-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 15;
+  pointer-events: none;
+  opacity: 0;
+  will-change: opacity;
+}
+#ignite-gate-circle {
+  position: absolute;
+  left: 49.74%;
+  top: 18.94%;
+  transform: translate(-50%, -50%);
+  width: 120px;
+  height: 120px;
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#ignite-gate.is-armed #ignite-gate-circle {
+  pointer-events: auto;
+}
+.ignite-gate-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.75);
+  animation: igniteGateFlicker 1.6s ease-in-out infinite;
+}
+.ignite-gate-orb {
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 42% 38%, #ffffff 0%, #f2ede2 38%, #cfc6b3 70%, rgba(207,198,179,0) 100%);
+  box-shadow: 0 0 24px 6px rgba(255, 255, 255, 0.55);
+  animation: igniteGateFlicker 1.6s ease-in-out infinite;
+  animation-delay: 0.15s;
+}
+#ignite-gate-circle:hover .ignite-gate-orb,
+#ignite-gate-circle:focus-visible .ignite-gate-orb {
+  box-shadow: 0 0 32px 10px rgba(255, 255, 255, 0.75);
+}
+@keyframes igniteGateFlicker {
+  0%, 100% { opacity: 1; }
+  38% { opacity: 0.45; }
+  50% { opacity: 0.9; }
+  62% { opacity: 0.35; }
+  78% { opacity: 1; }
+}
+#ignite-gate-cta {
+  position: absolute;
+  left: 49.74%;
+  top: calc(18.94% + 78px);
+  transform: translateX(-50%);
+  margin: 0;
+  white-space: nowrap;
+  font-family: var(--font-clean);
+  font-size: 13px;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: var(--fg);
+  text-shadow: 0 0 12px rgba(0,0,0,0.8), 0 1px 3px rgba(0,0,0,0.9);
+  animation: igniteGateFlicker 1.6s ease-in-out infinite;
+  animation-delay: 0.3s;
+}
+#ignite-gate.is-igniting #ignite-gate-circle,
+#ignite-gate.is-igniting #ignite-gate-cta {
+  animation: none;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+@media (max-width: 768px) {
+  #ignite-gate-circle { width: 90px; height: 90px; }
+  .ignite-gate-orb { width: 46px; height: 46px; }
+  #ignite-gate-cta { top: calc(18.94% + 62px); font-size: 11px; letter-spacing: 0.26em; }
+}
+
+/* ============================================================
+   VIDEOS-CONNECTED TEXT — "두번째 첨부이미지가 나오는 시점에서,
+   '당신은 나의 작업물과 연결되었습니다.'를 영어로 인터랙티브하게".
+   The reference screenshot (JUNE HONG header, photographer smiling
+   holding a lit torch + camera) matches videos-bg-13.mp4's own
+   "photographer reveal" moment -- pinpointed via mean-gray brightness
+   sampling (flat ~16 from t=0-1s while only the blazing torch fills
+   frame, rising to a peak of 24.16 at t=2.0s as the photographer comes
+   fully into focus). Shown/animated by GSAP scroll-tied logic in
+   setupVideosBgVideo() (renderVideosChain's connectedEl block), not
+   pure CSS -- opacity/transform starting state below is just the
+   "hidden, ready to reveal" baseline JS animates from.
+   REVISED (explicit user spec -- "문장 마지막에 마침표를 없애주고, 더
+   인터랙티브하게 만들어줘"): (1) trailing period removed from the
+   sentence in home.html; (2) the old effect faded/slid the whole
+   paragraph as one static block -- replaced with a per-word reveal
+   (.vc-word spans, same structural idiom as .wr-word in the work-reel
+   tagline section elsewhere on this page) so each word blurs/scales/
+   rises into place in its own staggered sub-window of the scroll
+   range, all still driven continuously by scroll position (reversible
+   on scroll-up), not a fixed timer.
+   ============================================================ */
+#videos-connected-text {
+  position: fixed;
+  inset: 0;
+  z-index: 16;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0;
+  will-change: opacity;
+}
+#videos-connected-text p {
+  margin: 0;
+  text-align: center;
+  font-family: 'Fraunces', var(--font-serif);
+  font-weight: 500;
+  font-variation-settings: 'wght' 480, 'opsz' 60, 'SOFT' 0;
+  font-size: clamp(28px, 4.4vw, 58px);
+  line-height: 1.28;
+  color: var(--fg);
+  letter-spacing: 0.01em;
+  text-shadow: 0 2px 22px rgba(0,0,0,0.75);
+}
+.vc-word {
+  display: inline-block;
+  opacity: 0;
+  filter: blur(6px);
+  transform: translateY(22px) scale(0.94);
+  will-change: opacity, transform, filter;
+}
+@media (max-width: 768px) {
+  #videos-connected-text p { font-size: clamp(22px, 6vw, 34px); padding: 0 8vw; }
+}
+
+/* ============================================================
+   VIDEOS-CATCHFIRE TEXT — "이때부터 Have a story worth filming? Let's
+   make it real 를 인터랙티브 요소를 많이 가미해서 넣으려고해 ... 포트폴리오
+   분위기에 맞는 다른 문구". User's reference screenshot (isolated,
+   full-blaze campfire with sparks flying, black background, no
+   forest/night-sky elements yet) was pinpointed via fine-grained
+   ffmpeg frame sampling (every 12th of 144 frames) of
+   videos-bg-14.mp4 to its STABLE mid-clip window -- roughly local14
+   0.25-0.90 -- after the opening photographer-to-campfire motion-
+   blur transition (local14 0-~0.17) settles and before local15's
+   own campfire-to-forest/starry-sky reveal begins. Phrase "This is
+   where stories catch fire" chosen (over the original suggested
+   CTA-style line) to match this site's quieter, cinematic first-
+   person narration tone (same register as "You are now connected
+   with my work") while doubling as a literal/figurative pun on the
+   actual fire visible on screen; confirmed grammatically correct and
+   naturally idiomatic in North American English before implementing.
+   Shown/animated by GSAP scroll-tied logic in setupVideosBgVideo()
+   (renderVideosChain's catchfireEl block) -- opacity/transform
+   starting state below is just the "hidden, ready to reveal"
+   baseline JS animates from. Per-word stagger (.cf-word spans) uses
+   the same structural idiom as .vc-word/.wr-word elsewhere on this
+   page, all driven continuously by scroll position (reversible on
+   scroll-up), never a fixed timer. The final word "fire" gets an
+   extra ember-glow color/flicker treatment (.cf-word--ember) as the
+   "더 인터랙티브하게" (more interactive) embellishment the user asked
+   for -- it doesn't just fade/rise into place like the other words,
+   it also warms from white to a flame-orange with a soft glowing
+   text-shadow that gently pulses once fully revealed.
+   ============================================================ */
+#videos-catchfire-text {
+  position: fixed;
+  inset: 0;
+  z-index: 16;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0;
+  will-change: opacity;
+}
+#videos-catchfire-text p {
+  margin: 0;
+  text-align: center;
+  font-family: 'Fraunces', var(--font-serif);
+  font-weight: 500;
+  font-variation-settings: 'wght' 480, 'opsz' 60, 'SOFT' 0;
+  font-size: clamp(28px, 4.4vw, 58px);
+  line-height: 1.28;
+  color: var(--fg);
+  letter-spacing: 0.01em;
+  text-shadow: 0 2px 22px rgba(0,0,0,0.75);
+}
+.cf-word {
+  display: inline-block;
+  opacity: 0;
+  filter: blur(6px);
+  transform: translateY(22px) scale(0.94);
+  will-change: opacity, transform, filter;
+}
+.cf-word--ember {
+  will-change: opacity, transform, filter, color, text-shadow;
+}
+.cf-word--ember.is-ablaze {
+  animation: catchfireEmberPulse 2.2s ease-in-out infinite;
+}
+@keyframes catchfireEmberPulse {
+  0%, 100% { text-shadow: 0 2px 22px rgba(0,0,0,0.75), 0 0 18px rgba(255,138,61,0.55); }
+  50% { text-shadow: 0 2px 22px rgba(0,0,0,0.75), 0 0 30px rgba(255,138,61,0.9); }
+}
+@media (max-width: 768px) {
+  #videos-catchfire-text p { font-size: clamp(22px, 6vw, 34px); padding: 0 8vw; }
+}
+
+/* ============================================================
+   NEW (this turn -- "이 구간부터 JUNE HONG을 인터랙티브 요소를 가미해
+   넣어보자"): a third full-screen scroll-tied text reveal, this time
+   for the site's own brand/artist name ("JUNE HONG", the same text
+   as the static header link), timed to appear once v15's campfire
+   scene has fully pulled back to reveal the surrounding forest and
+   the Milky Way night sky -- frame-accurate ffmpeg forensics on
+   videos-bg-15.mp4 found the dark, isolated-campfire framing (the
+   already-implemented catchfire-text zone) holding through
+   local15~0.42, a brief transition (forest silhouettes emerging,
+   then the Milky Way fading in) from local15~0.42-0.46, and the
+   full campfire+forest+starry-sky composition -- matching the
+   user's newest reference screenshot -- settling into a stable,
+   near-static hold from local15~0.46 through the end of the clip
+   (confirmed continuous into v16's own opening frames, before v16's
+   camera later pans away from the campfire into a pure sky-only
+   finale). So this reveal is keyed to local15, arriving only once
+   that wider vista is fully visible, and fades back out with a
+   margin before the v15->v16 cut.
+   Per user's explicit choice ("레터 스태거로 가줘" -- letter-by-letter
+   stagger), each character of "JUNE HONG" gets its own .jh-letter
+   span and animates in individually (rather than word-by-word like
+   the other two overlays), giving it more of a title-card / signature
+   "reveal" feel appropriate for a name. Uses the header brand's own
+   clean sans-serif (Jost) + wide uppercase letter-spacing so it reads
+   as the same identity, just presented as a cinematic full-screen
+   moment instead of a small persistent link. Driven continuously by
+   scroll position, never a fixed timer -- fully reversible on
+   scroll-up, same contract as .vc-word/.cf-word above.
+   ============================================================ */
+#videos-junehong-text {
+  position: fixed;
+  inset: 0;
+  z-index: 17;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0;
+  will-change: opacity;
+}
+#videos-junehong-text p {
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-clean);
+  font-weight: 600;
+  font-style: normal;
+  text-transform: uppercase;
+  font-size: clamp(36px, 8vw, 108px);
+  line-height: 1;
+  color: var(--fg);
+  white-space: nowrap;
+}
+.jh-letter {
+  display: inline-block;
+  opacity: 0;
+  filter: blur(10px);
+  letter-spacing: 0.34em;
+  transform: translateY(30px) scale(0.9);
+  text-shadow: 0 2px 30px rgba(0,0,0,0.8);
+  will-change: opacity, transform, filter, text-shadow;
+}
+.jh-letter.is-lit {
+  text-shadow: 0 2px 30px rgba(0,0,0,0.8), 0 0 26px rgba(255,201,77,0.65);
+}
+.jh-space {
+  width: 0.5em;
+}
+@media (max-width: 768px) {
+  #videos-junehong-text p { font-size: clamp(26px, 11vw, 48px); }
+  .jh-letter { letter-spacing: 0.22em; }
+}
+
+/* ============================================================
+   VIDEOS chain closing footer (this turn -- 사용자 요청: "마지막 영상에서
+   마지막 프레임을 홀드해줘 ... 이걸 footer로 박아줘. 마지막 프레임에 닿기
+   전에, 스크롤에 반응하면서 나오게끔해줘"). Contact/branding footer that
+   reveals over v16's own stable full Milky Way finale (see the
+   renderVideosChain() long comment in app.js for the frame-forensics
+   that pinpointed the reveal window) -- appears continuously as the
+   user scrolls through the tail of local16, fully in place well BEFORE
+   local16 reaches 1.0 (the true end of the scroll chain), then holds
+   visible through the end. Reuses the same `.jh-letter`-style fixed,
+   centered, pointer-events:none overlay pattern as the other three
+   text reveals, but LINE-staggered (4 lines) rather than word/letter
+   staggered, since this is a block of distinct contact facts rather
+   than a single sentence/name -- and unlike those three ephemeral
+   "moment" reveals, this one is a real footer (persistent contact
+   info) so it only fades IN, never back OUT, once revealed. The email/
+   phone lines are real mailto:/tel: links (pointer-events re-enabled
+   only on the .vf-line anchors) so they stay usable once shown. z-index
+   18 -- one above #videos-junehong-text (17), consistent with every
+   prior overlay in this chain incrementing by 1. */
+#videos-footer-text {
+  position: fixed;
+  inset: 0;
+  z-index: 18;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0;
+  will-change: opacity;
+}
+.vf-inner {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.vf-line {
+  opacity: 0;
+  filter: blur(8px);
+  transform: translateY(24px);
+  font-family: var(--font-clean);
+  color: var(--fg-dim);
+  letter-spacing: 0.08em;
+  font-size: 15px;
+  /* Legibility fix: the Milky Way finale frame this footer sits over
+     has bright, high-texture sky (dense star clusters + glowing core)
+     right where these lines land -- with no shadow the --fg-dim
+     (60% opacity) text was blending into the busy background (same
+     "text on unpredictable video brightness" problem already solved
+     for .wr-word/.vc-word/.cf-word elsewhere on this page via
+     text-shadow). Same fix here: a tight dark contact shadow plus a
+     soft wider glow to punch the glyphs off the sky regardless of
+     which part of the frame sits behind them. */
+  text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 0 14px rgba(0,0,0,0.7);
+  will-change: opacity, transform, filter;
+}
+.vf-line[data-line="0"] {
+  color: var(--fg);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 16px;
+  margin-bottom: 4px;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 0 16px rgba(0,0,0,0.75);
+}
+.vf-line a {
+  color: inherit;
+  text-decoration: none;
+  pointer-events: auto;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+.vf-line a:hover {
+  color: var(--fg);
+  border-color: var(--accent-gold);
+}
+@media (max-width: 768px) {
+  .vf-line { font-size: 13px; }
+  .vf-line[data-line="0"] { font-size: 14px; }
+}
+
+/* ============================================================
+   SECTION 1 — Intro + Cube
+   The section's own background is fully transparent -- NO extra
+   texture/scrim layers of its own -- so the #fixed-bg-video layer
+   underneath (with its single shared .fixed-bg-scrim) shows through
+   as the only thing behind this panel's content. Previously this
+   section stacked its own .bg-noise dot-grid texture PLUS a second
+   .section1-scrim gradient on top of the already-scrimmed video
+   layer, which read as a visible "extra layer" muddying the
+   background instead of a clean transparent panel; both were
+   removed so section-1 has zero background styling of its own.
+   ============================================================ */
+#section-1 { background: transparent; }
+
+.intro-content {
+  position: absolute;
+  left: 8%;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 5;
+  text-align: left;
+  max-width: 46vw;
+  will-change: transform, opacity;
+}
+.eyebrow {
+  font-family: var(--font-clean);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.5em;
+  color: var(--fg-dim);
+  margin: 0 0 18px;
+  text-transform: uppercase;
+  will-change: letter-spacing, color;
+}
+.hero-title {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-start;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+.hero-title-line {
+  font-family: 'Fraunces', var(--font-serif);
+  font-weight: 560;
+  font-variation-settings: 'wght' 560, 'opsz' 60, 'SOFT' 0;
+  font-size: clamp(48px, 9vw, 128px);
+  line-height: 1;
+  will-change: transform, font-variation-settings;
+}
+.hero-title-the {
+  font-style: italic;
+  font-weight: 500;
+  font-variation-settings: 'wght' 420, 'opsz' 40, 'SOFT' 0;
+  font-size: clamp(28px, 4vw, 56px);
+  color: var(--fg-dim);
+}
+.hero-title-one {
+  background: linear-gradient(90deg, var(--accent-ember), var(--accent-flame) 50%, var(--accent-gold));
+  background-size: 220% 100%;
+  background-position: 0% 50%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.cube-stage {
+  position: absolute;
+  left: 82%;
+  top: 50%;
+  transform: translate(-50%, -50%) scale(1);
+  width: 220px;
+  height: 220px;
+  perspective: 900px;
+  z-index: 2;
+  will-change: transform;
+}
+@media (max-width: 900px) {
+  .intro-content {
+    left: 6%;
+    max-width: 62vw;
+  }
+  .cube-stage {
+    left: 78%;
+    width: 150px;
+    height: 150px;
+  }
+}
+@media (max-width: 560px) {
+  .intro-content {
+    max-width: 72vw;
+  }
+  .cube-stage {
+    left: 74%;
+    width: 120px;
+    height: 120px;
+  }
+}
+
+.cube {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transform: rotateX(-24deg) rotateY(35deg);
+  will-change: transform;
+}
+.cube-face {
+  position: absolute;
+  width: 220px;
+  height: 220px;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: linear-gradient(145deg, rgba(255,77,28,0.25), rgba(255,138,0,0.12));
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: inset 0 0 40px rgba(255,255,255,0.05);
+}
+@media (max-width: 900px) {
+  .cube-face { width: 160px; height: 160px; }
+}
+.cube-face img, .cube-face video {
+  width: 100%; height: 100%; object-fit: cover;
+}
+/* Two stacked media slots per face (a = rotation lap 1, b = lap 2) so 12
+   thumbnails can cycle across 6 faces over 2 full cube rotations. Both sit
+   absolutely on top of each other; app.js crossfades their opacity as the
+   cube passes each full-turn boundary. Slot b starts hidden (opacity 0) so
+   only slot a shows on the very first frame before any scroll happens. */
+.cube-face-media {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: none; /* app.js drives opacity directly via gsap.set for scroll-scrub precision */
+}
+.cube-face-media img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+}
+.cube-face-media--a { opacity: 1; }
+.cube-face-media--b { opacity: 0; }
+.cube-face.has-media .face-placeholder { display: none; }
+.face-front  { transform: translateZ(110px); }
+.face-back   { transform: translateZ(-110px) rotateY(180deg); }
+.face-right  { transform: rotateY(90deg) translateZ(110px); }
+.face-left   { transform: rotateY(-90deg) translateZ(110px); }
+.face-top    { transform: rotateX(90deg) translateZ(110px); }
+.face-bottom { transform: rotateX(-90deg) translateZ(110px); }
+@media (max-width: 900px) {
+  .face-front  { transform: translateZ(80px); }
+  .face-back   { transform: translateZ(-80px) rotateY(180deg); }
+  .face-right  { transform: rotateY(90deg) translateZ(80px); }
+  .face-left   { transform: rotateY(-90deg) translateZ(80px); }
+  .face-top    { transform: rotateX(90deg) translateZ(80px); }
+  .face-bottom { transform: rotateX(-90deg) translateZ(80px); }
+}
+
+.face-placeholder {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 22px;
+  color: rgba(255,255,255,0.5);
+  letter-spacing: 0.1em;
+}
+
+/* Feather mask: a soft gradient fade sitting just under the scroll cue so any
+   media/content scrolling underneath softly dissolves before it reaches the
+   cue's screen position, instead of hard-clipping behind the text. */
+#scroll-feather {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 22vh;
+  min-height: 140px;
+  z-index: 199;
+  pointer-events: none;
+  background: linear-gradient(to top, var(--bg) 0%, rgba(5,5,6,0.75) 35%, transparent 100%);
+  transition: opacity 0.4s ease;
+}
+@media (max-width: 768px) {
+  #scroll-feather { height: 18vh; min-height: 110px; }
+}
+
+.scroll-cue {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  letter-spacing: 0.35em;
+  color: var(--fg-faint);
+  z-index: 500;
+  transition: opacity 0.4s ease;
+}
+.scroll-cue span {
+  width: 1px;
+  height: 28px;
+  background: linear-gradient(var(--fg-faint), transparent);
+  animation: scrollcue 1.8s ease-in-out infinite;
+}
+@keyframes scrollcue {
+  0% { transform: scaleY(0); transform-origin: top; opacity: 0.2; }
+  50% { transform: scaleY(1); transform-origin: top; opacity: 1; }
+  51% { transform-origin: bottom; }
+  100% { transform: scaleY(0); transform-origin: bottom; opacity: 0.2; }
+}
+@media (max-width: 768px) {
+  .scroll-cue { bottom: 16px; font-size: 9px; letter-spacing: 0.24em; }
+}
+
+/* ============================================================
+   WORK REEL — tagline only (inserted between SECTION 1 cube and
+   SECTION 2 client wall). This section no longer carries its own
+   video elements -- it has a transparent background so the
+   persistent #fixed-bg-video layer (continuing its 1b -> v2 -> v4
+   chain, see setupWorkReel()/setupFixedBgVideo() in app.js) shows
+   through underneath its own pinned scroll span, exactly like
+   section-1 and section-2 do. Only the tagline text itself is this
+   section's own foreground content, scrubbed in/out via app.js.
+   ============================================================ */
+.work-reel-panel {
+  background: transparent;
+  padding: 0;
+}
+.work-reel-tagline {
+  position: relative;
+  z-index: 2;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 0 32px;
+  text-align: center;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 500;
+  font-size: clamp(20px, 3vw, 36px);
+  line-height: 1.5;
+  color: var(--fg);
+}
+/* Word-level "reading spotlight" reveal -- replaces the earlier per-LINE
+   stagger (user feedback: "자꾸 줄이 바뀌는 건 아닌 거 같아", i.e. the
+   text visibly reflowing/moving line-by-line read as unwanted layout
+   motion, not a pleasant reactive effect). Each word is its own inline
+   unit that never moves position (no y-transform, no line reflow) --
+   app.js instead drives per-word opacity/color/scale so a "highlight"
+   sweeps continuously left-to-right, word-by-word, in lockstep with
+   scroll position, like a karaoke read-along. This keeps the paragraph's
+   layout completely static while still feeling continuously
+   scroll-reactive for the ENTIRE hold window (not just entry/exit). */
+.wr-word {
+  display: inline-block;
+  will-change: opacity, color, transform;
+  /* ROOT-CAUSE FIX (explicit user feedback on a screenshot of this exact
+     section, this turn): the tagline sits directly over the work-reel's
+     own bright/high-contrast footage (light matchstick wood, glowing
+     orange flame) with nothing behind it but its own thin, semi-
+     transparent serif glyphs -- no overlay, outline, or shadow at all --
+     so words over the brightest patches (match wood, flame center) read
+     as almost fully washed out/illegible while only the words sitting
+     over darker out-of-focus areas ("concept", "final color") were even
+     partly legible. Rather than add a dedicated dark overlay/scrim layer
+     behind the whole tagline (which, per the SAME user's rejection of the
+     analogous #header-feather approach earlier in this project, tends to
+     read as its own awkward band over bright content), this applies a
+     text-shadow directly to each word -- same technique already used by
+     #site-header .brand/.main-nav a and #ignite-gate-cta elsewhere on
+     this page -- so every word stays legible against ANY footage
+     brightness without any separate visible layer of its own. */
+  text-shadow: 0 1px 5px rgba(0,0,0,0.9), 0 0 18px rgba(0,0,0,0.7);
+}
+@media (max-width: 768px) {
+  .work-reel-tagline { font-size: clamp(16px, 4.6vw, 24px); padding: 0 22px; }
+}
+
+/* ============================================================
+   SECTION 2 — Full-screen white-logo client wall (6 rows)
+   ============================================================ */
+.split-panel {
+  align-items: center;
+  justify-content: center;
+  /* transparent -- #fixed-bg-video shows through from underneath (by the
+     time this section is reached, the 1a->1b->2->4 chain has already
+     finished and the layer sits static on v4's last frame) instead of
+     this section carrying its own background */
+  background: transparent;
+}
+
+/* ------------------------------------------------------------
+   Client / logo wall -- fills the ENTIRE section-2 box (the old
+   centered portrait frame has been removed entirely per spec:
+   "중앙에 포트레이트 영역을 없애주고, 로고가 꽉차게끔"). Six equally
+   spaced rows (5 -> 6 this turn, see .client-wall's padding comment)
+   of pure-white vector-silhouette logos stack top to bottom. Each
+   row's track is rendered TWICE in the DOM (see home.html) so a -50%
+   xPercent translate is a perfectly seamless loop point -- JS
+   (setupClientWall in app.js) scrubs each track's xPercent against
+   section-2's own scroll position; the topmost row moves right-to-left
+   and the rest alternate so the wall reads as a lively criss-cross
+   rather than one flat block. Rows are wider than the viewport and
+   clipped by .panel's own `overflow: hidden`, which is what produces
+   the intentional "슬쩍 넘치는" (slightly overflowing) edges.
+   ------------------------------------------------------------ */
+.client-wall {
+  /* NEW THIS TURN -- root cause of Bug 2 ("로고와 열과열마다 꽉차지
+     않아... 아예 구조 자체를 바꿔서"), found via a fraction-by-fraction
+     Playwright scroll-through (frac 0.0/0.15/0.3/0.5/0.7/0.85/1.0) of
+     section-2's full scroll range: at EVERY fraction where the wall is
+     risen and settled (0.3/0.5/0.7/0.85 -- i.e. NOT just a transient
+     mid-rise moment), the still-playing torch-blaze background video
+     was clearly visible bleeding through in the gaps between/around
+     logo tiles and rows. Three prior fix attempts (space-evenly ->
+     flex:1, then 5 rows -> 6 rows with smaller clamp() bounds) all
+     tuned the ROW/LOGO geometry to shrink those gaps, but never
+     addressed the actual cause: .client-wall itself had NO background
+     of its own (fully `transparent`, by original design, so the
+     torch/flame texture would "show through" as an intentional dark
+     backdrop) -- occlusion depended entirely on individual logo
+     silhouettes covering every pixel, which no row/flex tuning can
+     ever fully guarantee (logos are irregular shapes; there will
+     always be some background-colored space between/around them).
+     Per explicit "구조 자체를 바꿔서" (change the structure itself),
+     the wall now owns a genuinely OPAQUE backdrop -- since app.js's
+     entrance/exit ScrollTriggers already animate THIS element's own
+     `opacity` (see wallEntrance/wall in setupClientWall()), a
+     background painted directly on it fades in/out in perfect sync
+     automatically, with zero JS changes required: during the pin-tail
+     pre-rise the backdrop is proportionally translucent (so the "logos
+     rising up over the still-burning torch" transition is preserved
+     exactly as before), but the INSTANT it reaches opacity:1 (pin
+     release / settled scroll), the panel is 100% opaque -- structurally
+     guaranteeing zero background bleed-through regardless of any
+     gap between tiles, rows, or the row-5-has-5-logos-not-6 content
+     asymmetry, without depending on precise geometry at all. */
+  /* REVISED AGAIN (Bug 8, this turn -- user explicitly rejected the
+     semi-transparent dimmed version above: "로고 뒤 영상이 은은할
+     필요가 없다고 제발, 밝기 조절을 절대 하지 말고" -- the video must
+     be FULLY BRIGHT behind the logos, zero dimming, matching a reference
+     screenshot of a vividly bright, fully-saturated flame clearly visible
+     through a DENSE logo grid (dense enough that some logos overlapping
+     the brightest area are hard to read). So the backdrop tint is removed
+     entirely -- `background: none` -- and Bug 2's original "no gaps /
+     bleed-through" concern is now addressed structurally via LOGO DENSITY
+     instead of an opacity trick: a much denser grid (target ~20 logos per
+     row, see .client-row/.client-logo below) leaves far less visible
+     background between tiles, so what bleeds through reads as intentional
+     bright video behind a dense wall rather than a gappy hole. */
+  background: none;
+  /* CHANGED absolute -> fixed this turn. Root-cause of the "logos never
+     visibly rise during the still-pinned ignition footage" bug: while
+     work-reel-pin is engaged, #section-2 (this element's absolute
+     positioning parent) sits ENTIRELY below the viewport the whole time
+     (a pin, by definition, keeps the viewport locked on the pinned
+     section until its own scroll range ends) -- so ANY opacity/transform
+     app.js set on an absolutely-positioned .client-wall during the pin's
+     tail was computed correctly but rendered far off-screen, invisible.
+     `position: fixed` (matching the existing #fixed-bg-video layer's own
+     pattern) lets the wall render as a true viewport-relative overlay
+     ON TOP of the still-playing background video during the pin-tail
+     pre-rise (see workReelWallPreRiseRenderer in app.js), then continues
+     to work identically once section-2 is unpinned and scrolling
+     normally -- app.js's marquee/exit-fade ScrollTriggers already scrub
+     this element's opacity/xPercent/y purely off section-2's own scroll
+     PROGRESS (not off the element's own natural in-flow position), so
+     nothing else needed to change for the post-release behavior. */
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  /* REVISED this turn per explicit "워크 위드를 풀스크린으로 띄우면,
+     로고가 꽉 차지 않아보여서... 화면에 꽉차보이게끔". Root cause
+     (confirmed via computed-style inspection): `justify-content:
+     space-evenly` with 5 intrinsically-short (~58px) rows left large
+     empty bands between rows on any viewport taller than a phone --
+     the flame/video behind visibly bled through those bands (exactly
+     what the attached fullscreen screenshot showed). Switching each
+     row to `flex: 1` (see .client-row below) makes the rows divide
+     the ENTIRE available height evenly with no extra distributed gap
+     at all -- rows now abut edge-to-edge -- and .client-logo's height
+     is now viewport-relative (vh-based) so the logos themselves scale
+     up to occupy a large, consistent share of each row's own slot
+     instead of staying a fixed small px size regardless of screen
+     height.
+     FURTHER REVISED (this turn, 5 rows -> 6 rows): even with the
+     flex:1 fix above, the user's fresh fullscreen screenshot still
+     showed visible dark gaps between rows -- per explicit "로고는
+     6줄로 작게 들어가야할 거 같고... 절대적으로 이걸 채워줘야할 거
+     같아", going from 5 to 6 rows (see ROW_COUNT in app.js and the
+     6th client-track added in home.html) with correspondingly SMALLER
+     per-row clamp() bounds (see .client-logo below) packs the same
+     total logo count into more, shorter rows -- each row's flex:1
+     slice of the viewport is smaller, so any residual row-internal
+     whitespace above/below a logo shrinks too, tightening the fill
+     further. Padding trimmed slightly further for the same reason
+     (more of the viewport height goes to the 6 equal row slices). */
+  padding: 68px 0 36px;
+}
+
+.client-wall-eyebrow {
+  position: absolute;
+  top: 7%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-clean);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+  z-index: 2;
+}
+
+.client-row {
+  /* flex: 1 -- each of the 5 rows claims an EQUAL, full share of
+     .client-wall's available height (see the comment on .client-wall
+     above) instead of being sized to its own short intrinsic content
+     height with big leftover gaps distributed by space-evenly. */
+  flex: 1 1 0;
+  position: relative;
+  left: -6vw;
+  width: 112vw;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.9) 8%, rgba(0,0,0,0.9) 92%, transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.9) 8%, rgba(0,0,0,0.9) 92%, transparent 100%);
+}
+
+.client-track {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  white-space: nowrap;
+  will-change: transform;
+}
+
+/* REVISED this turn: per explicit "로고 색상 무시하고 백색으로 해줘"
+   (ignore each logo's own color, make them all white), every one of the
+   35 client marks was re-vectorized -- PIL alpha-thresholds each source
+   PNG into a binary foreground/background mask (so full-color art,
+   photos, or gradients inside a logo are collapsed to a single flat
+   silhouette), then potrace traces that mask into a clean, resolution-
+   independent SVG with fill="#ffffff" baked in. This is what the
+   previous version of this comment's "the logo itself IS the uniform
+   white mark" assumption now correctly describes again -- unlike the
+   prior full-color PNG set (which needed the white "chip" background
+   below to guarantee contrast for arbitrary logo colors), a pure-white
+   vector mark is ALWAYS visible against this wall's dark torch-flame
+   background regardless of the source art's original color, so the
+   chip is removed entirely (back to a bare <img>, restoring the
+   pre-chip drop-shadow for the same "float above the background"
+   separation a flat white shape needs). SVG was chosen over a raster
+   format per explicit "로딩에 최적화된 로고파일" -- the full 35-logo set
+   is under 500KB combined (vs. several MB for the old full-res PNGs),
+   scales to any row height with zero quality loss, and needs no
+   responsive srcset/sizing logic. */
+.client-tile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  /* NEW THIS TURN -- 6->20 logos per row density change, per explicit
+     "로고는 애초에 한줄에 20개씩 넣고... 절대 지금처럼 비어있다 차는
+     느낌이거나 이상한 느낌이 들지 않게 해줘" + "밝기 조절을 절대 하지
+     말고" (no dimming, so gaps must be closed via sheer logo density
+     instead -- see .client-wall's `background: none` above). Margin
+     shrunk from 26px to 10px (each row now carries ~3.3x as many
+     tiles as before, so the per-tile horizontal footprint has to
+     shrink proportionally to keep the same total row width). */
+  margin: 0 10px;
+  position: relative;
+}
+.client-logo {
+  display: block;
+  /* RE-TUNED for 20 logos/row (was 6): with more than 3x as many tiles
+     packed into the same row width, each logo's own footprint must
+     shrink to match, so height/max-width are both reduced roughly in
+     proportion (108px ceiling -> 46px, 230px max-width -> 100px) to
+     keep 20 logos comfortably filling one row without overlapping or
+     overflowing/wrapping. Still vh-based + clamp()'d for the same
+     reason as before (logos scale with viewport height, never grow
+     absurdly large on tall/narrow viewports). opacity/drop-shadow
+     unchanged -- still needed for the flat white SVG silhouette to
+     lift visibly off the now fully-un-tinted, brighter video backdrop. */
+  height: clamp(22px, 4.6vh, 46px);
+  width: auto;
+  max-width: 100px;
+  object-fit: contain;
+  opacity: 0.92;
+  filter: drop-shadow(0 4px 18px rgba(0, 0, 0, 0.45));
+}
+
+@media (max-width: 768px) {
+  .client-wall { padding: 56px 0 28px; }
+  .client-wall-eyebrow { font-size: 10px; letter-spacing: 0.26em; top: 4%; }
+  .client-row { left: -10vw; width: 120vw; }
+  .client-tile { margin: 0 5px; }
+  .client-logo { height: clamp(14px, 3.2vh, 26px); max-width: 62px; }
+}
+
+/* ============================================================
+   SECTION TITLE PANELS (PHOTOS intro / VIDEOS intro)
+   Note: the actual "PHOTOS"/"VIDEOS" title text itself no longer
+   lives inside these panels -- it was moved to the fixed
+   #photos-title-overlay / #videos-title-overlay group titles
+   (see below) so it can stay pinned across the whole group
+   (PHOTOS: sections 3-4, VIDEOS: sections 5-7) instead of only
+   its own intro panel. These panels now only host the background
+   media/gradient behind that fixed title.
+   ============================================================ */
+.section-title-panel { text-align: center; }
+.title-bg-media {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(160deg, #1c0f06 0%, #05050a 70%);
+  background-size: cover;
+  background-position: center;
+  z-index: 0;
+}
+/* section-3's own .title-bg-media gradient would otherwise paint ON TOP
+   of the new #photos-bg-video-layer fixed layer behind it (same "later
+   DOM element wins at equal z-index" rule that #section-1/#section-2
+   already had to work around by going transparent -- see the comment
+   on #section-1 above). Making it transparent here lets video-7/8 show
+   through for the whole PHOTOS group, same pattern, scoped ONLY to
+   section-3 so section-5's own videosIntroThumb gradient is untouched. */
+#section-3 .title-bg-media { background: transparent; }
+/* section-5 (VIDEOS intro) gets the same treatment as section-3 above,
+   now that #videos-bg-video-layer sits behind the whole VIDEOS group --
+   its own videosIntroThumb gradient/image would otherwise paint on top
+   of bg-video-9. */
+#section-5 .title-bg-media { background: transparent; }
+/* ROOT-CAUSE FIX ("검은 레이어가 계속 올라오는 현상을 절대적으로 없애줘" --
+   VIDEOS-intro black-seam bug). This overlay is position:absolute inset:0
+   INSIDE #section-5, a plain (non-fixed, non-pinned) panel that scrolls
+   normally -- so during the section-4->section-5 scroll transit, the
+   viewport only ever shows a PARTIAL slice of this box, starting right at
+   its own top edge (y=0 local). The radial-gradient's default
+   "farthest-corner" ellipse sizing makes its vertical radius reach past
+   the box's own half-height (for a 1024x600 box: ry≈424px vs a 300px
+   half-height), which puts the box's own top/bottom edges at roughly 70%
+   of the way through the 0%->80% alpha ramp -- i.e. the overlay is
+   already ~0.68 alpha (68% black) exactly at the DOM boundary where
+   section-4 (which has NO overlay at all) ends. The result: a hard,
+   ~0-to-0.68 alpha jump appears right at that boundary and visibly
+   "rises" up the screen as the user scrolls -- exactly this bug. FIX:
+   mask the overlay's own top/bottom edges down to fully transparent
+   (same mask-image technique already used by .client-row's left/right
+   fade and #scroll-feather's bottom fade elsewhere in this file) so the
+   vignette only ever ramps up gradually well inside the box, and reads
+   as 0 right at the edge no matter where that edge happens to sit in the
+   viewport mid-scroll. Purely a compositing-layer change -- does not
+   touch the underlying video element's brightness/color at all. */
+.title-overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0.15), rgba(0,0,0,0.75) 80%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%);
+  z-index: 1;
+}
+/* ROOT-CAUSE FIX (explicit user spec, this turn -- "비디오 텍스트가 올라가면서
+   완전 투명 백그라운드가 아니고, 그라디언트 레이어가 올라가는 게 보여").
+   #section-5's .title-overlay above is a plain (non-fixed) box that scrolls
+   normally with the document, so as the pinned "VIDEOS" group-title text
+   sits fixed on screen, this element's own radial-gradient vignette visibly
+   travels/rises up behind it during the section-4->section-5 scroll transit
+   -- a second, redundant dark layer on top of #videos-bg-video-layer's own
+   fixed .videos-bg-video-scrim (which already provides the exact same
+   vignette treatment, but from a layer that never itself moves on scroll).
+   FIX: make it fully transparent for section-5 specifically (same pattern
+   as #section-5 .title-bg-media above) so only the one, non-scrolling
+   videos-bg-video-scrim vignette remains. */
+#section-5 .title-overlay { background: transparent; }
+
+/* ============================================================
+   FIXED GROUP TITLES -- "PHOTOS" / "VIDEOS"
+   Anchored as high as possible, directly under the fixed site
+   header (top-offset in px, NOT a viewport-height percentage) so
+   it never drifts down into the vertically-centered conveyor
+   content below it regardless of viewport height. Unified font:
+   both use the same italic serif treatment (previously VIDEOS
+   used a different bold/upright override -- now identical to
+   PHOTOS). Font-size is ~60% of the old clamp(52px,10vw,130px)
+   title.
+   Visibility is toggled the same way as .panel-nav.is-visible:
+   fixed/pinned for as long as ANY section in that title's whole
+   group is active, only fading out once the group's last
+   thumbnail has fully conveyor-belted past. On top of that
+   container-level on/off switch, setupGroupTitleFrameIn() in
+   app.js scroll-scrubs the text's own opacity/position/blur as
+   the group's first section scrolls into view, giving it a real
+   scroll-linked "frame-in" entrance instead of a flat fade.
+   ============================================================ */
+.group-title {
+  /* Same self-referential-percentage-transform centering hazard as
+     .panel-nav above (see Bug 3 fix comment there) -- left:0/right:0 +
+     text-align:center avoids depending on this element's own width. */
+  position: fixed;
+  top: 92px; /* just under the 76px header + a small gap */
+  left: 0;
+  right: 0;
+  z-index: 4;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+.group-title.is-visible { opacity: 1; }
+.group-title-text {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 600;
+  font-size: clamp(28px, 5vw, 68px);
+  letter-spacing: 0.03em;
+  color: var(--fg);
+  font-variation-settings: 'wght' 500;
+  transition: color 0.4s ease;
+  will-change: transform, opacity, filter;
+}
+@media (max-width: 768px) {
+  .group-title { top: 68px; } /* just under the 60px mobile header */
+}
+/* ============================================================
+   SECTION 4 — Photo thumbnail conveyor
+   Extra top/bottom padding reserves a permanent safe zone for the
+   fixed .group-title above and the fixed .panel-nav below, so the
+   flex-centered conveyor content (thumb-frame + dots) can never
+   visually collide with either -- see .video-carousel-panel below
+   for the matching treatment on the VIDEOS conveyors. The offsets
+   are px-based (measured against the actual fixed elements'
+   heights: title top:92px + ~90px max text height; nav bottom:68px
+   + up to ~200px for the tallest (6-item Videos) category list),
+   NOT vh-based, since the title/nav footprints are themselves
+   fixed-px, not viewport-relative -- a vh padding would drift out
+   of sync with them on short/tall viewports.
+   ============================================================ */
+:root {
+  --conveyor-safe-top: 220px;
+  --conveyor-safe-bottom: 300px;
+}
+@media (max-width: 768px) {
+  :root {
+    --conveyor-safe-top: 150px;
+    --conveyor-safe-bottom: 240px;
+  }
+}
+.stack-panel {
+  justify-content: center;
+  gap: 18px;
+  padding-top: var(--conveyor-safe-top);
+  padding-bottom: var(--conveyor-safe-bottom);
+  /* IMPORTANT: an explicit (not just min-) height, combined with the
+     .panel base rule's overflow:hidden, hard-caps this panel at exactly
+     one viewport tall. Without this, on short viewports the safe-zone
+     padding + thumb-frame + dots could sum to MORE than 100vh, silently
+     growing the panel taller than the viewport (min-height lets a box
+     grow to fit its content). That excess then had to be scrolled away
+     as ordinary (non-pinned) document flow right after the conveyor's
+     pin released, dragging the frame/dots up through the fixed title's
+     and panel-nav's on-screen band before the next section arrived --
+     which is exactly the overlap the user's screenshots showed. Locking
+     the height means the padding + capped thumb-frame + dots are
+     guaranteed to add up to no more than 100vh, so there is no leftover
+     scroll distance left to drag content through the fixed zones. */
+  height: 100vh;
+  height: calc(var(--vh, 1vh) * 100);
+}
+
+/* ============================================================
+   SECTIONS 4, 6 & 7 — Unified thumbnail conveyor.
+   Every thumbnail (photo cards + both video carousels) shares the
+   same "frame" mechanism: each .thumb-item is absolutely centered
+   inside its .thumb-frame viewport, and JS drives a left-to-right
+   conveyor via GSAP `x` transforms as the user scrolls — items
+   frame IN from the left edge, pass through center, then frame OUT
+   past the right edge. Only the frame's fixed aspect/size differs
+   per section (card / landscape / reel).
+   ============================================================ */
+.thumb-frame {
+  position: relative;
+  overflow: hidden;
+}
+.thumb-item {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  overflow: hidden;
+  background: linear-gradient(150deg, #20130a, #0a0a0d 75%);
+  box-shadow: 0 25px 60px rgba(0,0,0,0.55);
+  border: 1px solid rgba(255,255,255,0.08);
+  will-change: transform, opacity;
+}
+.thumb-item img, .thumb-item video {
+  width: 100%; height: 100%; object-fit: cover;
+}
+
+/* dots row (~14px) + gap (18px) + panel's own vertical padding (60px) =
+   ~92px of non-frame content inside the safe area (no carousel-label on
+   this panel, unlike the video carousels below).
+   FULL-BLEED WIDTH: unlike the video carousels below (which stay inset
+   at ~70vw), the photo conveyor's "stage" must span the entire browser
+   width edge-to-edge -- per explicit user feedback, a narrow centered
+   900px box surrounded by large empty black margins on both sides read
+   as broken/incomplete, and also meant each card had to travel much
+   further off-screen (past this narrow box's edges, per the dynamic
+   edgeMargin fix) before becoming visible at all, reading as "too slow
+   to appear". Breaking the frame out to the FULL viewport width fixes
+   both: the frame's hidden edge now coincides with the actual screen
+   edge (so cards genuinely slide in/out from off-screen, not from a
+   mysterious gap in the middle of the screen), and several cards are
+   visible across the screen at once instead of just one in a narrow
+   strip. `calc(100% + 48px)` + matching negative left/right margins
+   exactly cancels out .panel's own `padding: 60px 24px` (24px each
+   side) without relying on 100vw (which can overflow by a scrollbar's
+   width on some browsers) -- .panel is itself always exactly viewport-
+   width, so this reaches the true screen edges while staying safely
+   inside .panel's own overflow:hidden boundary. */
+.thumb-frame--card {
+  width: calc(100% + 48px);
+  margin-left: -24px;
+  margin-right: -24px;
+  height: min(320px, calc(100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 92px));
+}
+/* `aspect-ratio` (not a fixed `width`) drives the card's width from its
+   height: previously width was pinned at a flat 220px while height alone
+   shrank via the min(300px, calc(100vh - ...)) clamp above, so on a short/
+   wide viewport the card became a squashed near-landscape box -- and since
+   the photo inside uses `object-fit: cover`, cover cropped it down to a
+   thin cross-section of the original image (reported by the user: photos
+   look "잘려서"/cropped when the window is shortened). Deriving width from
+   height at a constant ratio means the box -- and therefore the visible
+   crop window -- always keeps the same proportions no matter how much the
+   viewport shrinks; it can get smaller overall, but never gets distorted. */
+.thumb-frame--card .thumb-item {
+  height: min(300px, calc(100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 92px));
+  aspect-ratio: 220 / 300;
+  width: auto;
+}
+@media (max-width: 768px) {
+  .thumb-frame--card { height: min(230px, calc(100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 80px)); }
+  .thumb-frame--card .thumb-item { height: min(210px, calc(100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 80px)); aspect-ratio: 150 / 210; width: auto; }
+}
+
+/* ------------------------------------------------------------
+   PHOTOS thumbnail — polaroid picture-frame treatment.
+   Only the photo cards (.thumb-frame--card, section-4) get the
+   classic instant-film look: a cream paper "mat" around the photo
+   with a noticeably thicker strip at the bottom, plus a faint warm
+   shadow. Padding (not a border) creates the mat, because the photo
+   <img>/<video> is sized to 100%/100% of its parent's *content* box
+   (box-sizing: border-box is global) -- so insetting via padding
+   automatically reveals the cream background as an even frame
+   without any HTML/JS changes. Video/landscape/reel carousels
+   (.thumb-frame--landscape / --reel) are untouched. GSAP drives both
+   this item's position AND its scattered-photo tilt via one inline
+   `transform` (translate + rotate, see setupConveyor's `tilt` option
+   in app.js), so no `transform`/`rotate` is added here -- it would be
+   clobbered by that inline style every frame.
+   All 10 cards (2 per category) sit in a single flat conveyor row --
+   same left/right frame-in/frame-out mechanism as the VIDEOS
+   carousels below -- rather than a stacked/flippable pair, so every
+   photo is visible on its own as it scrolls through, with no cards
+   clipped behind the frame edge. */
+.thumb-frame--card .thumb-item {
+  background: linear-gradient(165deg, #fbf8f1, #f1ece0);
+  border: 1px solid rgba(0,0,0,0.06);
+  border-radius: 3px;
+  padding: 14px 14px 46px;
+  box-shadow:
+    0 25px 60px rgba(0,0,0,0.55),
+    0 2px 0 rgba(255,255,255,0.5) inset;
+}
+.thumb-frame--card .thumb-item .face-placeholder {
+  color: rgba(20,14,8,0.4);
+}
+@media (max-width: 768px) {
+  .thumb-frame--card .thumb-item { padding: 8px 8px 28px; }
+}
+
+/* ============================================================
+   SECTIONS 6 & 7 — Video carousels (landscape / reels)
+   Same reserved-safe-zone treatment as .stack-panel above (px-based
+   --conveyor-safe-top/--conveyor-safe-bottom): the padding keeps
+   the flex-centered label+frame+dots stack clear of the fixed
+   .group-title above and .panel-nav below. The thumb-frame heights
+   are additionally capped with a calc() that subtracts those same
+   safe zones (plus label/dots/gap overhead) from 100vh, so even on
+   short viewports the frame itself can never grow tall enough to
+   push back into either fixed zone.
+   ============================================================ */
+.video-carousel-panel {
+  gap: 18px;
+  padding-top: var(--conveyor-safe-top);
+  padding-bottom: var(--conveyor-safe-bottom);
+  /* Same explicit-height lock as .stack-panel above -- see that rule's
+     comment for why min-height alone isn't enough to prevent overlap. */
+  height: 100vh;
+  height: calc(var(--vh, 1vh) * 100);
+}
+.carousel-label {
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  color: var(--fg-faint);
+  z-index: 2;
+}
+.carousel-label span { color: var(--fg-dim); margin-left: 8px; }
+
+/* label (~14px) + dots (~14px) + 2x gap (18px) + panel's own vertical
+   padding (60px) = ~124px of non-frame content inside the safe area.
+   FULL-BLEED WIDTH, same treatment as .thumb-frame--card (PHOTOS,
+   see that rule's long comment above): the video carousels span the
+   full viewport width edge-to-edge exactly like PHOTOS.
+   `calc(100% + 48px)` + matching negative margins cancels out
+   .panel's own `padding: 60px 24px` exactly like the photo cards.
+
+   UNLIKE PHOTOS, the frame here is made deliberately TALLER than the
+   items it holds (frame ~380px vs. item ~190px/210px) -- per user
+   request ("횃불과 모닥불이 더 보이게, 뒷배경이 더 보이게"), this
+   leaves a large, permanent vertical gap above/below every thumbnail
+   through which the fixed torch/bonfire background video
+   (#videos-bg-video-layer) reads clearly, rather than the thumbnails
+   filling almost the entire frame height as before. That same spare
+   vertical room is also what setupConveyor()'s `float` mode (see
+   app.js) uses at runtime to bob each item up/down within the frame --
+   the frame must stay tall enough that a floating item's max vertical
+   excursion never clips against `overflow: hidden`. */
+.thumb-frame--landscape {
+  width: calc(100% + 48px);
+  margin-left: -24px;
+  margin-right: -24px;
+  height: min(400px, calc(100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 124px));
+}
+/* Individual item size is fixed via `aspect-ratio` (16:9, matching real
+   landscape video footage) and made noticeably SMALLER than the frame
+   (see comment above) -- deriving width from height exactly like the
+   photo cards, so the frame can hold several smaller video thumbnails
+   side by side, each surrounded by visible firelight background. */
+.thumb-frame--landscape .thumb-item {
+  height: min(182px, calc((100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 124px) * 0.546));
+  aspect-ratio: 16 / 9;
+  width: auto;
+}
+.thumb-frame--reel {
+  width: calc(100% + 48px);
+  margin-left: -24px;
+  margin-right: -24px;
+  height: min(400px, calc(100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 124px));
+}
+.thumb-frame--reel .thumb-item {
+  height: min(208px, calc((100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 124px) * 0.624));
+  aspect-ratio: 9 / 16;
+  width: auto;
+}
+@media (max-width: 768px) {
+  .video-carousel-panel { gap: 12px; }
+  .thumb-frame--landscape { height: min(300px, calc(100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 100px)); }
+  .thumb-frame--landscape .thumb-item { height: min(143px, calc((100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 100px) * 0.52)); aspect-ratio: 16 / 9; }
+  .thumb-frame--reel { height: min(310px, calc(100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 100px)); }
+  .thumb-frame--reel .thumb-item { height: min(162.5px, calc((100vh - var(--conveyor-safe-top) - var(--conveyor-safe-bottom) - 100px) * 0.559)); aspect-ratio: 9 / 16; }
+}
+
+.carousel-dots {
+  display: flex;
+  gap: 8px;
+  z-index: 2;
+  flex-wrap: wrap;
+  max-width: 320px;
+  justify-content: center;
+}
+.carousel-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.2);
+  transition: all 0.3s ease;
+}
+.carousel-dot.active {
+  background: var(--accent-flame);
+  box-shadow: 0 0 8px var(--accent-flame);
+  transform: scale(1.4);
+}
+
+/* ============================================================
+   SECTION 8 -- VIDEOS outro/cleanup. Per this turn's explicit spec
+   ("11번영상이 끝나기 전에 비디오 관련 컨텐츠는 모두 화면위로
+   올라가면서 사라져야해") this panel deliberately hosts NO foreground
+   content of its own -- it exists purely as extra scroll distance so
+   background video-11 (see setupVideosBgVideo() in app.js, whose scrub
+   range extends through this section's own BOTTOM) can keep playing
+   and finish naturally AFTER every other VIDEOS-group element
+   (panel-nav, group-title -- see setupVideosGroupExit()) has already
+   risen off-screen and faded to nothing during section-7's own exit.
+   Fully transparent so bg-video-11 shows through unobstructed, same
+   "later DOM element must not repaint over the fixed video layer"
+   pattern as #section-1/#section-3/#section-5 above.
+   ============================================================ */
+.videos-outro {
+  background: transparent;
+  /* EXTENDED (this turn -- "관련영상이 끝나자마자, 첨부한 영상 순서대로 ...
+     영상을 이어 올려줘"): 5 new background clips (videos-bg-12..16, each
+     6s) were appended to the #videos-bg-video-layer hard-cut chain (see
+     setupVideosBgVideo() in app.js) so they play out immediately after
+     video-11 finishes. Since this whole chain is scroll-scrubbed (not
+     autoplaying on a timer), each additional clip needs its own slice of
+     ACTUAL scroll distance to scrub through -- otherwise the same old
+     100vh budget would have to be shared across 6 clips instead of 1,
+     making every one of them fly by in a fraction of a scroll-second.
+     +500vh (100vh per new clip, matching the flat/unpinned pace video-9
+     already gets during section-5's own plain 100vh span) on top of the
+     original 100vh keeps this new stretch feeling consistent with the
+     rest of the chain instead of rushed. Still fully transparent/empty
+     of foreground content -- purely extra scroll runway, same rationale
+     as the original 100vh (all VIDEOS-group UI has already risen away
+     per setupVideosGroupExit() well before this point). */
+  min-height: 600vh;
+  min-height: calc(var(--vh, 1vh) * 600);
+}
+
+/* ============================================================
+   Generic media-slot fill (once real files are injected via JS)
+   ============================================================ */
+/* NOTE: scoped to :not(.thumb-item) -- .thumb-item also carries a
+   data-media-slot attribute but needs to keep its own
+   `position: absolute` (set above, for the conveyor's transform-driven
+   layout) rather than being knocked back to `relative` by this generic
+   media-slot rule. */
+[data-media-slot]:not(.thumb-item) { position: relative; }
+[data-media-slot] .face-placeholder { position: relative; z-index: 1; }
+[data-media-slot].has-media .face-placeholder { display: none; }
+/* .title-bg-media is itself a data-media-slot target (section2Media /
+   photosIntroImage / videosIntroThumb) but needs to keep its own
+   `position: absolute; inset: 0` full-bleed layout (set earlier) rather
+   than being knocked back to `relative` by the generic rule above --
+   otherwise the injected <video>'s wrapper collapses to 0x0 and the
+   video never becomes visible even though it's actually playing. */
+.title-bg-media[data-media-slot] { position: absolute; inset: 0; }
+
+/* ============================================================
+   Scroll-reactive text (PHOTOS/VIDEOS intro titles + carousel
+   labels): JS ties font-variation-settings / tracking / opacity
+   to each panel's own scroll progress via [data-scroll-text].
+   ============================================================ */
+[data-scroll-text] {
+  will-change: transform, opacity, letter-spacing, font-variation-settings;
+}
+
+/* ============================================================
+   Detail pages (/photos, /videos) — the "Details" pill target.
+   Plain scrollable grid, filterable by category pill.
+   ============================================================ */
+.static-header {
+  position: fixed;
+  background: rgba(5,5,6,0.9);
+  backdrop-filter: blur(10px);
+  pointer-events: auto;
+}
+.static-header .main-nav a.active { color: var(--fg); }
+.static-header .main-nav a.active::after { width: 100%; }
+
+/* ---------------- About page header override (Round 3 item 5) ----------------
+   "상단 메뉴바는 '홈'페이지처럼 투명하게 만들어줘" — /about's header uses
+   .static-header (solid dark bar + blur, shared with /photos and /videos,
+   which sit over a plain background and need it), but the About page's
+   hero is a full-bleed video/starfield background exactly like HOME, so
+   it should get HOME's own #site-header treatment instead: fully
+   transparent, no blur, legibility from text-shadow alone (see
+   #site-header .brand/.main-nav a above). Scoped to .about-header-
+   transparent only — /photos and /videos keep their solid bar. */
+.about-header-transparent {
+  background: transparent;
+  backdrop-filter: none;
+}
+
+.detail-page {
+  min-height: 100vh;
+  padding: 150px 6vw 100px;
+  background: var(--bg);
+}
+.detail-hero {
+  text-align: center;
+  margin-bottom: 40px;
+}
+.detail-eyebrow {
+  font-family: var(--font-clean);
+  font-size: 12px;
+  letter-spacing: 0.45em;
+  color: var(--fg-faint);
+  text-transform: uppercase;
+  margin: 0 0 14px;
+}
+.detail-title {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: clamp(42px, 8vw, 90px);
+  margin: 0;
+}
+.detail-filter {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 56px;
+}
+.detail-filter-pill {
+  appearance: none;
+  border: 1px solid var(--border-soft);
+  background: transparent;
+  color: var(--fg-dim);
+  font-family: var(--font-clean);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 9px 20px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+.detail-filter-pill:hover { color: var(--fg); border-color: rgba(255,255,255,0.4); }
+.detail-filter-pill.active {
+  color: #fff;
+  background: linear-gradient(90deg, var(--accent-ember), var(--accent-flame));
+  border-color: transparent;
+  box-shadow: 0 4px 16px rgba(255,138,0,0.35);
+}
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 22px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+.detail-card {
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: linear-gradient(150deg, #20130a, #0a0a0d 75%);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.45);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.detail-card.is-hidden {
+  display: none;
+}
+.detail-card-media {
+  aspect-ratio: 4 / 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.detail-card.is-reel .detail-card-media {
+  aspect-ratio: 9 / 16;
+}
+.detail-card-media img, .detail-card-media video {
+  width: 100%; height: 100%; object-fit: cover;
+}
+/* Photos detail page ONLY -- same polaroid mat treatment as the home-page
+   teaser cards (see .thumb-frame--card .thumb-item above): cream paper
+   frame with a thicker bottom strip. Scoped to .detail-page--photos so the
+   /videos detail grid (which shares .detail-card/.detail-grid) is
+   untouched. */
+.detail-page--photos .detail-card {
+  background: linear-gradient(165deg, #fbf8f1, #f1ece0);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.45), 0 2px 0 rgba(255,255,255,0.5) inset;
+  border: 1px solid rgba(0,0,0,0.06);
+}
+.detail-page--photos .detail-card-media {
+  padding: 12px 12px 0;
+}
+.detail-page--photos .detail-card-caption {
+  color: rgba(20,14,8,0.55);
+  padding: 10px 14px 16px;
+}
+.detail-card-caption {
+  padding: 12px 14px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+}
+@media (max-width: 768px) {
+  .detail-page { padding: 120px 5vw 70px; }
+  .detail-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px; }
+}
+
+/* ============================================================
+   ABOUT ME page (/about) — scroll-interactive page built to the
+   pichiworld.co.kr reference pattern: (1) a small glowing "prologue"
+   caption over a starfield, (2) a title-card reveal with a subtitle
+   line between the two title words, (3) a Star-Wars-style 3D
+   perspective opening crawl carrying the bio copy, landing on (4) a
+   plain readable profile section (photo + bio) so the content stays
+   fully accessible without relying on the animation.
+
+   COLOR CHOICE (flagged deliberately): the pichiworld reference is
+   purple/neon-pink, but the rest of this site's design tokens
+   (--accent-ember/--accent-flame/--accent-gold) are an explicitly
+   established "fire" palette that itself replaced an earlier purple/
+   pink/blue scheme per prior spec ("보라색 기운은 이제 삭제"). Rather
+   than reintroducing purple site-wide (which would fight that past
+   decision) or forcing the fire palette onto a space/starfield scene
+   (which would look wrong against black sky + stars), this page
+   defines its OWN small set of "cosmic" accent variables, scoped only
+   to #about-* selectors below — a deep violet for the prologue/crawl
+   text (closer to the reference) and a cool ice-white/blue-white for
+   the crawl body copy (closer to the actual Star Wars convention and
+   more legible against a starfield than pure white). Nothing outside
+   these #about-* rules touches these variables, so the site-wide fire
+   palette is completely unaffected.
+   ============================================================ */
+:root {
+  --about-violet: #9d6bff;
+  --about-violet-glow: rgba(157, 107, 255, 0.55);
+  --about-ice: #eef1ff;
+  --about-ice-dim: rgba(238, 241, 255, 0.72);
+}
+
+#about-scroll-container { position: relative; z-index: 2; }
+
+.about-panel { background: transparent; }
+
+/* ---------------- Fixed background video "media player" chain ----------------
+   Same structural pattern as #fixed-bg-video / #videos-bg-video-layer on the
+   HOME page (position:fixed, z-index:0, .about-bg-video-el absolute+cover,
+   opacity driven entirely by JS/scroll — see about.js). The one deliberate
+   difference from every other video-chain layer on this site: the
+   video1->video2 handoff here is allowed a short, real opacity dissolve
+   (see about.js's long comment on DISSOLVE_WIDTH for the explicit
+   rationale) instead of the site's usual zero-width hard cut. */
+#about-bg-video-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  will-change: opacity;
+}
+.about-bg-video-el {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  will-change: opacity;
+}
+.about-bg-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(4,4,10,0) 0%, rgba(4,4,10,0.38) 82%),
+    linear-gradient(180deg, rgba(4,4,10,0.35) 0%, transparent 22%, transparent 76%, rgba(4,4,10,0.4) 100%);
+}
+
+/* ---------------- Prologue line (Round 4 item 1) ----------------
+   "No genre holds still long enough to frame it." Deliberately FLAT/
+   2D -- no perspective, no rotateX, ever ("2d 느낌으로") -- unlike the
+   closing crawl further down. The viewport is a plain flex-centered
+   full-screen box so the text is always pinned dead-center on BOTH
+   axes ("센터에서 고정") while about.js drives only translateY (rise
+   in) and scale (recede out) via inline styles. Kept at the same
+   z-index as the old crawl viewport so it still sits above the video/
+   photo layers and below the title. */
+#about-intro-crawl-viewport {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  will-change: opacity;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8vw;
+}
+.about-intro-crawl-text {
+  /* Round 5 item 2 ("큰화면일때는 한줄로"): on desktop the container must
+     be allowed to grow as wide as the sentence needs (up to the full
+     safe padded viewport), NOT capped at a fixed 760px -- that fixed
+     cap combined with the font-size was what forced a wrap onto 2 lines
+     on common desktop widths (per user's reference screenshot). Using
+     the full padded viewport width (100% of the flex parent, which
+     already has `padding: 0 8vw` in #about-intro-crawl-viewport) plus
+     `white-space: nowrap` on the text below guarantees one line at any
+     desktop width; a fluid font-size (see below) keeps it from ever
+     overflowing that width. Mobile explicitly reverts both in the
+     media query. */
+  width: 100%;
+  text-align: center;
+  will-change: transform, opacity;
+}
+.about-intro-crawl-text p {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  /* More aggressive vw-scaling + lower ceiling than before (was
+     clamp(22px,3.4vw,40px) inside a 760px-capped box) so the full
+     sentence reliably fits one line across common desktop widths
+     without the box needing a fixed max-width at all. */
+  font-size: clamp(18px, 2.6vw, 34px);
+  line-height: 1.4;
+  color: var(--about-violet);
+  text-shadow: 0 0 18px var(--about-violet-glow), 0 0 4px rgba(0,0,0,0.6);
+  white-space: nowrap;
+}
+@media (max-width: 768px) {
+  /* Mobile: explicitly allow wrapping again and re-center/constrain the
+     box, since a nowrap single line at any font size readable on a
+     phone would overflow the screen width -- "모바일로 갈 때는 알아서
+     얼라인먼트를 잡아줘" (auto-align appropriately on mobile). */
+  .about-intro-crawl-text {
+    width: min(560px, 88vw);
+  }
+  .about-intro-crawl-text p {
+    white-space: normal;
+    font-size: clamp(19px, 5.6vw, 26px);
+  }
+}
+
+/* ---------------- Title card (pichiworld "PICHI / subtitle / STRIKE") ---------------- */
+#about-title-text {
+  position: fixed;
+  inset: 0;
+  z-index: 11;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  pointer-events: none;
+  opacity: 0;
+  will-change: opacity;
+}
+/* JUNE/HONG use a large negative-leading display font whose glyph box
+   is visually taller than its line-height, which is what made the
+   subtitle collide with the descenders/ascenders of both words at
+   gap:6px (see user screenshot). Fixed by (a) giving each title line
+   real vertical breathing room via margin instead of relying on the
+   parent flex `gap`, and (b) reserving a fixed min-height band for the
+   subtitle so it never sits inside that breathing room regardless of
+   viewport width.
+
+   ROUND 3 ITEM 1 FIX ("june과 hong사이의 센터에 맞춤"): verified via
+   precise getBoundingClientRect() measurement (not visual estimation)
+   that equal margin-bottom/margin-top on JUNE/HONG (clamp(18,2.8vw,34)
+   each) places the subtitle band's geometric center at the true
+   midpoint between JUNE's bottom edge and HONG's top edge. An earlier
+   attempt used asymmetric margins to compensate for the "J" descender,
+   but that overcorrected (56px gap to JUNE vs 23px gap to HONG at
+   1024px viewport) — reverted to symmetric margins, which measure to
+   ~48px vs ~48px (centered within rounding). The subtitle band itself
+   is also a fixed-height flex-centered container
+   (.about-title-subtitle-band) rather than a bare <p>, so the text is
+   always vertically centered WITHIN that band regardless of its own
+   line-height quirks. */
+.about-title-line {
+  margin: 0;
+  font-family: var(--font-clean);
+  font-weight: 800;
+  text-transform: uppercase;
+  font-size: clamp(56px, 12vw, 160px);
+  line-height: 0.92;
+  letter-spacing: 0.04em;
+  color: transparent;
+  -webkit-text-stroke: 2px var(--about-violet);
+  text-shadow: 0 0 24px var(--about-violet-glow), 0 0 60px var(--about-violet-glow);
+}
+#about-title-june { margin-bottom: clamp(18px, 2.8vw, 34px); }
+#about-title-hong { margin-top: clamp(18px, 2.8vw, 34px); }
+.about-title-subtitle-band {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.4em;
+}
+.about-title-subtitle {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: clamp(10px, 1.3vw, 15px);
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--about-ice-dim);
+  white-space: nowrap;
+}
+@media (max-width: 768px) {
+  .about-title-line { -webkit-text-stroke: 1.4px var(--about-violet); }
+  #about-title-june { margin-bottom: 18px; }
+  #about-title-hong { margin-top: 18px; }
+  .about-title-subtitle { font-size: 9px; letter-spacing: 0.16em; white-space: normal; text-align: center; padding: 0 6vw; }
+}
+
+/* ---------------- Scroll-interactive profile-photo reveal ----------------
+   Same fixed-overlay + phase-window pattern as prologue/title/crawl above
+   (see renderAboutHero() in about.js): fades/scales/rises in right after
+   the JUNE/HONG title settles, so the photo becomes part of the same
+   reactive scroll sequence as the text instead of only appearing in the
+   plain resting section further down. */
+#about-photo-reveal {
+  position: fixed;
+  inset: 0;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0;
+  will-change: opacity, transform;
+}
+/* Round 4 item 4 ("프레임하단에 FEATHER를 먹여 자연스럽게... 더
+   키워줬으면"): the wrapper carries a mask-image gradient that fades
+   the image's own hard bottom edge to fully transparent, so the flat
+   PNG cutout blends into the starfield/title scene instead of
+   showing a visible rectangular edge. -webkit-mask-image is included
+   for Safari; both are kept in sync. Sized noticeably larger than the
+   old 360px cap so it fills much more of the space directly behind
+   JUNE/HONG. */
+.about-photo-feather-mask {
+  width: min(620px, 74vw);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 62%, transparent 96%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 62%, transparent 96%);
+}
+#about-photo-reveal img {
+  width: 100%;
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 0 40px var(--about-violet-glow)) drop-shadow(0 20px 50px rgba(0,0,0,0.6));
+}
+@media (max-width: 768px) {
+  .about-photo-feather-mask { width: min(420px, 84vw); }
+}
+
+/* ---------------- Star-Wars-style 3D opening crawl ---------------- */
+#about-crawl-viewport {
+  position: fixed;
+  inset: 0;
+  z-index: 9;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  will-change: opacity;
+  /* Reference screenshot (pichiworld.co.kr crawl) reads as a much
+     shallower tilt than the original 55deg/420px combo, which folded
+     the text back so hard it became illegible ("우리가 읽을 수가
+     없어"). A longer perspective distance + a much shallower rotation
+     keeps the "receding into the screen" read while leaving each line
+     close to flat/legible, matching the reference angle. */
+  perspective: 1400px;
+  perspective-origin: 50% 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.about-crawl-text {
+  width: min(760px, 82vw);
+  transform-origin: 50% 100%;
+  transform: rotateX(22deg) translateY(0);
+  text-align: center;
+  will-change: transform, opacity;
+}
+.about-crawl-text p {
+  margin: 0 0 1.4em;
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: clamp(20px, 3.4vw, 34px);
+  line-height: 1.5;
+  color: var(--about-ice);
+  text-shadow: 0 0 14px rgba(238,241,255,0.35);
+}
+
+/* ---------------- Pinned hero section (drives the whole sequence) ---------------- */
+#section-about-hero {
+  min-height: 100vh;
+  min-height: calc(var(--vh, 1vh) * 100);
+}
+/* #about-scroll-cue intentionally has NO overrides here — per spec
+   ("홈 페이지의 스크롤과 디자인과 위치를 맞춰줘") it reuses the exact
+   same .scroll-cue / .scroll-cue span / @keyframes scrollcue ruleset
+   the HOME page uses (see top of this file), sharing the "scroll-cue"
+   class directly rather than maintaining a near-duplicate #about-*
+   ruleset that could drift out of sync. See about.html markup. */
+
+/* ---------------- Resting profile section (photo + bio, always legible) ---------------- */
+.about-profile-panel {
+  padding: 100px 6vw 120px;
+}
+.about-profile-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(32px, 6vw, 90px);
+  max-width: 1180px;
+  width: 100%;
+  flex-wrap: wrap;
+}
+.about-profile-media {
+  flex: 0 0 auto;
+  width: min(440px, 88vw);
+}
+.about-profile-media img {
+  width: 100%;
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 30px 60px rgba(0,0,0,0.55));
+}
+.about-profile-copy {
+  flex: 1 1 360px;
+  max-width: 560px;
+}
+.about-profile-eyebrow {
+  margin: 0 0 14px;
+  font-size: 12px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--about-violet);
+}
+.about-profile-name {
+  margin: 0 0 8px;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: clamp(36px, 5vw, 58px);
+  color: var(--fg);
+}
+.about-profile-role {
+  margin: 0 0 26px;
+  font-family: var(--font-clean);
+  font-size: 14px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+}
+.about-profile-bio {
+  margin: 0;
+  font-size: clamp(15px, 1.5vw, 18px);
+  line-height: 1.85;
+  color: var(--fg-dim);
+}
+@media (max-width: 900px) {
+  .about-profile-wrap { flex-direction: column; text-align: center; }
+  .about-profile-copy { max-width: 620px; }
+}
+
+/* ============================================================
+   CHAPTERS 2-5 — Selected Works / Education & Skills / Awards /
+   Professional Experience. Reuses the exact same fixed-overlay +
+   scroll-progress-driven shrink/fade + teaser-overlap pattern as
+   the hero JUNE/HONG + crawl above (see setupChapterPin() in
+   about.js), generalized into shared .chapter-* classes so all
+   four chapters share one ruleset instead of four near-duplicates.
+   The starfield backdrop (#about-bg-video-layer / about-bg-video-2)
+   now stays visible + looping behind all of this — about.js no
+   longer fades that layer to 0 after chapter 1.
+   ============================================================ */
+
+/* ---------------- Chapter title + teaser fixed overlays ---------------- */
+.chapter-title-text {
+  position: fixed;
+  inset: 0;
+  z-index: 11;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(10px, 1.6vw, 18px);
+  text-align: center;
+  padding: 0 8vw;
+  pointer-events: none;
+  opacity: 0;
+  will-change: opacity, transform;
+}
+.chapter-title-eyebrow {
+  margin: 0;
+  font-family: var(--font-clean);
+  font-weight: 600;
+  font-size: clamp(11px, 1.3vw, 14px);
+  letter-spacing: 0.36em;
+  text-transform: uppercase;
+  color: var(--about-ice-dim);
+}
+.chapter-title-main {
+  margin: 0;
+  font-family: var(--font-clean);
+  font-weight: 800;
+  text-transform: uppercase;
+  font-size: clamp(40px, 8vw, 96px);
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: transparent;
+  -webkit-text-stroke: 2px var(--about-violet);
+  text-shadow: 0 0 24px var(--about-violet-glow), 0 0 60px var(--about-violet-glow);
+}
+.chapter-teaser-viewport {
+  position: fixed;
+  inset: 0;
+  z-index: 9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8vw;
+  pointer-events: none;
+  opacity: 0;
+  will-change: opacity;
+}
+.chapter-teaser-text {
+  width: min(760px, 82vw);
+  text-align: center;
+  will-change: transform, opacity;
+}
+.chapter-teaser-text p {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: clamp(19px, 3vw, 30px);
+  line-height: 1.55;
+  color: var(--about-ice);
+  text-shadow: 0 0 14px rgba(238,241,255,0.35);
+}
+@media (max-width: 768px) {
+  .chapter-title-main { -webkit-text-stroke: 1.4px var(--about-violet); }
+}
+
+/* ---------------- Pinned title-beat panels (empty stubs driving the pin) ---------------- */
+.chapter-pin-panel {
+  min-height: 100vh;
+  min-height: calc(var(--vh, 1vh) * 100);
+}
+
+/* ---------------- Resting detail panels (always-legible content) ---------------- */
+.chapter-detail-panel {
+  padding: 100px 6vw 120px;
+  align-items: flex-start;
+}
+.chapter-detail-wrap {
+  max-width: 900px;
+  width: 100%;
+  margin: 0 auto;
+}
+.chapter-detail-eyebrow {
+  margin: 0 0 14px;
+  font-family: var(--font-clean);
+  font-size: 12px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--about-violet);
+}
+.chapter-detail-heading {
+  margin: 0 0 20px;
+  font-family: var(--font-serif);
+  font-weight: 700;
+  font-size: clamp(32px, 4.6vw, 52px);
+  color: var(--fg);
+}
+.chapter-detail-heading em {
+  font-style: italic;
+  color: var(--about-ice);
+}
+.chapter-detail-intro {
+  margin: 0 0 40px;
+  max-width: 720px;
+  font-size: clamp(15px, 1.5vw, 18px);
+  line-height: 1.8;
+  color: var(--fg-dim);
+}
+.chapter-detail-wrap--split {
+  max-width: 1180px;
+  display: grid;
+  grid-template-columns: minmax(240px, 360px) 1fr;
+  gap: clamp(40px, 6vw, 90px);
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .chapter-detail-wrap--split { grid-template-columns: 1fr; }
+}
+
+/* ---------------- Selected Works — filmography list ---------------- */
+.filmography-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+.filmography-item {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 20px;
+  padding-bottom: 26px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.filmography-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.filmography-year {
+  font-family: var(--font-clean);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  color: var(--about-violet);
+  padding-top: 3px;
+}
+.filmography-title {
+  margin: 0 0 6px;
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: clamp(17px, 1.9vw, 21px);
+  color: var(--fg);
+  line-height: 1.4;
+}
+.filmography-format {
+  font-family: var(--font-sans);
+  font-weight: 400;
+  font-size: 0.72em;
+  letter-spacing: 0.02em;
+  color: var(--fg-faint);
+}
+.filmography-role {
+  margin: 0 0 4px;
+  font-size: 13.5px;
+  letter-spacing: 0.02em;
+  color: var(--fg-dim);
+}
+.filmography-credit {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--fg-faint);
+}
+@media (max-width: 560px) {
+  .filmography-item { grid-template-columns: 1fr; gap: 4px; }
+  .filmography-year { padding-top: 0; }
+}
+
+/* ---------------- Education & Skills ---------------- */
+.education-list {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.education-item {
+  padding: 18px 20px;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.02);
+}
+.education-school {
+  margin: 0 0 6px;
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 18px;
+  color: var(--fg);
+}
+.education-degree {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--fg-dim);
+}
+.skills-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 18px;
+  font-family: var(--font-clean);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+}
+.skills-hint i { color: var(--about-violet); }
+
+/* 3D flip-card skill tiles: front face = icon + name, back face =
+   percent + fill bar. Flips on hover (desktop) or tap/focus
+   (touch/keyboard), per spec ("고정된 바 차트 대신, 좀 더 인터랙티브
+   하게 표현해줘"). */
+.skills-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+@media (min-width: 560px) {
+  .skills-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (min-width: 1100px) {
+  .skills-grid { grid-template-columns: repeat(5, 1fr); }
+}
+.skill-tile {
+  appearance: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  background: none;
+  cursor: pointer;
+  aspect-ratio: 1 / 1;
+  perspective: 900px;
+  font: inherit;
+  color: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+/* Flip mechanism: .skill-tile is the shared 3D perspective host
+   (position:relative, set above); each face is absolutely
+   positioned inside it and pre-rotated to its resting angle (front
+   0deg facing the viewer, back 180deg facing away). Hovering/
+   focusing/tapping the tile rotates BOTH faces forward by +180deg
+   together, so the front spins away exactly as the back spins into
+   view -- a standard single-hinge flip-card, not two independent
+   flips. */
+.skill-tile {
+  position: relative;
+}
+.skill-tile-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 14px;
+  border: 1px solid var(--border-soft);
+  background: rgba(255,255,255,0.03);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1), border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.skill-tile-face--front { transform: rotateY(0deg); }
+.skill-tile-face--back { transform: rotateY(180deg); }
+.skill-tile:hover .skill-tile-face--front,
+.skill-tile:focus-visible .skill-tile-face--front,
+.skill-tile.is-flipped .skill-tile-face--front {
+  transform: rotateY(180deg);
+}
+.skill-tile:hover .skill-tile-face--back,
+.skill-tile:focus-visible .skill-tile-face--back,
+.skill-tile.is-flipped .skill-tile-face--back {
+  transform: rotateY(360deg);
+}
+.skill-tile:hover .skill-tile-face,
+.skill-tile:focus-visible .skill-tile-face,
+.skill-tile.is-flipped .skill-tile-face {
+  border-color: var(--about-violet);
+  box-shadow: 0 0 22px var(--about-violet-glow);
+}
+.skill-icon {
+  width: clamp(30px, 4vw, 42px);
+  height: clamp(30px, 4vw, 42px);
+  object-fit: contain;
+  filter: drop-shadow(0 0 8px rgba(238,241,255,0.25));
+}
+.skill-icon--flag {
+  border-radius: 50%;
+  filter: drop-shadow(0 0 6px rgba(0,0,0,0.3));
+}
+.skill-name {
+  font-family: var(--font-clean);
+  font-size: clamp(10.5px, 1.15vw, 12.5px);
+  letter-spacing: 0.03em;
+  text-align: center;
+  color: var(--fg-dim);
+}
+.skill-percent {
+  font-family: var(--font-serif);
+  font-weight: 700;
+  font-size: clamp(22px, 2.6vw, 30px);
+  color: var(--about-ice);
+  text-shadow: 0 0 12px rgba(238,241,255,0.35);
+}
+.skill-bar {
+  width: 70%;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.1);
+  overflow: hidden;
+}
+.skill-bar-fill {
+  display: block;
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--about-violet), var(--about-ice));
+  transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ---------------- Awards ---------------- */
+.awards-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.awards-item {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 20px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.awards-item:last-child { border-bottom: none; padding-bottom: 0; }
+.awards-year {
+  font-family: var(--font-clean);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--about-violet);
+  padding-top: 3px;
+}
+.awards-title {
+  margin: 0 0 6px;
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: clamp(16px, 1.8vw, 19px);
+  color: var(--fg);
+  line-height: 1.4;
+}
+.awards-project {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--fg-dim);
+}
+@media (max-width: 560px) {
+  .awards-item { grid-template-columns: 1fr; gap: 4px; }
+}
+
+/* ---------------- Professional Experience ---------------- */
+.career-heading-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 40px;
+}
+.career-heading-row .chapter-detail-heading,
+.career-heading-row .chapter-detail-eyebrow { margin-bottom: 0; }
+.career-heading-row .chapter-detail-eyebrow { margin-bottom: 14px; }
+.career-heading-note {
+  margin: 0 0 4px;
+  font-size: 12.5px;
+  letter-spacing: 0.05em;
+  color: var(--fg-faint);
+}
+.career-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.career-item {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 20px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.career-item:last-child { border-bottom: none; padding-bottom: 0; }
+.career-year {
+  font-family: var(--font-clean);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  color: var(--about-violet);
+  padding-top: 3px;
+}
+.career-role {
+  margin: 0 0 6px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: clamp(17px, 1.9vw, 21px);
+  color: var(--fg);
+}
+.career-title {
+  font-family: var(--font-sans);
+  font-weight: 400;
+  font-size: 0.68em;
+  color: var(--fg-faint);
+}
+.career-badge {
+  font-family: var(--font-clean);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--about-ice);
+  border: 1px solid var(--about-violet);
+  border-radius: 999px;
+  padding: 3px 10px;
+  box-shadow: 0 0 12px var(--about-violet-glow);
+}
+.career-desc {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--fg-dim);
+}
+@media (max-width: 640px) {
+  .career-item { grid-template-columns: 1fr; gap: 6px; }
+  .career-heading-row { flex-direction: column; align-items: flex-start; }
+}

@@ -1,12 +1,14 @@
 import { Hono } from 'hono'
-import { renderer } from './renderer'
+import homeHtml from './pages/home.html?raw'
+import photosHtml from './pages/photos.html?raw'
+import videosHtml from './pages/videos.html?raw'
+import aboutHtml from './pages/about.html?raw'
 
 const app = new Hono()
 
-app.use(renderer)
-
-app.get('/', (c) => {
-  return c.render(<h1>Hello!</h1>)
-})
+app.get('/', (c) => c.html(homeHtml))
+app.get('/photos', (c) => c.html(photosHtml))
+app.get('/videos', (c) => c.html(videosHtml))
+app.get('/about', (c) => c.html(aboutHtml))
 
 export default app
