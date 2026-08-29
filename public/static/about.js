@@ -234,7 +234,22 @@
   const CRAWL_IN_START = TITLE_OUT_START - 0.03;
   const CRAWL_IN_END = TITLE_OUT_START;
   const CRAWL_RUN_START = CRAWL_IN_START;
-  const CRAWL_RUN_END = 0.995;
+  // ROUND 13 FIX ("이건 금방 페이드아웃되는 게 아니라, 위쪽까지
+  // 스크롤되다가 사라져야지" -- with the old CRAWL_RUN_END=0.995, the
+  // upward recede motion was spread so thin across the remaining pin
+  // distance that by the time OUTRO_START/END (the opacity fade
+  // window) fired, the text had barely moved off its resting spot --
+  // still sitting comfortably mid-screen -- so it read as an abrupt
+  // FADE rather than a continuous scroll-away. Fixed by ending the
+  // recede leg (see CRAWL_Y_END below) BEFORE the opacity fade starts,
+  // so the two are now sequential, not simultaneous: the text first
+  // finishes physically scrolling all the way up past the top edge,
+  // and ONLY THEN does the (now mostly redundant/cleanup) opacity
+  // fade run — matching a real Star Wars crawl's "recede into the
+  // distance, then it's just gone" read. Aligned to TITLE_OUT_END so
+  // the crawl's own recede and the title's fade both resolve at the
+  // same scroll point, then OUTRO_START picks up from there.
+  const CRAWL_RUN_END = TITLE_OUT_END;
   const CRAWL_Y_START = 78; // vh, bottom of viewport (fully hidden)
   // ROUND 7 FOLLOW-UP FIX: opacity reaching 1 by CRAWL_IN_END is not
   // enough on its own -- the translateY sweep from CRAWL_Y_START(78vh)
@@ -254,7 +269,20 @@
   // screen, overlapping the title" happen at the same moment.
   const CRAWL_ENTRY_END = CRAWL_IN_END;
   const CRAWL_Y_VISIBLE = 26; // vh -- on-screen, overlapping lower title
-  const CRAWL_Y_END = -60; // vh, receded up past the top
+  // ROUND 13 FIX ("이건 금방 페이드아웃되는 게 아니라, 위쪽까지
+  // 스크롤되다가 사라져야지" -- the crawl text was disappearing via a
+  // quick OPACITY fade while still sitting comfortably mid-screen,
+  // instead of visibly continuing to scroll/recede all the way up
+  // past the top edge like a real Star Wars crawl). -60vh only moved
+  // the text a little above its resting spot -- nowhere near
+  // scrolled off the top of the 100vh viewport -- so the OUTRO
+  // opacity fade (see below) was doing all the disappearing work,
+  // which read as an abrupt fade rather than a continuous upward
+  // scroll-away. Pushed much further negative so the translateY
+  // sweep itself carries the text fully above the visible viewport
+  // (#about-crawl-viewport clips via overflow:hidden) well before
+  // opacity ever starts to drop.
+  const CRAWL_Y_END = -150; // vh, fully scrolled off past the top edge
   // Shallow, legible tilt matching the pichiworld reference screenshot
   // (was 55deg — far too steep to read, per user feedback). Kept as a
   // named constant here so the JS-driven inline transform and the CSS
@@ -290,13 +318,21 @@
   // above the normal document flow via z-index), that whole window
   // rendered as two full copies of the photo/name/tagline visible
   // and overlapping at once. Fixed by moving the fade window much
-  // earlier (0.70 -> 0.78) -- safely before the earliest measured
-  // peek-in point (~0.848) with a comfortable margin across all
-  // tested viewport heights (600px-2000px), while still leaving a
-  // real, unhurried reading window for the crawl copy at full
-  // opacity (CRAWL_IN_END=0.64 -> OUTRO_START=0.70).
-  const OUTRO_START = 0.70;
-  const OUTRO_END = 0.78;
+  // earlier -- safely before the earliest measured peek-in point
+  // (~0.848) with a comfortable margin across all tested viewport
+  // heights (600px-2000px).
+  //
+  // ROUND 13 ADJUSTMENT ("위쪽까지 스크롤되다가 사라져야지"): the
+  // crawl's own upward recede (CRAWL_Y_END=-150vh) now finishes
+  // physically carrying the text off past the top edge at
+  // CRAWL_RUN_END (aliased to TITLE_OUT_END=0.76) -- BEFORE this
+  // opacity fade ever starts, so OUTRO_START is pinned to start no
+  // earlier than that (0.76), with OUTRO_END given a small amount of
+  // room after it (0.80) purely as an already-off-screen opacity
+  // cleanup, not the thing doing the visible "disappearing" anymore.
+  // Still comfortably below the ~0.848 measured peek-in floor.
+  const OUTRO_START = CRAWL_RUN_END;
+  const OUTRO_END = 0.80;
 
   const easeInOut = gsap.parseEase('power2.inOut');
 
