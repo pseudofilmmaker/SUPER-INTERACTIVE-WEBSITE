@@ -318,8 +318,20 @@
   // internal beats (title fade, overlapping crawl entrance, crawl
   // hold, crawl recede) comfortable scroll runway, which is unrelated
   // to the now-removed section and still holds.
+  //
+  // ROUND 15 v3 FIX ("첫번째 이미지가 화면 밖으로 빠지면... 스크롤 다운
+  // 갭이 너무 커" -- once the crawl scrolls off-screen, the gap before
+  // Chapter 2's title fully appears feels far too long). Root cause:
+  // OUTRO_END used to be 0.94, leaving a full unused 0.94->1.0 tail
+  // where the pin was still held but NOTHING was on screen any more
+  // (crawl already faded to opacity 0, nothing else animating) --
+  // pure dead scroll before the pin even released into Chapter 2.
+  // Fixed by letting the opacity cleanup run all the way to the very
+  // end of the pin (OUTRO_END = 1) instead of finishing early and
+  // leaving a silent tail -- same fade, just no longer front-loaded
+  // with unused scroll room after it.
   const OUTRO_START = CRAWL_RUN_END;
-  const OUTRO_END = 0.94;
+  const OUTRO_END = 1;
 
   const easeInOut = gsap.parseEase('power2.inOut');
 
@@ -553,7 +565,15 @@
     const cardEl = document.getElementById(cfg.cardId);
     if (!hostEl || !cardEl) return;
 
-    const IN_END = 0.30;
+    // ROUND 15 v3 FIX ("첫번째 두번째 이미지 사이의 스크롤 다운 갭이 너무
+    // 커" -- the gap between the crawl exiting and this chapter title card
+    // reading as "fully there" felt too long): IN_END used to be 0.30,
+    // meaning the card didn't reach full opacity until 30% through its own
+    // 1.5x-viewport-height pin (~324px of dim/rising card before it read as
+    // fully visible). Shortened to 0.12 so the rise+fade-in resolves much
+    // faster (~130px) once this pin starts, without changing the HOLD or
+    // OUT phases at all.
+    const IN_END = 0.12;
     const HOLD_END = 0.68;
     const RISE_VH = 46;
 

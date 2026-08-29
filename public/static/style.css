@@ -2350,6 +2350,15 @@ html, body {
    own animation length. */
 #section-about-hero {
   min-height: 0;
+  /* ROUND 15 v3 FIX ("첫번째 이미지가 화면 밖으로 빠지면... 스크롤 다운
+     갭이 너무 커"): min-height:0 above already killed the 100vh box,
+     but this section still inherited .panel's own `padding: 60px 24px`
+     (120px total vertical), which -- exactly like the min-height dead
+     zone above it -- gets appended as extra unused scroll space right
+     after the pin releases, before Chapter 2's title card is even
+     visible. Zeroed out since this section hosts nothing but the
+     position:fixed .scroll-cue (which needs no padding at all). */
+  padding: 0;
 }
 /* #about-scroll-cue intentionally has NO overrides here — per spec
    ("홈 페이지의 스크롤과 디자인과 위치를 맞춰줘") it reuses the exact
