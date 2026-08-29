@@ -2524,15 +2524,41 @@ html, body {
 }
 
 /* ---------------- Pinned title-beat panels (empty stubs driving the pin) ----------------
-   ROUND 9 FIX: same trailing-dead-scroll issue as #section-about-hero above —
-   these stubs have no in-flow content (title/teaser overlays are all
-   `position:fixed`), so forcing them to a full 100vh box only added reserved
-   scroll space AFTER each chapter's pin animation already finished. Shrunk to
-   just their padding; setupChapterPin() in about.js now computes each pin's
-   `end` as a fixed pixel value instead of a percentage of this box's height,
-   so the animation's own scroll distance is unaffected by this change. */
+   ROUND 9 originally shrunk this to min-height:0, copying the fix that was
+   actually needed for #section-about-hero (which had a genuine trailing-
+   dead-scroll bug). That copy was a mistake: it introduced a NEW, more
+   severe bug caught in Round 10 testing ("두번째 이미지" ghosting screenshot,
+   later shown by measurement to be much bigger than mere scrub-lag).
+
+   ROOT CAUSE (confirmed via Playwright geometry probe): GSAP's pin-spacer
+   height = thisBox'sOwnHeight + CHAPTER_PIN_DISTANCE. With this box shrunk
+   to ~120px (just its padding), the pin-spacer's trailing slack was far
+   SHORTER than one viewport height, which means the very NEXT section in
+   the document flow (.chapter-detail-panel, containing the plain filmography
+   /education/awards/career list) started entering the bottom of the
+   viewport at only ~52% of the chapter's own pin progress (peekP = 1 +
+   (panelHeight-vh)/CHAPTER_PIN_DISTANCE ≈ 0.52 for every chapter) — i.e.
+   HALFWAY through the title+teaser sequence, well before the title had
+   even finished fading out (TITLE_OUT_END=0.56 at the time). Since both
+   the title/teaser fixed overlays AND the detail panel behind them are
+   opaque-background-less, this produced a severe, sustained double-
+   exposure of the teaser paragraph directly over the (identical, by
+   design) intro paragraph + list items underneath — not a brief end-of-
+   pin flicker.
+
+   FIX: restore the base .panel 100vh height for this box specifically.
+   That pushes the peek-through point back out to exactly p=1.0 (the very
+   end of the pin), so the ENTIRE title+teaser sequence below in
+   setupChapterPin() has the full [0,1] progress range to complete safely
+   before any of the resting detail content can possibly be visible. This
+   box has no visible content either way (title/teaser are separate
+   position:fixed overlays elsewhere in the DOM) so growing it back to
+   100vh does not resurrect the original hero-specific dead-scroll bug —
+   it only affects how much of the chapter's OWN pin distance is "spent"
+   before the detail list is allowed to appear. */
 .chapter-pin-panel {
-  min-height: 0;
+  min-height: 100vh;
+  min-height: calc(var(--vh, 1vh) * 100);
 }
 
 /* ---------------- Resting detail panels (always-legible content) ---------------- */
