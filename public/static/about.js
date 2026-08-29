@@ -273,8 +273,30 @@
   // must stay visible as the persistent backdrop behind ALL of the
   // new chapters, not just chapter 1 -- so it is NO LONGER faded to 0
   // here. Only the hero's own foreground overlays fade at OUTRO.
-  const OUTRO_START = 0.94;
-  const OUTRO_END = 1.0;
+  //
+  // ROUND 12 FIX ("사진도 이름도 모두, 위에 겹치는 걸 없애줘야되는
+  // 거야" -- the hero's own fixed-position crawl text was still fully
+  // opaque and ghosting on top of the real .about-profile-wrap
+  // content -- same photo, same name, same tagline -- once that
+  // section had already scrolled into view underneath it). ROOT
+  // CAUSE: OUTRO_START/END (0.94 -> 1.0) fire far too late relative
+  // to the pin's own scroll distance -- measured live via Playwright
+  // across a range of viewport heights, the real #section-about-
+  // profile content already scrolls into the visible viewport at
+  // roughly progress ≈ 0.85-0.87 (varies slightly with viewport
+  // height/HERO_PIN_DISTANCE ratio), i.e. a full ~0.07-0.09 of
+  // progress BEFORE the crawl (still at opacity 1) even starts to
+  // fade. Since every hero overlay is `position:fixed` (stacked
+  // above the normal document flow via z-index), that whole window
+  // rendered as two full copies of the photo/name/tagline visible
+  // and overlapping at once. Fixed by moving the fade window much
+  // earlier (0.70 -> 0.78) -- safely before the earliest measured
+  // peek-in point (~0.848) with a comfortable margin across all
+  // tested viewport heights (600px-2000px), while still leaving a
+  // real, unhurried reading window for the crawl copy at full
+  // opacity (CRAWL_IN_END=0.64 -> OUTRO_START=0.70).
+  const OUTRO_START = 0.70;
+  const OUTRO_END = 0.78;
 
   const easeInOut = gsap.parseEase('power2.inOut');
 
@@ -470,59 +492,137 @@
      setupChapterPin() (the pinned duplicate-overlay approach) and its
      TITLE_ and TEASER_ timing constants are removed entirely, replaced
      by setupChapterCrawlHeading() below: a plain (non-pinned) scrub
-     ScrollTrigger attached directly to the real .chapter-crawl-heading
-     wrapper, tied to its own natural top-of-viewport scroll position.
+     ScrollTrigger attached directly to the real chapter heading/intro
+     elements, tied to their own natural top-of-viewport scroll position.
+     (Round 12: further replaced by setupChapterTitleCard() — a separately
+     pinned rise/hold/shrink title card per chapter — see below.)
      Because there is now only ONE copy of this text in the DOM (no
      fixed duplicate sitting on top of anything), the entire class of
      "duplicate text ghosting through from behind" bug that Rounds 9-10
      were fighting cannot occur here — nothing else can ever render
      underneath this text, because nothing else is drawn twice.
      ============================================================ */
-  function setupChapterCrawlHeading(cfg) {
-    const headingEl = document.getElementById(cfg.headingId);
-    const innerEl = headingEl ? headingEl.querySelector('.chapter-crawl-heading-inner') : null;
-    if (!headingEl || !innerEl) return;
+  // ROUND 12 REPLACEMENT ("제목은 세번째 이미지처럼 화면아래서 올라오다,
+  // 가운데 고정, 축소되면서 사라지고"): setupChapterCrawlHeading() (the
+  // in-place scrub tilt) is replaced by setupChapterTitleCard() — a
+  // SHORT, separately-pinned ScrollTrigger (its own small pin host,
+  // .chapter-title-pin-host, ~1.4x viewport height of scroll) that
+  // drives a fixed, large glowing #ch-*-title-card overlay through a
+  // distinct 3-phase beat: (1) IN -- rises up from below the viewport
+  // while fading in; (2) HOLD -- sits flat, fully opaque and centered,
+  // at full prominent scale; (3) OUT -- shrinks + fades away. Once this
+  // pin releases the card is already fully faded out (opacity 0)
+  // before the real, plain, always-legible .chapter-detail-panel
+  // heading (a separate, smaller, non-fixed copy of the same text)
+  // scrolls into view below -- so the two are never on screen at the
+  // same time, avoiding the Round 9-10 "duplicate text ghosting" bug.
+  function setupChapterTitleCard(cfg) {
+    const hostEl = document.getElementById(cfg.hostId);
+    const cardEl = document.getElementById(cfg.cardId);
+    if (!hostEl || !cardEl) return;
 
-    // Starts tilted back at the same angle as the hero's own crawl
-    // (CRAWL_TILT_DEG, shared constant so the two treatments can never
-    // drift out of sync) and lifted slightly below its resting spot,
-    // fully transparent; eases to flat (rotateX 0), in its natural
-    // position and fully opaque as the heading scrolls into view. A
-    // modest lift (not a full off-screen sweep, since this text stays
-    // in-flow and permanent rather than receding away again) keeps the
-    // "rising up out of the starfield" read without disturbing layout.
-    const TILT_START_DEG = CRAWL_TILT_DEG;
-    const LIFT_START_VH = 7;
+    const IN_END = 0.30;
+    const HOLD_END = 0.68;
+    const RISE_VH = 46;
 
     function render(p) {
       p = Math.max(0, Math.min(1, p));
-      const e = easeInOut(p);
-      innerEl.style.opacity = e;
-      innerEl.style.transform = `rotateX(${TILT_START_DEG * (1 - e)}deg) translateY(${LIFT_START_VH * (1 - e)}vh)`;
+      let opacity, y, scale;
+      if (p < IN_END) {
+        const t = easeInOut(p / IN_END);
+        opacity = t;
+        y = RISE_VH * (1 - t);
+        scale = 1;
+      } else if (p < HOLD_END) {
+        opacity = 1;
+        y = 0;
+        scale = 1;
+      } else {
+        const t = easeInOut((p - HOLD_END) / (1 - HOLD_END));
+        opacity = 1 - t;
+        y = 0;
+        scale = 1 - 0.42 * t;
+      }
+      cardEl.style.opacity = opacity;
+      cardEl.style.transform = `translateY(${y}vh) scale(${scale})`;
     }
 
     render(0);
 
-    // Non-pinned: the heading scrolls normally, this ScrollTrigger only
-    // reads its own top-of-viewport progress to drive the tween. Window
-    // chosen so the motion completes well before the heading reaches
-    // its natural resting read position (top 42% of viewport), rather
-    // than continuing to animate while the user is already reading it.
+    const PIN_DISTANCE = Math.round(window.innerHeight * 1.5);
     ScrollTrigger.create({
-      id: cfg.headingId + '-crawl',
-      trigger: headingEl,
-      start: 'top 88%',
-      end: 'top 42%',
-      scrub: 0.5,
+      id: cfg.hostId + '-pin',
+      trigger: hostEl,
+      start: 'top top',
+      end: '+=' + PIN_DISTANCE,
+      pin: true,
+      scrub: 0.4,
       onUpdate: (self) => render(self.progress),
       onRefresh: (self) => render(self.progress),
     });
   }
 
-  setupChapterCrawlHeading({ headingId: 'ch-works-crawl-heading' });
-  setupChapterCrawlHeading({ headingId: 'ch-edu-crawl-heading' });
-  setupChapterCrawlHeading({ headingId: 'ch-awards-crawl-heading' });
-  setupChapterCrawlHeading({ headingId: 'ch-career-crawl-heading' });
+  setupChapterTitleCard({ hostId: 'ch-works-title-pin', cardId: 'ch-works-title-card' });
+  setupChapterTitleCard({ hostId: 'ch-edu-title-pin', cardId: 'ch-edu-title-card' });
+  setupChapterTitleCard({ hostId: 'ch-awards-title-pin', cardId: 'ch-awards-title-card' });
+  setupChapterTitleCard({ hostId: 'ch-career-title-pin', cardId: 'ch-career-title-card' });
+
+  // ROUND 12 ("년도별 작업 내역은... 3디로 공간을 활용해 화면아래서부터
+  // 올라와서 화면위로 계속 올라가야지"): filmography list items now use
+  // the same 3D-perspective Star-Wars-crawl treatment as the hero's own
+  // crawl text (CRAWL_TILT_DEG-tilted, receding) instead of a flat
+  // fade-up. Each .filmography-item-inner tilts back + rises from below
+  // as its own <li> scrolls into view, then continues tilting further
+  // AWAY (receding, as if scrolling up into the starfield) as it exits
+  // through the top of the viewport -- driven by each item's own
+  // scroll-linked progress across a generous [bottom-of-viewport,
+  // top-of-viewport] window, not a one-shot enter animation.
+  function setupFilmographyCrawl() {
+    const list = document.getElementById('filmography-list');
+    if (!list) return;
+    const items = list.querySelectorAll('.filmography-item-inner');
+    if (!items.length) return;
+
+    items.forEach((inner) => {
+      const li = inner.closest('.filmography-item');
+
+      function render(p) {
+        p = Math.max(0, Math.min(1, p));
+        // 0 -> 0.5: rising in from below, tilting flat, fading in.
+        // 0.5 -> 1: sitting near-flat while it crosses the viewport,
+        // then tilting/receding away again as it nears the top.
+        let opacity, tilt, y;
+        if (p < 0.18) {
+          const t = easeInOut(p / 0.18);
+          opacity = t;
+          tilt = CRAWL_TILT_DEG * (1 - t);
+          y = 30 * (1 - t);
+        } else if (p < 0.82) {
+          opacity = 1;
+          tilt = 0;
+          y = 0;
+        } else {
+          const t = easeInOut((p - 0.82) / 0.18);
+          opacity = 1 - t;
+          tilt = -CRAWL_TILT_DEG * t;
+          y = -18 * t;
+        }
+        inner.style.opacity = opacity;
+        inner.style.transform = `perspective(1000px) rotateX(${tilt}deg) translateY(${y}px)`;
+      }
+
+      gsap.set(inner, { opacity: 0 });
+      ScrollTrigger.create({
+        trigger: li,
+        start: 'top 95%',
+        end: 'top 15%',
+        scrub: 0.4,
+        onUpdate: (self) => render(self.progress),
+        onRefresh: (self) => render(self.progress),
+      });
+    });
+  }
+  setupFilmographyCrawl();
 
   /* ---------- resting content reveal (profile + all 4 chapter detail
      sections) — generalized from the hero-only .about-profile-wrap

@@ -2451,27 +2451,67 @@ html, body {
    entire class of "duplicate text ghosting through from behind" bugs
    these rounds were fighting is structurally impossible now.
 
-   .chapter-crawl-heading wraps that real heading+intro. It is laid
-   out completely normally (in-flow, static position) — the crawl
-   illusion comes entirely from a NON-pinned ScrollTrigger in
-   about.js (setupChapterCrawlHeading()) that, while this element's
-   own natural scroll-into-view window plays out, tweens it from
-   "tilted back via rotateX + lifted below its resting spot + faded
-   out" to "flat, in place, fully opaque" — the same rotateX(22deg)
-   tilt + perspective treatment as the hero's own #about-crawl-text,
-   just applied in-place to the real content instead of to a separate
-   fixed duplicate. The starfield backdrop (#about-bg-video-layer /
-   about-bg-video-2) still stays visible + looping behind all of this.
+   (Round 12: the in-flow crawl-heading approach above was replaced by
+   setupChapterTitleCard() — a separately pinned fixed title card per
+   chapter with rise / hold-centered / shrink-fade phases — see
+   .chapter-title-card rules below. The real heading+intro is now plain
+   in-flow content with normal data-reveal fade-in.) The starfield
+   backdrop (#about-bg-video-layer / about-bg-video-2) still stays
+   visible + looping behind all of this.
    ============================================================ */
 
-/* ---------------- Star-Wars-crawl entrance for the real heading+intro ---------------- */
-.chapter-crawl-heading {
-  perspective: 1400px;
-  perspective-origin: 50% 100%;
+/* ---------------- ROUND 12: fixed, separately-pinned title card ----------------
+   Rise-from-bottom -> hold-centered-prominent-glowing -> shrink-and-fade, driven
+   by setupChapterTitleCard() in about.js against its own short pin host
+   (.chapter-title-pin-host). Reuses the hero's own JUNE/HONG glow styling so it
+   matches the requested reference screenshot. Only ONE of these + the resting
+   .chapter-detail-panel content is ever visible at a time (the pin fully
+   releases + fades out before the real panel scrolls into view), so this does
+   not reintroduce the old duplicate-text ghosting bug. ---------------- */
+.chapter-title-pin-host {
+  min-height: 0;
 }
-.chapter-crawl-heading-inner {
-  transform-origin: 50% 100%;
-  will-change: transform, opacity;
+.chapter-title-card {
+  position: fixed;
+  inset: 0;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  text-align: center;
+  padding: 0 6vw;
+  pointer-events: none;
+  opacity: 0;
+  will-change: opacity, transform;
+}
+.chapter-title-card-eyebrow {
+  margin: 0;
+  font-family: var(--font-clean);
+  font-size: 12px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--about-ice-dim);
+}
+.chapter-title-card-heading {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 700;
+  font-size: clamp(40px, 7vw, 96px);
+  color: transparent;
+  -webkit-text-stroke: 1.6px var(--about-violet);
+  text-shadow: 0 0 24px var(--about-violet-glow), 0 0 60px var(--about-violet-glow);
+}
+.chapter-title-card-heading em {
+  font-style: italic;
+  color: transparent;
+  -webkit-text-stroke: 1.6px var(--about-ice);
+  text-shadow: 0 0 24px rgba(238,241,255,0.5), 0 0 60px rgba(238,241,255,0.3);
+}
+@media (max-width: 768px) {
+  .chapter-title-card-heading { -webkit-text-stroke: 1.1px var(--about-violet); }
+  .chapter-title-card-heading em { -webkit-text-stroke: 1.1px var(--about-ice); }
 }
 
 /* ---------------- Resting detail panels (always-legible content) ---------------- */
@@ -2493,7 +2533,13 @@ html, body {
   color: var(--about-violet);
 }
 .chapter-detail-heading {
-  margin: 0 0 20px;
+  /* ROUND 12 FIX ("제목과 본문이 붙은 거야?" -- title and body text
+     were reading as visually stuck together): margin-bottom widened
+     (20px -> clamp(28px,4vw,44px)) so the heading always has clear
+     breathing room above the intro paragraph/list, scaling with
+     viewport instead of a small fixed gap that could look tight on
+     narrower/taller viewports. */
+  margin: 0 0 clamp(28px, 4vw, 44px);
   font-family: var(--font-serif);
   font-weight: 700;
   font-size: clamp(32px, 4.6vw, 52px);
@@ -2504,7 +2550,7 @@ html, body {
   color: var(--about-ice);
 }
 .chapter-detail-intro {
-  margin: 0 0 40px;
+  margin: 0 0 clamp(36px, 5vw, 56px);
   max-width: 720px;
   font-size: clamp(15px, 1.5vw, 18px);
   line-height: 1.8;
@@ -2530,12 +2576,21 @@ html, body {
   flex-direction: column;
   gap: 26px;
 }
+/* ROUND 12: grid moved onto .filmography-item-inner (the new 3D-crawl
+   transform target added in about.html); .filmography-item itself now
+   only hosts the perspective + border, so the tilt/translate transform
+   on -inner never fights with the grid layout it also needs. */
 .filmography-item {
+  perspective: 900px;
+  padding-bottom: 26px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.filmography-item-inner {
   display: grid;
   grid-template-columns: 92px 1fr;
   gap: 20px;
-  padding-bottom: 26px;
-  border-bottom: 1px solid var(--border-soft);
+  transform-origin: 50% 100%;
+  will-change: transform, opacity;
 }
 .filmography-item:last-child {
   border-bottom: none;
@@ -2577,7 +2632,7 @@ html, body {
   color: var(--fg-faint);
 }
 @media (max-width: 560px) {
-  .filmography-item { grid-template-columns: 1fr; gap: 4px; }
+  .filmography-item-inner { grid-template-columns: 1fr; gap: 4px; }
   .filmography-year { padding-top: 0; }
 }
 

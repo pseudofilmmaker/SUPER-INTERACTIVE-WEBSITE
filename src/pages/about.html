@@ -112,26 +112,44 @@
 </div>
 
 <!-- ============================================================
-     ROUND 11 FIX ("첫번째 이미지, 제거해줘야지... 두번째 이미지가
-     스타워즈 스크롤 스크립트처럼 나와야한다는 거야" — the separate
-     pinned title/teaser overlay screen shown BEFORE each chapter's
-     real content (a duplicate of the content's own heading+intro
-     text, fixed centered on the starfield) must be removed entirely.
-     Instead, the REAL "Selected Works" / "Education & Skills" /
-     "Awards" / "Professional Experience" heading + intro paragraph
-     — the actual content, further down in <main> — should itself
-     rise into view with the hero's own Star-Wars-crawl motion
-     (tilted 3D perspective, receding up from below) as the user
-     scrolls to it, then settle flat and fully legible in place.
-     There is no longer a separate pinned "title beat" section per
-     chapter; setupChapterCrawlHeading() in about.js instead attaches
-     a normal (non-pinned) ScrollTrigger directly to each chapter's
-     .chapter-crawl-heading wrapper (see the detail sections below)
-     that only tilts/lifts the heading + intro while it enters,
-     leaving the rest of the list to fade in exactly as before. This
-     removes the whole class of "duplicate text peeking through from
-     behind" ghosting bugs since there is now only ONE copy of this
-     text in the DOM. -->
+     ROUND 12 REWRITE ("제목은 세번째 이미지처럼 화면아래서 올라오다,
+     가운데 고정, 축소되면서 사라지고" — each chapter's title card
+     should rise up from the bottom of the screen, hold fixed/pinned
+     and prominent dead-center, then shrink and fade away — a
+     distinct 3-phase beat, matching the large glowing centered
+     JUNE/HONG-style reference screenshot, NOT the Round 11 in-place
+     scrub tilt).
+
+     Each chapter gets its own small, separately-pinned title-card
+     overlay (position:fixed, driven by setupChapterTitleCard() in
+     about.js via a SHORT dedicated ScrollTrigger pin — much shorter
+     than the hero's own pin, just enough scroll distance for the
+     rise -> hold -> shrink beat to play out) that shows ONLY the
+     eyebrow + heading in the large glowing display style. Once its
+     pin releases, the REAL content below (chapter-detail-panel,
+     further down in <main>) is already a plain, always-legible,
+     normally-spaced heading + intro + list — a separate, smaller
+     copy of the eyebrow/heading text, but NEVER on screen at the same
+     time as the big fixed title card (the fixed card's pin has
+     already fully released and faded out by the time the real panel
+     content scrolls into view), so this does not reintroduce the
+     Round 9-10 "duplicate text ghosting" bug that Round 11 fixed. -->
+<div id="ch-works-title-card" class="chapter-title-card" aria-hidden="true">
+  <p class="chapter-title-card-eyebrow">Filmography</p>
+  <h2 class="chapter-title-card-heading">Selected <em>Works</em></h2>
+</div>
+<div id="ch-edu-title-card" class="chapter-title-card" aria-hidden="true">
+  <p class="chapter-title-card-eyebrow">Background</p>
+  <h2 class="chapter-title-card-heading">Education <em>&amp; Skills</em></h2>
+</div>
+<div id="ch-awards-title-card" class="chapter-title-card" aria-hidden="true">
+  <p class="chapter-title-card-eyebrow">Recognition</p>
+  <h2 class="chapter-title-card-heading">Awards</h2>
+</div>
+<div id="ch-career-title-card" class="chapter-title-card" aria-hidden="true">
+  <p class="chapter-title-card-eyebrow">Career</p>
+  <h2 class="chapter-title-card-heading">Professional <em>Experience</em></h2>
+</div>
 
 <main id="about-scroll-container">
 
@@ -169,169 +187,205 @@
   </section>
 
   <!-- ==========================================================
-       Chapter 2 — Selected Works. ROUND 11: no separate pinned
-       title-beat section anymore — the real heading+intro below
-       (wrapped in .chapter-crawl-heading) plays the Star-Wars-crawl
-       entrance itself as it scrolls into view, then the filmography
-       list fades in as before.
+       Chapter 2 — Selected Works. ROUND 12: a short pinned host
+       section drives the fixed #ch-works-title-card's rise -> hold
+       -> shrink-and-fade beat (setupChapterTitleCard() in about.js),
+       then releases into the plain, always-legible detail panel
+       below.
        ========================================================== -->
+  <section class="panel about-panel chapter-title-pin-host" id="ch-works-title-pin"></section>
+
   <section class="panel about-panel chapter-detail-panel" id="section-ch-works-detail" data-index="2">
     <div class="chapter-detail-wrap">
-      <div class="chapter-crawl-heading" id="ch-works-crawl-heading">
-        <div class="chapter-crawl-heading-inner">
-          <p class="chapter-detail-eyebrow">Filmography</p>
-          <h2 class="chapter-detail-heading">Selected <em>Works</em></h2>
-          <p class="chapter-detail-intro">Since 2023, I&rsquo;ve handled cinematography, aerial filming and editing at JK World Group &mdash; covering brand films, reels, event recaps and photography across the group&rsquo;s family of companies.</p>
-        </div>
-      </div>
+      <p class="chapter-detail-eyebrow" data-reveal="true">Filmography</p>
+      <h2 class="chapter-detail-heading" data-reveal="true">Selected <em>Works</em></h2>
+      <p class="chapter-detail-intro" data-reveal="true">Since 2023, I&rsquo;ve handled cinematography, aerial filming and editing at JK World Group &mdash; covering brand films, reels, event recaps and photography across the group&rsquo;s family of companies.</p>
 
-      <ol class="filmography-list">
-        <li class="filmography-item" data-reveal="true">
+      <ol class="filmography-list" id="filmography-list">
+        <li class="filmography-item">
+          <div class="filmography-item-inner">
           <span class="filmography-year">2022</span>
           <div class="filmography-body">
             <h3 class="filmography-title">The Road to Hanti <span class="filmography-format">&middot; Documentary, YouTube</span></h3>
             <p class="filmography-role">Cinematography, Aerial Filming, Editing</p>
             <p class="filmography-credit">Hanti Association, in partnership with Chilgok County</p>
           </div>
+          </div>
         </li>
-        <li class="filmography-item" data-reveal="true">
+        <li class="filmography-item">
+          <div class="filmography-item-inner">
           <span class="filmography-year">2021</span>
           <div class="filmography-body">
             <h3 class="filmography-title">Environmental Industry Financing Program <span class="filmography-format">&middot; YouTube</span></h3>
             <p class="filmography-role">Editing, Motion Graphics</p>
             <p class="filmography-credit">Korea Environmental Industry &amp; Technology Institute, in partnership with the Ministry of Environment</p>
           </div>
+          </div>
         </li>
-        <li class="filmography-item" data-reveal="true">
+        <li class="filmography-item">
+          <div class="filmography-item-inner">
           <span class="filmography-year">2021</span>
           <div class="filmography-body">
             <h3 class="filmography-title">Wild VR <span class="filmography-format">&middot; YouTube, 37 episodes</span></h3>
             <p class="filmography-role">Cinematography, Editing, Aerial Filming</p>
             <p class="filmography-credit">Outstanding Broadcast Content Support Program, with the Korea Creative Content Agency (KOCCA) and the Ministry of Culture, Sports and Tourism</p>
           </div>
+          </div>
         </li>
-        <li class="filmography-item" data-reveal="true">
+        <li class="filmography-item">
+          <div class="filmography-item-inner">
           <span class="filmography-year">2020</span>
           <div class="filmography-body">
             <h3 class="filmography-title">Basement <span class="filmography-format">&middot; Feature Film, 96 min</span></h3>
             <p class="filmography-role">Screenplay, On-set Editing, Title Design</p>
             <p class="filmography-credit">Official selection, Moscow International Film Festival &middot; Streamed on SK Wavve</p>
           </div>
+          </div>
         </li>
-        <li class="filmography-item" data-reveal="true">
+        <li class="filmography-item">
+          <div class="filmography-item-inner">
           <span class="filmography-year">2020</span>
           <div class="filmography-body">
             <h3 class="filmography-title">Daelim Acro <span class="filmography-format">&middot; Commercial, 1 min 49 sec</span></h3>
             <p class="filmography-role">Direction, Cinematography, Editing, Motion Graphics</p>
             <p class="filmography-credit">Sales gallery media wall, powered by ScreenX</p>
           </div>
+          </div>
         </li>
-        <li class="filmography-item" data-reveal="true">
+        <li class="filmography-item">
+          <div class="filmography-item-inner">
           <span class="filmography-year">2019</span>
           <div class="filmography-body">
             <h3 class="filmography-title">Seoul Through Quantum Physics <span class="filmography-format">&middot; Documentary, VR, 12 min</span></h3>
             <p class="filmography-role">Direction, Cinematography, Editing, Motion Graphics</p>
             <p class="filmography-credit">VR Content Competition, with NAVER, KOCCA and the Ministry of Culture, Sports and Tourism</p>
           </div>
+          </div>
         </li>
-        <li class="filmography-item" data-reveal="true">
+        <li class="filmography-item">
+          <div class="filmography-item-inner">
           <span class="filmography-year">2019</span>
           <div class="filmography-body">
             <h3 class="filmography-title">Legend of the Fox Woman <span class="filmography-format">&middot; Narrative Short, VR, 8 min</span></h3>
             <p class="filmography-role">Cinematography, Editing</p>
             <p class="filmography-credit">VR Content Competition, with NAVER, KOCCA and the Ministry of Culture, Sports and Tourism</p>
           </div>
+          </div>
         </li>
-        <li class="filmography-item" data-reveal="true">
+        <li class="filmography-item">
+          <div class="filmography-item-inner">
           <span class="filmography-year">2018</span>
           <div class="filmography-body">
             <h3 class="filmography-title">Love Is <span class="filmography-format">&middot; Feature Film, 81 min</span></h3>
             <p class="filmography-role">Direction, Screenplay, Aerial Filming, Editing</p>
             <p class="filmography-credit">Culture Technology R&amp;D Support Program, with KOCCA</p>
           </div>
+          </div>
         </li>
-        <li class="filmography-item" data-reveal="true">
+        <li class="filmography-item">
+          <div class="filmography-item-inner">
           <span class="filmography-year">2018</span>
           <div class="filmography-body">
             <h3 class="filmography-title">Tower the Most <span class="filmography-format">&middot; Commercial, 2 min 20 sec</span></h3>
             <p class="filmography-role">Direction, Cinematography, Editing</p>
             <p class="filmography-credit">Sales gallery media wall, powered by ScreenX</p>
           </div>
+          </div>
         </li>
-        <li class="filmography-item" data-reveal="true">
+        <li class="filmography-item">
+          <div class="filmography-item-inner">
           <span class="filmography-year">2018</span>
           <div class="filmography-body">
             <h3 class="filmography-title">Hollow <span class="filmography-format">&middot; Short Film, 26 min</span> &middot; A Birthday Gift for Dad <span class="filmography-format">&middot; Short Film</span> <span class="filmography-format">&middot; and others</span></h3>
             <p class="filmography-role">Editing</p>
           </div>
+          </div>
         </li>
-        <li class="filmography-item" data-reveal="true">
+        <li class="filmography-item">
+          <div class="filmography-item-inner">
           <span class="filmography-year">2017</span>
           <div class="filmography-body">
             <h3 class="filmography-title">King Jeongjo&rsquo;s Dream, Hwaseong Fortress <span class="filmography-format">&middot; Documentary, 3D, 14 min</span></h3>
             <p class="filmography-role">Direction, Aerial Filming</p>
             <p class="filmography-credit">In partnership with the Cultural Heritage Administration</p>
           </div>
+          </div>
         </li>
-        <li class="filmography-item" data-reveal="true">
+        <li class="filmography-item">
+          <div class="filmography-item-inner">
           <span class="filmography-year">2017</span>
           <div class="filmography-body">
             <h3 class="filmography-title">ASEAN Culture House <span class="filmography-format">&middot; Media Wall</span></h3>
             <p class="filmography-role">Direction, Cinematography &mdash; Cambodia, Myanmar &amp; Indonesia episodes</p>
             <p class="filmography-credit">With the Ministry of Foreign Affairs, the Korea Foundation and the ASEAN Culture House</p>
           </div>
+          </div>
         </li>
-        <li class="filmography-item" data-reveal="true">
+        <li class="filmography-item">
+          <div class="filmography-item-inner">
           <span class="filmography-year">2016&ndash;17</span>
           <div class="filmography-body">
             <h3 class="filmography-title">Bicycle Road <span class="filmography-format">&middot; Documentary, 4 episodes</span></h3>
             <p class="filmography-role">Direction, Editing &mdash; Japan &amp; Taiwan episodes</p>
             <p class="filmography-credit">With the Korea Independent Broadcasters Association, Contents Square and Paranoi Films</p>
           </div>
+          </div>
         </li>
-        <li class="filmography-item" data-reveal="true">
+        <li class="filmography-item">
+          <div class="filmography-item-inner">
           <span class="filmography-year">2016</span>
           <div class="filmography-body">
             <h3 class="filmography-title">TV Cello <span class="filmography-format">&middot; Feature Film, ScreenX</span></h3>
             <p class="filmography-role">Screenplay, Producer</p>
             <p class="filmography-credit">KAFA Film, with CGV ScreenX &middot; Official selection, Bucheon International Fantastic Film Festival (BIFAN)</p>
           </div>
+          </div>
         </li>
-        <li class="filmography-item" data-reveal="true">
+        <li class="filmography-item">
+          <div class="filmography-item-inner">
           <span class="filmography-year">2016</span>
           <div class="filmography-body">
             <h3 class="filmography-title">Amado Annual Nale &mdash; Currently in Progress <span class="filmography-format">&middot; Group Exhibition, 8 Artists</span></h3>
             <p class="filmography-role">Participating Artist</p>
             <p class="filmography-credit">&ldquo;Jouissance,&rdquo; with artist Sang-jin Kim &middot; 3-channel media installation</p>
           </div>
+          </div>
         </li>
-        <li class="filmography-item" data-reveal="true">
+        <li class="filmography-item">
+          <div class="filmography-item-inner">
           <span class="filmography-year">2015</span>
           <div class="filmography-body">
             <h3 class="filmography-title">Future Is Mine <span class="filmography-format">&middot; Feature Film, 3D</span></h3>
             <p class="filmography-role">Direction, Screenplay, Editing</p>
           </div>
+          </div>
         </li>
-        <li class="filmography-item" data-reveal="true">
+        <li class="filmography-item">
+          <div class="filmography-item-inner">
           <span class="filmography-year">2014</span>
           <div class="filmography-body">
             <h3 class="filmography-title">29cm Shopping Video <span class="filmography-format">&middot; Commercial</span> &middot; Most Sweetest <span class="filmography-format">&middot; Short Film</span></h3>
             <p class="filmography-role">Producer &middot; Direction</p>
             <p class="filmography-credit">Official selection, International Thailand Film Festival</p>
           </div>
+          </div>
         </li>
-        <li class="filmography-item" data-reveal="true">
+        <li class="filmography-item">
+          <div class="filmography-item-inner">
           <span class="filmography-year">2008</span>
           <div class="filmography-body">
             <h3 class="filmography-title">Busan Horse Racing Association <span class="filmography-format">&middot; CM</span></h3>
             <p class="filmography-role">Lyrics, CM Song</p>
           </div>
+          </div>
         </li>
-        <li class="filmography-item" data-reveal="true">
+        <li class="filmography-item">
+          <div class="filmography-item-inner">
           <span class="filmography-year">1999&ndash;2013</span>
           <div class="filmography-body">
             <h3 class="filmography-title">Feature Film Script Doctoring &amp; Additional Work</h3>
             <p class="filmography-role">Direction, Cinematography, Art Direction, Music, Editing, Sound Recording across numerous features</p>
+          </div>
           </div>
         </li>
       </ol>
@@ -344,15 +398,13 @@
        on hover/tap (desktop hover, mobile tap-to-flip via CSS
        :focus/.is-active), rather than a static bar chart.
        ========================================================== -->
+  <section class="panel about-panel chapter-title-pin-host" id="ch-edu-title-pin"></section>
+
   <section class="panel about-panel chapter-detail-panel" id="section-ch-edu-detail" data-index="3">
     <div class="chapter-detail-wrap chapter-detail-wrap--split">
       <div class="edu-education-col">
-        <div class="chapter-crawl-heading" id="ch-edu-crawl-heading">
-          <div class="chapter-crawl-heading-inner">
-            <p class="chapter-detail-eyebrow">Background</p>
-            <h2 class="chapter-detail-heading">Education <em>&amp; Skills</em></h2>
-          </div>
-        </div>
+        <p class="chapter-detail-eyebrow" data-reveal="true">Background</p>
+        <h2 class="chapter-detail-heading" data-reveal="true">Education <em>&amp; Skills</em></h2>
 
         <ul class="education-list">
           <li class="education-item" data-reveal="true">
@@ -480,15 +532,13 @@
        so this list is scoped to actual prizes/awards only, per
        spec ("영화제 참여는 따로 기재됐기 때문에, 수상내역만 기재").
        ========================================================== -->
+  <section class="panel about-panel chapter-title-pin-host" id="ch-awards-title-pin"></section>
+
   <section class="panel about-panel chapter-detail-panel" id="section-ch-awards-detail" data-index="4">
     <div class="chapter-detail-wrap">
-      <div class="chapter-crawl-heading" id="ch-awards-crawl-heading">
-        <div class="chapter-crawl-heading-inner">
-          <p class="chapter-detail-eyebrow">Recognition</p>
-          <h2 class="chapter-detail-heading">Awards</h2>
-          <p class="chapter-detail-intro">Festival selections are credited alongside each project in Selected Works above &mdash; this list is reserved for actual prizes.</p>
-        </div>
-      </div>
+      <p class="chapter-detail-eyebrow" data-reveal="true">Recognition</p>
+      <h2 class="chapter-detail-heading" data-reveal="true">Awards</h2>
+      <p class="chapter-detail-intro" data-reveal="true">Festival selections are credited alongside each project in Selected Works above &mdash; this list is reserved for actual prizes.</p>
 
       <ol class="awards-list">
         <li class="awards-item" data-reveal="true">
@@ -522,15 +572,13 @@
        heading; the standalone Freelance row has been removed per
        spec, and the PARANOI misspelling fixed to Paranoi.
        ========================================================== -->
+  <section class="panel about-panel chapter-title-pin-host" id="ch-career-title-pin"></section>
+
   <section class="panel about-panel chapter-detail-panel" id="section-ch-career-detail" data-index="5">
     <div class="chapter-detail-wrap">
       <div class="career-heading-row">
-        <div class="chapter-crawl-heading" id="ch-career-crawl-heading">
-          <div class="chapter-crawl-heading-inner">
-            <p class="chapter-detail-eyebrow">Career</p>
-            <h2 class="chapter-detail-heading">Professional <em>Experience</em></h2>
-          </div>
-        </div>
+        <p class="chapter-detail-eyebrow" data-reveal="true">Career</p>
+        <h2 class="chapter-detail-heading" data-reveal="true">Professional <em>Experience</em></h2>
         <p class="career-heading-note" data-reveal="true">Employment history, most recent first</p>
       </div>
 
