@@ -190,17 +190,17 @@
   const TITLE_IN_START = 0.53;
   const TITLE_IN_END = 0.59;
   const TITLE_OUT_START = 0.64;
-  // Round 8 ("축소되면서 사라져서, 아래 텍스트가 더 겹치는 구간이 있을
-  // 수 있게" -- the title+photo group should shrink away as it exits,
-  // not just fade, AND the exit should take longer so there's more
-  // sustained overlap time with the crawl text underneath). Widened
-  // from 0.68 to 0.76 -- nearly doubles the OUT window's duration,
-  // giving far more scroll distance during which JUNE/HONG (now also
-  // scaling down, see the titleScale block in renderAboutHero) is
-  // still at least partially visible on top of the already-fully-
-  // opaque crawl text (see CRAWL_IN_END, still pinned to
-  // TITLE_OUT_START so the crawl's own entrance timing is unaffected).
-  const TITLE_OUT_END = 0.76;
+  // ROUND 14 REVERSAL of the Round 7-8 "deliberate overlap" design
+  // ("겹치면서 올라가는 건 좀 아닌 거 같은데? 제목과 본문의 구간을
+  // 명확히 분리"). Rounds 7-8 had WIDENED this window specifically so
+  // the closing bio crawl underneath would spend a long stretch
+  // visually overlapping JUNE/HONG while it faded out. The user has
+  // now reversed that call: the title and the body text must occupy
+  // clearly SEPARATE scroll segments with no simultaneous on-screen
+  // overlap. Narrowed back down to the original, normal, prompt
+  // fade-out width (was widened to 0.76 in Round 8 specifically to
+  // create overlap time — that reason no longer applies).
+  const TITLE_OUT_END = 0.68;
 
   // Profile-photo reveal — Round 3 item 2: now LAYERED behind the
   // title (same IN/OUT window, stacked underneath via z-index in
@@ -211,77 +211,40 @@
   const PHOTO_OUT_END = TITLE_OUT_END;
 
   // Closing opening crawl — 3D perspective paragraph receding up/back
-  // into the starfield, carrying the full bio copy. Opacity ramps in
-  // over a short window; the perspective translateY itself is a
-  // continuous function of p across the WHOLE remaining span so the
-  // recede motion reads as one continuous scroll-driven camera move.
+  // into the starfield, carrying the full bio copy.
   //
-  // Round 7 ("자막과 june hong이 겹쳐야된다" -- the crawl copy and the
-  // JUNE/HONG title must actually OVERLAP on screen together, not just
-  // cross paths in a symmetric linear crossfade). Round 6's version
-  // aliased CRAWL_IN_START/END to TITLE_OUT_START/END directly, which
-  // made the two opacities sum to ~1 the whole time (a pure dissolve
-  // handoff) -- both are only ever "visible" at a diminished, blended
-  // opacity at any given instant, which does not read as a real
-  // overlap. Fixed by making the crawl fade in FASTER, finishing
-  // BEFORE the title's own fade-out completes: the crawl starts
-  // rising a moment before TITLE_OUT_START and is already at FULL
-  // opacity (1) by TITLE_OUT_START, so for the entire
-  // TITLE_OUT_START -> TITLE_OUT_END span the crawl sits fully visible
-  // UNDERNEATH the title while the title itself gradually fades away
-  // on top of it -- a genuine, sustained overlap window, not a
-  // transient crossfade point.
-  const CRAWL_IN_START = TITLE_OUT_START - 0.03;
-  const CRAWL_IN_END = TITLE_OUT_START;
+  // ROUND 14 REDESIGN ("겹치면서 올라가는 건 좀 아닌 거 같은데? 제목과
+  // 본문의 구간을 명확히 분리하고, 본문은 화면의 위까지 스크롤업되서
+  // 사라지는 걸 유의"). Rounds 7-8-13 all iterated on a design where
+  // this crawl was DELIBERATELY made to overlap the fading JUNE/HONG
+  // title on screen at the same time. The user has now reversed that
+  // call outright: title and body must be two CLEARLY SEPARATE beats
+  // with a clean starfield-only gap between them, and the body's own
+  // exit must still be a genuine continued upward scroll off the top
+  // of the screen (not an opacity fade), per Round 13.
+  //
+  // CRAWL_GAP: a deliberate no-text buffer right after TITLE_OUT_END
+  // — nothing (title or crawl) is on screen here, just the starfield,
+  // so the handoff reads as two distinct scenes, not a cross-dissolve.
+  const CRAWL_GAP = 0.05;
+  const CRAWL_IN_START = TITLE_OUT_END + CRAWL_GAP;
+  // Entry leg: fades in while rising from off-screen-bottom
+  // (CRAWL_Y_START) up to a genuinely on-screen, comfortably legible
+  // resting spot (CRAWL_Y_VISIBLE) — this is now the crawl's OWN
+  // dedicated entrance, no longer timed against the title at all.
+  const CRAWL_IN_END = CRAWL_IN_START + 0.05;
   const CRAWL_RUN_START = CRAWL_IN_START;
-  // ROUND 13 FIX ("이건 금방 페이드아웃되는 게 아니라, 위쪽까지
-  // 스크롤되다가 사라져야지" -- with the old CRAWL_RUN_END=0.995, the
-  // upward recede motion was spread so thin across the remaining pin
-  // distance that by the time OUTRO_START/END (the opacity fade
-  // window) fired, the text had barely moved off its resting spot --
-  // still sitting comfortably mid-screen -- so it read as an abrupt
-  // FADE rather than a continuous scroll-away. Fixed by ending the
-  // recede leg (see CRAWL_Y_END below) BEFORE the opacity fade starts,
-  // so the two are now sequential, not simultaneous: the text first
-  // finishes physically scrolling all the way up past the top edge,
-  // and ONLY THEN does the (now mostly redundant/cleanup) opacity
-  // fade run — matching a real Star Wars crawl's "recede into the
-  // distance, then it's just gone" read. Aligned to TITLE_OUT_END so
-  // the crawl's own recede and the title's fade both resolve at the
-  // same scroll point, then OUTRO_START picks up from there.
-  const CRAWL_RUN_END = TITLE_OUT_END;
-  const CRAWL_Y_START = 78; // vh, bottom of viewport (fully hidden)
-  // ROUND 7 FOLLOW-UP FIX: opacity reaching 1 by CRAWL_IN_END is not
-  // enough on its own -- the translateY sweep from CRAWL_Y_START(78vh)
-  // to CRAWL_Y_END(-60vh) used to run linearly across the ENTIRE
-  // remaining span (CRAWL_RUN_START -> CRAWL_RUN_END, i.e. all the way
-  // to 0.995), so at CRAWL_IN_END the text was still barely off its
-  // 78vh starting point -- fully opaque but still sitting off-screen
-  // below the viewport, so no visual overlap actually occurred despite
-  // the opacity math being correct. Fixed by splitting the Y motion
-  // into two legs: an ENTRY leg (CRAWL_RUN_START -> CRAWL_ENTRY_END,
-  // the same window as the opacity fade-in) that quickly carries the
-  // text from 78vh up to CRAWL_Y_VISIBLE -- a position that is
-  // genuinely on-screen and overlaps the lower half of the JUNE/HONG
-  // title -- followed by the original slow RECEDE leg (CRAWL_ENTRY_END
-  // -> CRAWL_RUN_END) continuing on from CRAWL_Y_VISIBLE up to
-  // CRAWL_Y_END. This guarantees "fully opaque" and "actually on
-  // screen, overlapping the title" happen at the same moment.
   const CRAWL_ENTRY_END = CRAWL_IN_END;
-  const CRAWL_Y_VISIBLE = 26; // vh -- on-screen, overlapping lower title
-  // ROUND 13 FIX ("이건 금방 페이드아웃되는 게 아니라, 위쪽까지
-  // 스크롤되다가 사라져야지" -- the crawl text was disappearing via a
-  // quick OPACITY fade while still sitting comfortably mid-screen,
-  // instead of visibly continuing to scroll/recede all the way up
-  // past the top edge like a real Star Wars crawl). -60vh only moved
-  // the text a little above its resting spot -- nowhere near
-  // scrolled off the top of the 100vh viewport -- so the OUTRO
-  // opacity fade (see below) was doing all the disappearing work,
-  // which read as an abrupt fade rather than a continuous upward
-  // scroll-away. Pushed much further negative so the translateY
-  // sweep itself carries the text fully above the visible viewport
-  // (#about-crawl-viewport clips via overflow:hidden) well before
-  // opacity ever starts to drop.
+  const CRAWL_Y_START = 78; // vh, bottom of viewport (fully hidden)
+  const CRAWL_Y_VISIBLE = 24; // vh -- on-screen, comfortably legible resting spot
+  // Recede leg: continues rising from CRAWL_Y_VISIBLE, THROUGH the
+  // top edge of the viewport and on to CRAWL_Y_END (well past fully
+  // clipped by #about-crawl-viewport's overflow:hidden) — this is the
+  // literal "스크롤업되서 사라지는" motion the user asked for, and it
+  // must fully finish BEFORE the opacity cleanup below ever starts
+  // (see OUTRO_START = CRAWL_RUN_END), so disappearance always reads
+  // as "scrolled away", never as "faded out in place".
+  const CRAWL_RUN_END = 0.90;
   const CRAWL_Y_END = -150; // vh, fully scrolled off past the top edge
   // Shallow, legible tilt matching the pichiworld reference screenshot
   // (was 55deg — far too steep to read, per user feedback). Kept as a
@@ -325,14 +288,23 @@
   // ROUND 13 ADJUSTMENT ("위쪽까지 스크롤되다가 사라져야지"): the
   // crawl's own upward recede (CRAWL_Y_END=-150vh) now finishes
   // physically carrying the text off past the top edge at
-  // CRAWL_RUN_END (aliased to TITLE_OUT_END=0.76) -- BEFORE this
-  // opacity fade ever starts, so OUTRO_START is pinned to start no
-  // earlier than that (0.76), with OUTRO_END given a small amount of
-  // room after it (0.80) purely as an already-off-screen opacity
-  // cleanup, not the thing doing the visible "disappearing" anymore.
-  // Still comfortably below the ~0.848 measured peek-in floor.
+  // CRAWL_RUN_END -- BEFORE this opacity fade ever starts, so
+  // OUTRO_START is pinned to start no earlier than that, with
+  // OUTRO_END given a small amount of room after it purely as an
+  // already-off-screen opacity cleanup, not the thing doing the
+  // visible "disappearing" anymore.
+  //
+  // ROUND 14 NOTE: CRAWL_RUN_END moved out to 0.90 (see above, to make
+  // room for the now-separated, no-longer-overlapping title/gap/crawl
+  // beats within the same total hero pin length) which pushes this
+  // window later too. HERO_PIN_DISTANCE below was widened accordingly
+  // (6.2 -> 7.4 * viewport height) so the real #section-about-profile
+  // content's own measured peek-in point is pushed out in lockstep,
+  // preserving the same comfortable safety margin verified in Round
+  // 12 (peek-in stayed at ~0.848 of the OLD, shorter pin; widening the
+  // pin distance itself moves that peek-in fraction later too).
   const OUTRO_START = CRAWL_RUN_END;
-  const OUTRO_END = 0.80;
+  const OUTRO_END = 0.94;
 
   const easeInOut = gsap.parseEase('power2.inOut');
 
@@ -464,10 +436,12 @@
     }
 
     // ---- opening crawl (3D perspective, continuous recede) ----
-    // Round 7 follow-up: Y motion now runs in two legs (see the long
-    // comment on CRAWL_ENTRY_END above) so the text is genuinely
-    // ON SCREEN — not just opaque — by the time it needs to overlap
-    // the fading-out JUNE/HONG title.
+    // Round 14: Y motion runs in two legs — an ENTRY leg (rise from
+    // off-screen-bottom to the on-screen resting spot, matched to the
+    // opacity fade-in) followed by a RECEDE leg (continue rising all
+    // the way past the top edge, well after the title has already
+    // fully cleared with its own gap — see CRAWL_GAP/CRAWL_IN_START
+    // above; the two no longer share any timing relationship).
     if (crawlViewport && crawlText) {
       const co = windowedOpacity(p, CRAWL_IN_START, CRAWL_IN_END, OUTRO_START, OUTRO_END);
       crawlViewport.style.opacity = co;
@@ -500,7 +474,13 @@
   // to an explicit PIXEL distance instead, computed once from the viewport
   // height at load time so the animation's own pacing/feel is unchanged
   // from before (620% of a 100vh box = 6.2 * innerHeight).
-  const HERO_PIN_DISTANCE = Math.round(window.innerHeight * 6.2);
+  // ROUND 14: widened from 6.2 -> 7.4 to give the now fully-separated
+  // title / gap / crawl-entry / crawl-hold-and-recede beats enough
+  // scroll runway that none of them feel rushed, while keeping the
+  // same safety margin below the real #section-about-profile peek-in
+  // point that Round 12 established (re-verified via Playwright below
+  // after this change).
+  const HERO_PIN_DISTANCE = Math.round(window.innerHeight * 7.4);
   ScrollTrigger.create({
     id: 'about-hero-pin',
     trigger: heroSection,
