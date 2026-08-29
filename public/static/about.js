@@ -432,11 +432,22 @@
 
   renderAboutHero(0);
 
+  // ROUND 9 FIX ("둘 사이에 갭을 없애줘" — remove the scroll-distance gap
+  // between the hero's closing crawl fading out and Chapter 2's title
+  // appearing). `end` used to be a PERCENTAGE ('+=620%'), which GSAP
+  // resolves against the trigger element's (#section-about-hero) own CSS
+  // box height. That box has now been shrunk to ~0 (see #section-about-hero
+  // in style.css — it only ever existed to host this pin, its real content
+  // is all `position:fixed`), so the percentage basis is gone too. Switched
+  // to an explicit PIXEL distance instead, computed once from the viewport
+  // height at load time so the animation's own pacing/feel is unchanged
+  // from before (620% of a 100vh box = 6.2 * innerHeight).
+  const HERO_PIN_DISTANCE = Math.round(window.innerHeight * 6.2);
   ScrollTrigger.create({
     id: 'about-hero-pin',
     trigger: heroSection,
     start: 'top top',
-    end: '+=620%',
+    end: '+=' + HERO_PIN_DISTANCE,
     pin: true,
     scrub: 0.5,
     onUpdate: (self) => renderAboutHero(self.progress),
@@ -462,24 +473,35 @@
     const teaserText = document.getElementById(cfg.teaserTextId);
     if (!pinSection || !titleEl) return;
 
-    // Title: fades/rises in, holds, then shrinks-while-fading away —
-    // identical shape to the hero JUNE/HONG title's own outScale
-    // treatment (see TITLE_OUT_* / outScale above).
-    const TITLE_IN_START = 0.08;
-    const TITLE_IN_END = 0.26;
-    const TITLE_OUT_START = 0.48;
-    const TITLE_OUT_END = 0.80;
+    // ROUND 9 FIX ("제목과 본문이 겹쳐 보여" — the title and teaser body
+    // text visibly collide in every chapter). Previously the teaser was
+    // timed to reach full opacity WHILE the title was still fading out
+    // (a deliberate "genuine overlap" trick borrowed from the hero's own
+    // JUNE/HONG-title + closing-crawl sequence). That trick only reads
+    // cleanly on the hero because the crawl sits in a DIFFERENT screen
+    // position (bottom-anchored + 3D tilt via .about-crawl-viewport's
+    // align-items:flex-end) than the dead-center title. The chapter
+    // title and teaser are BOTH dead-center (.chapter-title-text /
+    // .chapter-teaser-viewport both use align-items:center) with no such
+    // offset, so the same overlap trick just stacks two blocks of text on
+    // top of each other. Fixed by making the two phases fully SEQUENTIAL
+    // instead: the title completely fades out (opacity -> 0) before the
+    // teaser begins fading in, matching the clean "title, then body" flow
+    // the user pointed to (their reference images of the hero's own
+    // JUNE/HONG title card followed by the clean bio-copy screen).
+    const TITLE_IN_START = 0.04;
+    const TITLE_IN_END = 0.20;
+    const TITLE_OUT_START = 0.38;
+    const TITLE_OUT_END = 0.56;
 
-    // Teaser: starts rising in a moment BEFORE the title begins its
-    // exit and is already at full opacity by TITLE_OUT_START — same
-    // "genuine overlap, not a crossfade" fix as CRAWL_IN_START/END
-    // above — then holds through the rest of the pin and only clears
-    // right at the very end, just before release.
-    const TEASER_IN_START = TITLE_OUT_START - 0.05;
-    const TEASER_IN_END = TITLE_OUT_START;
+    // Teaser now only starts fading in once the title has fully cleared
+    // (TEASER_IN_START === TITLE_OUT_END), so there is no shared on-screen
+    // instant where both are above 0 opacity.
+    const TEASER_IN_START = TITLE_OUT_END;
+    const TEASER_IN_END = TEASER_IN_START + 0.08;
     const TEASER_OUT_START = 0.93;
     const TEASER_OUT_END = 1.0;
-    const TEASER_Y_START = 46; // vh, rises up to 0 (on-screen, overlapping title)
+    const TEASER_Y_START = 26; // vh, rises up to 0 (on-screen, below where the title sat)
 
     function render(p) {
       p = Math.max(0, Math.min(1, p));
@@ -503,11 +525,18 @@
 
     render(0);
 
+    // ROUND 9 FIX: same pixel-distance fix as the hero pin above — this
+    // stub's own CSS box height has been shrunk to ~0 (see .chapter-pin-panel
+    // in style.css), so '+=180%' (which resolved against that box's height)
+    // is replaced with an equivalent fixed pixel distance (180% of 100vh)
+    // computed from the actual viewport height, keeping this chapter's own
+    // animation pacing identical to before.
+    const CHAPTER_PIN_DISTANCE = Math.round(window.innerHeight * 1.8);
     ScrollTrigger.create({
       id: cfg.pinSectionId + '-pin',
       trigger: pinSection,
       start: 'top top',
-      end: '+=180%',
+      end: '+=' + CHAPTER_PIN_DISTANCE,
       pin: true,
       scrub: 0.5,
       onUpdate: (self) => render(self.progress),

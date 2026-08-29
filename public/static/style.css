@@ -2335,10 +2335,21 @@ html, body {
   text-shadow: 0 0 14px rgba(238,241,255,0.35);
 }
 
-/* ---------------- Pinned hero section (drives the whole sequence) ---------------- */
+/* ---------------- Pinned hero section (drives the whole sequence) ----------------
+   ROUND 9 FIX (part of "둘 사이에 갭을 없애줘"): this section only exists to host
+   the pin trigger — its content (.scroll-cue) is `position:fixed` and does not
+   consume layout space. But GSAP's pin mechanism reserves the trigger's OWN
+   natural CSS box height (previously 100vh/900px, inherited from .panel) as
+   extra dead-scroll space appended AFTER the pin's animated distance — even
+   though nothing is visibly happening there (everything has already reached
+   its fully-faded-out OUTRO state). Shrinking this box's own height to just
+   its padding removes that trailing dead zone. The animated scroll distance
+   itself is unchanged — about.js now computes the hero pin's `end` as a fixed
+   pixel value (620% of the viewport height) instead of a percentage of this
+   box's own height, so shrinking this box no longer also shrinks the pin's
+   own animation length. */
 #section-about-hero {
-  min-height: 100vh;
-  min-height: calc(var(--vh, 1vh) * 100);
+  min-height: 0;
 }
 /* #about-scroll-cue intentionally has NO overrides here — per spec
    ("홈 페이지의 스크롤과 디자인과 위치를 맞춰줘") it reuses the exact
@@ -2347,9 +2358,21 @@ html, body {
    class directly rather than maintaining a near-duplicate #about-*
    ruleset that could drift out of sync. See about.html markup. */
 
-/* ---------------- Resting profile section (photo + bio, always legible) ---------------- */
+/* ---------------- Resting profile section (photo + bio, always legible) ----------------
+   ROUND 9 FIX ("둘 사이에 갭을 없애줘" — remove the gap between the hero's
+   crawl fading out and Chapter 2's title appearing): this panel repeats the
+   SAME bio copy the hero's own closing crawl just showed, in a plain static
+   layout. Because it lives on the shared `.panel` class it used to force a
+   full `min-height:100vh` scroll span (plus a large 440px-wide photo makes
+   its natural content height comparable anyway) between the hero pin's
+   release and Chapter 2's own pin start — i.e. a long stretch of scroll
+   where nothing NEW happens, which reads exactly like the "gap" the user
+   flagged. Overridden here to size to its own (now smaller) content instead
+   of a forced full screen, so the transition into Chapter 2 arrives far
+   sooner. Content itself is unchanged — still fully legible/accessible. */
 .about-profile-panel {
-  padding: 100px 6vw 120px;
+  min-height: 0;
+  padding: 56px 6vw 64px;
 }
 .about-profile-wrap {
   display: flex;
@@ -2362,7 +2385,7 @@ html, body {
 }
 .about-profile-media {
   flex: 0 0 auto;
-  width: min(440px, 88vw);
+  width: min(300px, 74vw);
 }
 .about-profile-media img {
   width: 100%;
@@ -2486,10 +2509,16 @@ html, body {
   .chapter-title-main { -webkit-text-stroke: 1.4px var(--about-violet); }
 }
 
-/* ---------------- Pinned title-beat panels (empty stubs driving the pin) ---------------- */
+/* ---------------- Pinned title-beat panels (empty stubs driving the pin) ----------------
+   ROUND 9 FIX: same trailing-dead-scroll issue as #section-about-hero above —
+   these stubs have no in-flow content (title/teaser overlays are all
+   `position:fixed`), so forcing them to a full 100vh box only added reserved
+   scroll space AFTER each chapter's pin animation already finished. Shrunk to
+   just their padding; setupChapterPin() in about.js now computes each pin's
+   `end` as a fixed pixel value instead of a percentage of this box's height,
+   so the animation's own scroll distance is unaffected by this change. */
 .chapter-pin-panel {
-  min-height: 100vh;
-  min-height: calc(var(--vh, 1vh) * 100);
+  min-height: 0;
 }
 
 /* ---------------- Resting detail panels (always-legible content) ---------------- */
