@@ -260,15 +260,31 @@
   const CRAWL_ENTRY_END = CRAWL_IN_END;
   const CRAWL_Y_START = 78; // vh, bottom of viewport (fully hidden)
   const CRAWL_Y_VISIBLE = 24; // vh -- on-screen, comfortably legible resting spot
-  // Recede leg: continues rising from CRAWL_Y_VISIBLE, THROUGH the
-  // top edge of the viewport and on to CRAWL_Y_END (well past fully
-  // clipped by #about-crawl-viewport's overflow:hidden) — this is the
-  // literal "스크롤업되서 사라지는" motion the user asked for, and it
-  // must fully finish BEFORE the opacity cleanup below ever starts
-  // (see OUTRO_START = CRAWL_RUN_END), so disappearance always reads
-  // as "scrolled away", never as "faded out in place".
-  const CRAWL_RUN_END = 0.90;
-  const CRAWL_Y_END = -150; // vh, fully scrolled off past the top edge
+  // Recede leg — ROUND 15 v4 FIX ("너무 위까지 올라가지 말고 올라가다가
+  // 페이드아웃을 걸어서 현재같이 어색한 효과가 생기지 않게끔해줘": don't
+  // let it climb so high; fade it out WHILE it's still rising instead).
+  //
+  // Previous behavior traveled a huge CRAWL_Y_END=-150vh while staying
+  // fully opaque the ENTIRE recede (opacity only started dropping at
+  // OUTRO_START=CRAWL_RUN_END=0.90, by which point the text had already
+  // been fully opaque and sliding straight through the viewport's top
+  // edge for a long stretch) — the screenshot confirmed this reads as
+  // an ugly hard "slice" of fully legible text getting chopped off by
+  // the frame, not a graceful disappearance.
+  //
+  // Fixed by (a) shrinking the travel distance drastically (-150 -> -20,
+  // "너무 위까지 올라가지 말고") so it barely climbs past the resting
+  // spot before settling, and (b) starting the opacity fade (OUTRO_START,
+  // now a dedicated CRAWL_FADE_START constant instead of being pinned to
+  // CRAWL_RUN_END) well BEFORE the rise finishes, at 0.76, so the text is
+  // already visibly dissolving throughout the back half of this gentle
+  // climb ("올라가다가 페이드아웃") rather than staying opaque until it's
+  // already off-screen. CRAWL_RUN_END now matches OUTRO_END (both = 1,
+  // the pin's own end) so the rise and the fade finish together, right
+  // as the pin releases — preserving the Round 15 v3 no-dead-tail fix.
+  const CRAWL_FADE_START = 0.76;
+  const CRAWL_RUN_END = 1;
+  const CRAWL_Y_END = -20; // vh, a modest climb past the resting spot, not a long flight off-screen
   // Shallow, legible tilt matching the pichiworld reference screenshot
   // (was 55deg — far too steep to read, per user feedback). Kept as a
   // named constant here so the JS-driven inline transform and the CSS
@@ -330,7 +346,15 @@
   // end of the pin (OUTRO_END = 1) instead of finishing early and
   // leaving a silent tail -- same fade, just no longer front-loaded
   // with unused scroll room after it.
-  const OUTRO_START = CRAWL_RUN_END;
+  //
+  // ROUND 15 v4 FIX ("올라가다가 페이드아웃을 걸어서"): OUTRO_START used
+  // to be pinned to CRAWL_RUN_END (i.e. the fade only began once the
+  // rise had ALREADY finished), which is exactly what produced the
+  // "opaque text sliced by the frame edge" bug -- the fade and the rise
+  // never overlapped. Now driven by the dedicated CRAWL_FADE_START
+  // (0.76) defined above instead, so the fade runs DURING the second
+  // half of the (now much shorter) rise, not after it.
+  const OUTRO_START = CRAWL_FADE_START;
   const OUTRO_END = 1;
 
   const easeInOut = gsap.parseEase('power2.inOut');
