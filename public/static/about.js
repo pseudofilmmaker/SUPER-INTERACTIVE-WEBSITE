@@ -596,12 +596,31 @@
     // 커" -- the gap between the crawl exiting and this chapter title card
     // reading as "fully there" felt too long): IN_END used to be 0.30,
     // meaning the card didn't reach full opacity until 30% through its own
-    // 1.5x-viewport-height pin (~324px of dim/rising card before it read as
-    // fully visible). Shortened to 0.12 so the rise+fade-in resolves much
-    // faster (~130px) once this pin starts, without changing the HOLD or
-    // OUT phases at all.
-    const IN_END = 0.12;
-    const HOLD_END = 0.68;
+    // pin. Shortened so the rise+fade-in resolves much faster once this
+    // pin starts, without changing the HOLD or OUT phases at all.
+    //
+    // ROUND 16 FIX ("이렇게 겹치는게 아니구, 뒤에 셀렉티드 워크는 본문이
+    // 올라오기 전에 축소되면서 페이드인돼야지" -- the glowing title card
+    // must finish shrinking+fading away BEFORE the resting detail panel's
+    // body content rises into view; the two must never be visible at the
+    // same time). ROOT CAUSE: with `pin:true`, GSAP reserves exactly
+    // PIN_DISTANCE of extra scroll room after hostEl, which means the
+    // panel that follows in the DOM (.chapter-detail-panel) inevitably
+    // starts peeking up from the BOTTOM edge of the viewport once the
+    // pin's own progress crosses `1 - viewportHeight/PIN_DISTANCE` --
+    // there is no way to keep it fully hidden all the way to p=1, since
+    // that would require an infinite PIN_DISTANCE. The old PIN_DISTANCE
+    // (1.5x viewport height) crossed that threshold at p≈0.33, while the
+    // card's HOLD phase ran all the way to p=0.68 at full opacity --
+    // guaranteeing a long window where both were fully visible at once.
+    // FIX: widen PIN_DISTANCE to 2.4x viewport height (pushing that
+    // peek-up threshold out to p≈0.58) and pull FADE_END in so the card
+    // finishes fading to opacity 0 by p=0.46 -- a full 0.12 (≈207px)
+    // safety margin before the panel can possibly start entering, so the
+    // two beats never overlap even with easing/scrub smoothing.
+    const IN_END = 0.07;
+    const HOLD_END = 0.34;
+    const FADE_END = 0.46;
     const RISE_VH = 46;
 
     function render(p) {
@@ -616,11 +635,15 @@
         opacity = 1;
         y = 0;
         scale = 1;
-      } else {
-        const t = easeInOut((p - HOLD_END) / (1 - HOLD_END));
+      } else if (p < FADE_END) {
+        const t = easeInOut((p - HOLD_END) / (FADE_END - HOLD_END));
         opacity = 1 - t;
         y = 0;
         scale = 1 - 0.42 * t;
+      } else {
+        opacity = 0;
+        y = 0;
+        scale = 0.58;
       }
       cardEl.style.opacity = opacity;
       cardEl.style.transform = `translateY(${y}vh) scale(${scale})`;
@@ -628,7 +651,7 @@
 
     render(0);
 
-    const PIN_DISTANCE = Math.round(window.innerHeight * 1.5);
+    const PIN_DISTANCE = Math.round(window.innerHeight * 2.4);
     ScrollTrigger.create({
       id: cfg.hostId + '-pin',
       trigger: hostEl,
@@ -647,15 +670,18 @@
   setupChapterTitleCard({ hostId: 'ch-career-title-pin', cardId: 'ch-career-title-card' });
 
   // ROUND 12 ("년도별 작업 내역은... 3디로 공간을 활용해 화면아래서부터
-  // 올라와서 화면위로 계속 올라가야지"): filmography list items now use
-  // the same 3D-perspective Star-Wars-crawl treatment as the hero's own
-  // crawl text (CRAWL_TILT_DEG-tilted, receding) instead of a flat
-  // fade-up. Each .filmography-item-inner tilts back + rises from below
-  // as its own <li> scrolls into view, then continues tilting further
-  // AWAY (receding, as if scrolling up into the starfield) as it exits
-  // through the top of the viewport -- driven by each item's own
-  // scroll-linked progress across a generous [bottom-of-viewport,
-  // top-of-viewport] window, not a one-shot enter animation.
+  // 올라와서 화면위로 계속 올라가야지"): filmography list items used to
+  // use the same 3D-perspective Star-Wars-crawl treatment as the hero's
+  // own crawl text (CRAWL_TILT_DEG-tilted rotateX, receding).
+  //
+  // ROUND 16 FIX ("두번째 이미지의 코딩을 확인해서, 이런식으로 글자의
+  // 각도가 수정돼야해" -- reference image 2 is the hero's flat, non-
+  // tilted intro paragraph; the filmography list text should read the
+  // SAME flat way, with no 3D rotateX angle at all): the rotateX tilt is
+  // removed entirely. Each .filmography-item-inner now just fades + rises
+  // a flat translateY as its own <li> scrolls into view (matching the
+  // hero crawl text's own flat, front-facing look), instead of tilting
+  // back/forward in 3D space.
   function setupFilmographyCrawl() {
     const list = document.getElementById('filmography-list');
     if (!list) return;
@@ -667,27 +693,24 @@
 
       function render(p) {
         p = Math.max(0, Math.min(1, p));
-        // 0 -> 0.5: rising in from below, tilting flat, fading in.
-        // 0.5 -> 1: sitting near-flat while it crosses the viewport,
-        // then tilting/receding away again as it nears the top.
-        let opacity, tilt, y;
+        // 0 -> 0.18: flat fade + rise-in from below.
+        // 0.18 -> 0.82: sitting fully visible while it crosses the
+        // viewport. 0.82 -> 1: flat fade + rise-out near the top.
+        let opacity, y;
         if (p < 0.18) {
           const t = easeInOut(p / 0.18);
           opacity = t;
-          tilt = CRAWL_TILT_DEG * (1 - t);
           y = 30 * (1 - t);
         } else if (p < 0.82) {
           opacity = 1;
-          tilt = 0;
           y = 0;
         } else {
           const t = easeInOut((p - 0.82) / 0.18);
           opacity = 1 - t;
-          tilt = -CRAWL_TILT_DEG * t;
           y = -18 * t;
         }
         inner.style.opacity = opacity;
-        inner.style.transform = `perspective(1000px) rotateX(${tilt}deg) translateY(${y}px)`;
+        inner.style.transform = `translateY(${y}px)`;
       }
 
       gsap.set(inner, { opacity: 0 });
