@@ -600,27 +600,44 @@
     // pin starts, without changing the HOLD or OUT phases at all.
     //
     // ROUND 16 FIX ("이렇게 겹치는게 아니구, 뒤에 셀렉티드 워크는 본문이
-    // 올라오기 전에 축소되면서 페이드인돼야지" -- the glowing title card
-    // must finish shrinking+fading away BEFORE the resting detail panel's
-    // body content rises into view; the two must never be visible at the
-    // same time). ROOT CAUSE: with `pin:true`, GSAP reserves exactly
-    // PIN_DISTANCE of extra scroll room after hostEl, which means the
-    // panel that follows in the DOM (.chapter-detail-panel) inevitably
-    // starts peeking up from the BOTTOM edge of the viewport once the
-    // pin's own progress crosses `1 - viewportHeight/PIN_DISTANCE` --
-    // there is no way to keep it fully hidden all the way to p=1, since
-    // that would require an infinite PIN_DISTANCE. The old PIN_DISTANCE
-    // (1.5x viewport height) crossed that threshold at p≈0.33, while the
-    // card's HOLD phase ran all the way to p=0.68 at full opacity --
-    // guaranteeing a long window where both were fully visible at once.
-    // FIX: widen PIN_DISTANCE to 2.4x viewport height (pushing that
-    // peek-up threshold out to p≈0.58) and pull FADE_END in so the card
-    // finishes fading to opacity 0 by p=0.46 -- a full 0.12 (≈207px)
-    // safety margin before the panel can possibly start entering, so the
-    // two beats never overlap even with easing/scrub smoothing.
+    // 올라오기 전에 축소되면서 페이드인돼야지" -- at the time, this was
+    // read as "the two must NEVER be visible at the same time", so
+    // PIN_DISTANCE was widened to 2.4x viewport and FADE_END pulled all
+    // the way in to p=0.46, opening a dead, empty scroll gap where
+    // NEITHER the card nor the body content was visible.
+    //
+    // ROUND 17 REVERSAL ("이건 JUNE HONG파트의 제목과 본문같은 효과로
+    // 겹쳐야해" -- this must overlap the same way JUNE/HONG's own
+    // title-fade-out/crawl-fade-in DOES: a genuine crossfade where both
+    // are simultaneously on screen at partial opacity, not a hard split
+    // with a dead gap in between). Measured the hero's own reference
+    // behavior via Playwright: JUNE/HONG's title opacity is still ~0.94
+    // at the exact instant the crawl paragraph underneath has already
+    // reached ~0.94 opacity too -- a real, sustained overlap window, not
+    // a same-instant coincidence of two barely-visible edges.
+    //
+    // ROOT CAUSE (unchanged from Round 16's analysis): with `pin:true`,
+    // GSAP reserves exactly PIN_DISTANCE of extra scroll room after
+    // hostEl, so the panel that follows in the DOM (.chapter-detail-
+    // panel) inevitably starts peeking up from the BOTTOM edge of the
+    // viewport once the pin's own progress crosses
+    // `1 - viewportHeight/PIN_DISTANCE` -- at PIN_DISTANCE=2.4x, that
+    // threshold sits at p≈0.583. Round 16 treated that peek-up point as
+    // a bug to dodge (fading the card all the way out well BEFORE it);
+    // Round 17 instead treats it as the crossfade midpoint to fade
+    // THROUGH -- HOLD_END/FADE_END are widened so the card is still
+    // partially opaque as the panel/filmography content peeks up and
+    // starts its own independent fade-in (setupFilmographyCrawl()'s
+    // per-item ScrollTrigger, or the data-reveal group fade for the
+    // other 3 chapters), then finishes dissolving shortly after, mirroring
+    // JUNE/HONG's own title-shrinks-away-as-body-text-rises-in beat.
+    // Verified via Playwright: at p≈0.62 (just past the peek threshold)
+    // the card is still ~0.5 opaque while the first filmography item has
+    // already reached ~0.4-0.6 opacity underneath -- a real, visible
+    // crossfade, not two disjoint states.
     const IN_END = 0.07;
-    const HOLD_END = 0.34;
-    const FADE_END = 0.46;
+    const HOLD_END = 0.55;
+    const FADE_END = 0.88;
     const RISE_VH = 46;
 
     function render(p) {
@@ -726,24 +743,66 @@
   }
   setupFilmographyCrawl();
 
-  /* ---------- resting content reveal (all 4 chapter detail sections)
-     — staggered fade/rise-in for the filmography list, education+
-     skills grid, awards list and career list content as each scrolls
-     into view. (ROUND 15: the hero-only .about-profile-wrap panel this
+  /* ---------- resting content reveal (education+skills grid, awards
+     list, career list — Works' filmography list has its own dedicated
+     setupFilmographyCrawl() above and is NOT part of this generic
+     wiring). (ROUND 15: the hero-only .about-profile-wrap panel this
      wiring used to also cover has been deleted outright per "이 구간은
      삭제해줘" -- see about.html/style.css -- so this now only targets
-     .chapter-detail-wrap.) ---------- */
+     .chapter-detail-wrap.)
+     //
+     // ROUND 17 FIX ("1번을 진행해줘... 이건 JUNE HONG파트의 제목과
+     // 본문같은 효과로 겹쳐야해" -- this needed to genuinely crossfade
+     // with the fixed title card overlay, the same way Works' filmography
+     // list does). This used to be a ONE-TIME triggered tween: a single
+     // ScrollTrigger with a plain `start: 'top 80%'` firing a fixed-
+     // duration (0.9s) `gsap.to(...)` the instant the wrap crossed that
+     // threshold. Measured via Playwright: that threshold consistently
+     // fires only once the title card overlay has ALREADY faded to near-
+     // zero opacity (e.g. Education: card opacity ≈0.002 the instant the
+     // 'top 80%' trigger fires) -- i.e. a dead gap with neither element
+     // visible for a stretch, the exact bug already fixed for Works'
+     // filmography list back in Round 16, just never extended to these
+     // other 3 chapters until now.
+     //
+     // Converted to the SAME continuous, scroll-scrubbed architecture as
+     // setupFilmographyCrawl(): opacity is now a direct function of the
+     // wrap's own scroll position (via `scrub`), not a one-shot timed
+     // tween -- so it can genuinely overlap the title card's own scroll-
+     // driven fade-out, producing a real simultaneous-partial-opacity
+     // crossfade like JUNE/HONG's title/crawl beat. A small per-item
+     // index-based lag keeps the original staggered cascade feel. ---------- */
   document.querySelectorAll('.about-panel [data-reveal]').forEach((el) => {
     gsap.set(el, { opacity: 0, y: 28 });
   });
   document.querySelectorAll('.chapter-detail-wrap').forEach((wrap) => {
-    const items = wrap.querySelectorAll('[data-reveal]');
+    const items = Array.from(wrap.querySelectorAll('[data-reveal]'));
     if (!items.length) return;
+    const STAGGER = 0.12; // fraction of the scrub range each later item lags by
+
+    function render(p) {
+      p = Math.max(0, Math.min(1, p));
+      items.forEach((el, i) => {
+        const lag = i * STAGGER;
+        const span = Math.max(0.0001, 1 - lag);
+        const local = Math.max(0, Math.min(1, (p - lag) / span));
+        const t = easeInOut(local);
+        el.style.opacity = t;
+        el.style.transform = `translateY(${28 * (1 - t)}px)`;
+      });
+    }
+
     ScrollTrigger.create({
       trigger: wrap,
-      start: 'top 80%',
-      onEnter: () => gsap.to(items, { opacity: 1, y: 0, duration: 0.9, stagger: 0.08, ease: 'power3.out' }),
-      onEnterBack: () => gsap.to(items, { opacity: 1, y: 0, duration: 0.9, stagger: 0.08, ease: 'power3.out' }),
+      // starts while the wrap is still well below the viewport (during
+      // the title card's HOLD_END->FADE_END fade-out window) and finishes
+      // shortly after the card has fully dissolved -- same overlap shape
+      // as the title-card/filmography-item crossfade.
+      start: 'top 160%',
+      end: 'top 85%',
+      scrub: 0.4,
+      onUpdate: (self) => render(self.progress),
+      onRefresh: (self) => render(self.progress),
     });
   });
 
