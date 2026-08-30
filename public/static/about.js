@@ -681,6 +681,25 @@
     });
   }
 
+  // ROUND 21 NOTE: these setupChapterTitleCard()/setupFilmographyCrawl()/
+  // setupGroupCrawl() calls (this block, plus the two further down where
+  // each function happens to be DEFINED) must be invoked in the SAME
+  // order the sections actually appear in the DOM. GSAP computes each
+  // `pin:true` ScrollTrigger's scroll-position window (and inserts its
+  // pin-spacer into the DOM's flow) at CREATION time, using whatever
+  // extra scroll room earlier-created pins have already reserved -- it
+  // is NOT re-derived from final DOM order afterwards. Discovered via
+  // Playwright: with setupGroupCrawl('edu-skills-crawl', ...) called
+  // AFTER setupChapterTitleCard() had already run for every chapter
+  // title (including ch-awards-title-pin, which sits AFTER edu-skills-
+  // crawl in the DOM), ch-awards-title-pin's cached pin window was short
+  // by exactly edu-skills-crawl's own pinned distance (2840px) -- so it
+  // fired ~2840px too EARLY and visibly overlapped/bled through the
+  // still-pinned, still-holding skills grid underneath it. Calling
+  // setupGroupCrawl() for each block immediately before the
+  // setupChapterTitleCard() call for the NEXT chapter's title (mirroring
+  // their real top-to-bottom DOM sequence) fixes this with no change to
+  // either function's own internals.
   setupChapterTitleCard({ hostId: 'ch-works-title-pin', cardId: 'ch-works-title-card' });
   setupChapterTitleCard({ hostId: 'ch-edu-title-pin', cardId: 'ch-edu-title-card' });
   // Round 19 ("두번째 이미지가 아래서 스크롤되다가 중앙에 멈춰, 사라질때는
@@ -693,8 +712,11 @@
   // starts) once the user has scrolled past this pin's full release
   // point, i.e. after the logo has completely faded away.
   setupChapterTitleCard({ hostId: 'ch-edu-logo-pin', cardId: 'ch-edu-logo-card' });
+  setupGroupCrawl('edu-skills-crawl', '.edu-skills-crawl-inner');
   setupChapterTitleCard({ hostId: 'ch-awards-title-pin', cardId: 'ch-awards-title-card' });
+  setupGroupCrawl('awards-crawl', '.awards-crawl-inner');
   setupChapterTitleCard({ hostId: 'ch-career-title-pin', cardId: 'ch-career-title-card' });
+  setupGroupCrawl('career-crawl', '.career-crawl-inner');
 
   // ROUND 12 ("년도별 작업 내역은... 3디로 공간을 활용해 화면아래서부터
   // 올라와서 화면위로 계속 올라가야지"): filmography list items used to
@@ -793,6 +815,24 @@
   // scroll distance with viewport height, which would make the hold
   // feel shorter on smaller screens. HOLD_PX=2200 is tuned to
   // approximate "3초 정도" at a typical continuous scroll speed.
+  //
+  // ROUND 21 BUGFIX (found while verifying the above via Playwright,
+  // BEFORE reporting back): the very first version of this function had
+  // NO `pin`, so it just mapped scroll PROGRESS across a large virtual
+  // window (start:'top bottom' -> end:'+=2840px') onto opacity/transform,
+  // while the host itself kept scrolling through the viewport at NORMAL
+  // (unpinned) speed -- i.e. it physically exited the viewport after
+  // only ~1 viewport-height of scroll, long before the math's ~2200px
+  // "hold" leg had elapsed. Measured directly: at scrollY=17800 the
+  // Awards block's computed opacity was 1, but getBoundingClientRect().top
+  // was -493px (already fully scrolled past, off the top of the screen)
+  // -- opacity was "correct" per the render() math, but the element
+  // wasn't there to see it on. `pin:true` (anchored at 'center center',
+  // the same mechanism setupChapterTitleCard() already relies on for its
+  // own rise->hold->fade cards) freezes the host at mid-viewport for the
+  // ENTIRE TOTAL_PX window, so the hold is now a genuine, visible dwell
+  // rather than a same-opacity-value coincidence on a block that has
+  // already left the screen.
   function setupGroupCrawl(hostId, innerSelector) {
     const host = document.getElementById(hostId);
     if (!host) return;
@@ -830,19 +870,39 @@
       inner.style.transform = `perspective(1200px) rotateX(${tilt}deg) translateY(${y}px)`;
     }
 
-    gsap.set(inner, { opacity: 0 });
+    render(0);
+    // `start: 'top top'` (not 'center center') is deliberate: it exactly
+    // mirrors setupChapterTitleCard()'s own pin trigger, which is the
+    // ONLY way consecutive pin:true ScrollTriggers hand off cleanly in
+    // this file. With sequential DOM sections, a 'top top' pin's start
+    // scroll position is always exactly the previous pin's release point
+    // (GSAP's pin-spacer makes this exact), so back-to-back pins never
+    // overlap. 'center center' was tried first and triggered ~viewportH/2
+    // EARLY (while the block is still only half-scrolled-up), which
+    // overlapped with the still-active ch-awards-title-pin card
+    // immediately after Education's skills grid -- both pinned/visible
+    // at once, confirmed via Playwright (ScrollTrigger window
+    // 14161-17001 for the grid vs. 14971-16891 for the Awards title
+    // card) and a screenshot showing the "Awards" title bleeding through
+    // over the still-pinned skills grid. Vertical centering during the
+    // hold is instead handled by the host's own CSS (min-height:100vh +
+    // flex centering, see .edu-skills-crawl/.awards-crawl/.career-crawl
+    // in style.css) rather than by the pin's start keyword.
     ScrollTrigger.create({
+      id: hostId + '-crawl',
       trigger: host,
-      start: 'top bottom',
+      start: 'top top',
       end: '+=' + TOTAL_PX,
+      pin: true,
+      pinSpacing: true,
       scrub: 0.4,
       onUpdate: (self) => render(self.progress),
       onRefresh: (self) => render(self.progress),
     });
   }
-  setupGroupCrawl('edu-skills-crawl', '.edu-skills-crawl-inner');
-  setupGroupCrawl('awards-crawl', '.awards-crawl-inner');
-  setupGroupCrawl('career-crawl', '.career-crawl-inner');
+  // (invocations moved up above, interleaved with setupChapterTitleCard()
+  // in real DOM order -- see the ROUND 21 NOTE there for why order
+  // matters for pin:true ScrollTriggers.)
 
   /* ============================================================
      Education & Skills — interactive skill tiles. Each tile is a

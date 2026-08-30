@@ -2620,14 +2620,29 @@ html, body {
 /* Round 20 ("세번째 이미지, 이건 하단에서 올라오다가, 중앙에서 멈춰서
    있다가 올라가야지"): perspective host + transform target for the
    skills-grid's rise-in -> hold -> recede-and-fade crawl beat, driven
-   by setupSkillsCrawl() in about.js. Mirrors .filmography-item (host)
+   by setupGroupCrawl() in about.js. Mirrors .filmography-item (host)
    / .filmography-item-inner (target) exactly -- the outer element
    stays untransformed (so it can be measured as a stable ScrollTrigger
-   trigger), while the inner element receives the opacity/transform. */
+   trigger), while the inner element receives the opacity/transform.
+
+   ROUND 21 BUGFIX: setupGroupCrawl() now uses `pin:true` (see about.js
+   comment there for why the earlier un-pinned version silently scrolled
+   the block off-screen while its opacity math still read 1). Because
+   the pin trigger is anchored at 'top top' (required for clean pin-to-
+   pin handoff with the adjacent chapter-title-card pins), the host
+   itself must be a full-viewport-tall flex-center box so its content
+   still reads as vertically centered for the whole pinned hold, exactly
+   like .chapter-title-pin-host's own cards do. */
 .edu-skills-crawl {
   perspective: 1200px;
+  min-height: 100vh;
+  min-height: calc(var(--vh, 1vh) * 100);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .edu-skills-crawl-inner {
+  width: 100%;
   transform-origin: 50% 100%;
   will-change: transform, opacity;
 }
@@ -2765,8 +2780,14 @@ html, body {
    .edu-skills-crawl-inner exactly. */
 .awards-crawl {
   perspective: 1200px;
+  min-height: 100vh;
+  min-height: calc(var(--vh, 1vh) * 100);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .awards-crawl-inner {
+  width: 100%;
   transform-origin: 50% 100%;
   will-change: transform, opacity;
 }
@@ -2833,8 +2854,14 @@ html, body {
    .awards-crawl/.awards-crawl-inner, driven by setupGroupCrawl(). */
 .career-crawl {
   perspective: 1200px;
+  min-height: 100vh;
+  min-height: calc(var(--vh, 1vh) * 100);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .career-crawl-inner {
+  width: 100%;
   transform-origin: 50% 100%;
   will-change: transform, opacity;
 }
