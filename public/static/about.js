@@ -68,6 +68,7 @@
   const layer = document.getElementById('about-bg-video-layer');
   const video1 = document.getElementById('about-bg-video-1');
   const video2 = document.getElementById('about-bg-video-2');
+  const video3 = document.getElementById('about-bg-video-3'); // Round 26 outro clip
   const introCrawlViewport = document.getElementById('about-intro-crawl-viewport');
   const introCrawlText = document.getElementById('about-intro-crawl-text');
   const titleEl = document.getElementById('about-title-text');
@@ -717,6 +718,11 @@
   setupGroupCrawl('awards-crawl', '.awards-crawl-inner');
   setupChapterTitleCard({ hostId: 'ch-career-title-pin', cardId: 'ch-career-title-card' });
   setupGroupCrawl('career-crawl', '.career-crawl-inner');
+  // ROUND 26: the new Chapter 6 outro pin (video3 hard-cut + hold-on-
+  // last-frame + footer reveal) is the LAST section in the DOM, so its
+  // setupOutroSequence() call must be the LAST setup call here too --
+  // see the ROUND 21 NOTE above on why pin:true creation order matters.
+  setupOutroSequence();
 
   // ROUND 12 ("년도별 작업 내역은... 3디로 공간을 활용해 화면아래서부터
   // 올라와서 화면위로 계속 올라가야지"): filmography list items used to
@@ -903,6 +909,162 @@
   // (invocations moved up above, interleaved with setupChapterTitleCard()
   // in real DOM order -- see the ROUND 21 NOTE there for why order
   // matters for pin:true ScrollTriggers.)
+
+  /* ============================================================
+     ROUND 26 — Chapter 6 outro: video3 hard-cut + scrub + hold-on-
+     last-frame + closing footer reveal.
+
+     User's request ("첫번째 이미지, 마지막 커리어 부분이 페이드아웃되고
+     나면, 첨부한 영상을 최적화시켜서 이어줘. 첨부한 영상의 마지막
+     프레임을 홀드 시켜서, 두번째 첨부 이미지, '홈' 페이지의 마지막화면의
+     정보를 똑같은 정보를 똑같은 효과를 입혀서 화면에 얹혀줘") breaks into
+     four pieces, each handled by a distinct block below:
+
+     1) HARD CUT (renderCut/its own zero-width ScrollTrigger): the
+        moment #ch-outro-pin's own top reaches the top of the viewport
+        (i.e. right as Career's own group crawl finishes receding and
+        this pin takes over), video2 (the persistent looping starfield
+        backdrop) is instantly swapped for video3 (the new, optimized
+        forest/campfire clip) -- a true binary opacity swap, matching
+        the site's dominant hard-cut-only video-chain convention (see
+        setupBgLayerHandoff() in app.js for the reference pattern),
+        NOT the one-off dissolve used for the video1->video2 handoff
+        above (that dissolve is a deliberate exception scoped only to
+        that specific pair, per the DISSOLVE_WIDTH comment).
+
+        This MUST be its own separate, non-pinned ScrollTrigger rather
+        than logic inside the main scrub renderer below: that renderer
+        is also called once synchronously at setup time via render(0)
+        (same as every other setup*() function in this file, so the
+        very first paint already reflects the correct starting state)
+        -- if the video2->video3 swap lived there, that same call would
+        flip the backdrop to video3 immediately on page load, long
+        before the user has scrolled anywhere near Chapter 6. Gating it
+        behind a real ScrollTrigger (which only reports progress=1
+        once actual scroll position crosses the boundary) avoids that.
+
+     2) SCRUB (seekVideo3, within render() below): once cut in, video3
+        scrubs 1:1 with scroll across the pin's first SCRUB_PX of
+        travel, exactly like video1's own seekVideo1() above.
+
+     3) HOLD ON LAST FRAME: videoLocal is clamped to 1 once scroll
+        passes SCRUB_END, so video3's visible frame simply stops
+        advancing (holds on its true last frame) for the remaining
+        HOLD_PX of this pin's travel -- video3's own final ~2s are
+        already a near-static campfire-under-stars hold (confirmed via
+        analyze_media_content), so freezing at the literal last frame
+        (rather than an earlier SCENE_HOLD_POINT the way HOME's v16
+        does, which needed to dodge unwanted motion later in that
+        clip) reads cleanly with no jump.
+
+     4) FOOTER REVEAL, keyed to the RAW (unclamped) pRaw rather than
+        videoLocal -- exactly mirroring HOME's local16Raw/SCENE_HOLD_
+        POINT split in renderVideosChain() (app.js): even though the
+        on-screen video frame has stopped moving once pRaw exceeds
+        SCRUB_END, pRaw itself keeps advancing 0->1 across the rest of
+        the pin, so the footer still progressively reveals as the user
+        keeps scrolling past the frozen scene rather than freezing too.
+        Uses the identical FL_COUNT/FL_BAND line-stagger formula (blur
+        + translateY + opacity) as HOME's own footerLines.forEach() —
+        same effect, same 4 lines of contact text, per "똑같은 정보를
+        똑같은 효과를 입혀서 화면에 얹혀줘". Once revealed it stays
+        visible (no OUT window) -- a real footer, not an ephemeral
+        "moment" overlay -- same design choice as HOME's own footer.
+     ============================================================ */
+  function setupOutroSequence() {
+    const host = document.getElementById('ch-outro-pin');
+    const footerEl = document.getElementById('about-outro-footer-text');
+    if (!host || !video3) return;
+    const footerLines = footerEl ? gsap.utils.toArray(footerEl.querySelectorAll('.avf-line')) : [];
+
+    blobifySeekableVideo(video3, 0);
+    prewarmSeek(video3, 0);
+    gsap.set(video3, { opacity: 0 });
+
+    const V3_DURATION = 4.0; // ffprobe-confirmed re-encode duration (96 frames @ 24fps)
+    function seekVideo3(localP) {
+      const t = Math.max(0, Math.min(1, localP)) * V3_DURATION;
+      if (video3.readyState > 0 && Number.isFinite(t)) {
+        video3.currentTime = t;
+      }
+    }
+
+    // ---- (1) hard cut: video2 -> video3, at the exact scroll position
+    // this pin's own host reaches the top of the viewport. Same
+    // zero-width-ScrollTrigger-boundary pattern as setupBgLayerHandoff()
+    // in app.js -- start === end means self.progress can only ever be
+    // exactly 0 (above this point) or exactly 1 (at/past it).
+    function renderCut(p) {
+      const cut = Math.round(Math.max(0, Math.min(1, p)));
+      video2.style.opacity = 1 - cut;
+      video3.style.opacity = cut;
+      if (cut && video3.paused) video3.play().catch(() => {});
+    }
+    ScrollTrigger.create({
+      id: 'outro-bg-cut',
+      trigger: host,
+      start: 'top top',
+      end: 'top top',
+      scrub: true,
+      onUpdate: (self) => renderCut(self.progress),
+      onRefresh: (self) => renderCut(self.progress),
+    });
+
+    // ---- (2)-(4): scrub + hold + footer, in absolute pixels (same
+    // convention as setupGroupCrawl's ENTRY_PX/HOLD_PX/EXIT_PX, for the
+    // same reason -- consistent feel across viewport heights).
+    const SCRUB_PX = 1200; // video3's own scroll-scrub runway
+    const HOLD_PX = 2000; // extra travel while the last frame holds + footer reveals
+    const TOTAL_PX = SCRUB_PX + HOLD_PX;
+    const SCRUB_END = SCRUB_PX / TOTAL_PX;
+    const FOOTER_IN_START = SCRUB_END + 0.05;
+    const FOOTER_IN_END = 0.85;
+
+    function render(pRaw) {
+      pRaw = Math.max(0, Math.min(1, pRaw));
+      const videoLocal = SCRUB_END > 0 ? Math.min(pRaw / SCRUB_END, 1) : 1;
+      seekVideo3(videoLocal);
+
+      let fo = 0;
+      if (pRaw >= FOOTER_IN_START) {
+        fo = pRaw < FOOTER_IN_END
+          ? (pRaw - FOOTER_IN_START) / (FOOTER_IN_END - FOOTER_IN_START)
+          : 1;
+      }
+      fo = Math.max(0, Math.min(1, fo));
+
+      if (footerEl) {
+        footerEl.style.opacity = fo > 0.01 ? 1 : 0;
+        if (footerLines.length) {
+          const FL_COUNT = footerLines.length;
+          const FL_BAND = 1 / (FL_COUNT * 0.6);
+          footerLines.forEach((line, i) => {
+            const bandStart = (i / FL_COUNT) * (1 - FL_BAND) * 0.6;
+            const lp = Math.max(0, Math.min(1, (fo - bandStart) / FL_BAND));
+            line.style.opacity = lp;
+            line.style.transform = `translateY(${(1 - lp) * 24}px)`;
+            line.style.filter = `blur(${(1 - lp) * 8}px)`;
+          });
+        }
+      }
+    }
+
+    render(0);
+
+    ScrollTrigger.create({
+      id: 'ch-outro-pin-scrub',
+      trigger: host,
+      start: 'top top',
+      end: '+=' + TOTAL_PX,
+      pin: true,
+      pinSpacing: true,
+      scrub: 0.4,
+      onUpdate: (self) => render(self.progress),
+      onRefresh: (self) => render(self.progress),
+    });
+  }
+  // (invoked above, immediately after setupGroupCrawl('career-crawl', ...)
+  // -- see the ROUND 26 comment there for why it must be called last.)
 
   /* ============================================================
      Education & Skills — interactive skill tiles. Each tile is a

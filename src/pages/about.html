@@ -72,10 +72,42 @@
      item 7) has been removed along with its <canvas> element -- the
      real starfield-loop footage IS the backdrop now, so a second,
      synthetic starfield drawn on top of it was redundant. -->
+<!-- ROUND 26 ("첫번째 이미지, 마지막 커리어 부분이 페이드아웃되고나면,
+     첨부한 영상을 최적화시켜서 이어줘"): a third clip, about-bg-video-3
+     (re-encoded from the user's uploaded 4K forest/campfire footage to
+     this site's standard 1920x1080/h264/no-audio background-video spec
+     -- see about-bg-03-forest-descent.mp4 + its poster), hard-cuts in
+     to replace the still-looping starfield (video2) right at the start
+     of the new Chapter 6 outro pin below (setupOutroSequence() in
+     about.js), same zero-width-ScrollTrigger-boundary hard-cut pattern
+     as setupBgLayerHandoff() on the HOME page -- NOT the dissolve used
+     for the video1->video2 handoff above, since that dissolve is a
+     one-time deliberate exception scoped only to that pair. -->
 <div id="about-bg-video-layer" aria-hidden="true">
   <video class="about-bg-video-el" id="about-bg-video-1" src="/static/media/about/about-bg-01-campfire-to-galaxy.mp4" poster="/static/media/about/about-bg-01-poster.jpg" muted playsinline preload="auto"></video>
   <video class="about-bg-video-el" id="about-bg-video-2" src="/static/media/about/about-bg-02-starfield-loop.mp4" muted playsinline preload="auto" loop></video>
+  <video class="about-bg-video-el" id="about-bg-video-3" src="/static/media/about/about-bg-03-forest-descent.mp4" poster="/static/media/about/about-bg-03-poster.jpg" muted playsinline preload="auto"></video>
   <div class="about-bg-scrim"></div>
+</div>
+
+<!-- ROUND 26 ("첨부한 영상의 마지막 프레임을 홀드 시켜서... '홈' 페이지의
+     마지막화면의 정보를... 똑같은 효과를 입혀서 화면에 얹혀줘"): the
+     closing contact/footer overlay, revealed once video3 (above) has
+     scrubbed through to its own last frame and holds there -- exact
+     same 4-line copyright/email/phone/address text and the same
+     line-staggered opacity+blur+translateY reveal effect as the HOME
+     page's own #videos-footer-text (see .vf-line reveal formula in
+     app.js's renderVideosChain(), ported here as setupOutroSequence()
+     in about.js). Uses the site-wide --fg/--fg-dim palette (not the
+     about-page's own --about-violet/--about-ice) so it matches HOME's
+     actual footer look exactly, per "똑같은 정보를 똑같은 효과". -->
+<div id="about-outro-footer-text" aria-hidden="true">
+  <div class="avf-inner">
+    <div class="avf-line" data-line="0">&copy; 2026 JUNE HONG &mdash; HONG JOONSEONG</div>
+    <div class="avf-line" data-line="1"><a href="mailto:pseudofilmmaker@gmail.com">pseudofilmmaker@gmail.com</a></div>
+    <div class="avf-line" data-line="2"><a href="tel:+12368666081">+1 236 866 6081</a></div>
+    <div class="avf-line" data-line="3">Vancouver, CANADA</div>
+  </div>
 </div>
 
 <!-- Prologue line -- Round 4 item 1 ("No genre holds still long enough
@@ -650,6 +682,21 @@
       </div>
     </div>
   </section>
+
+  <!-- ==========================================================
+       Chapter 6 — Closing outro. ROUND 26: once Career's own group
+       crawl (above) has fully receded and faded out, this pin takes
+       over -- hard-cutting the background from the looping starfield
+       (video2) to the new forest/campfire clip (video3), scrubbing it
+       across the scroll distance, holding on its last frame, then
+       revealing the contact footer (#about-outro-footer-text, fixed
+       overlay defined near the top of <body>) while still tracking
+       scroll. Driven by setupOutroSequence() in about.js -- the LAST
+       pin:true ScrollTrigger created in the file, since this is also
+       the LAST section in the DOM (see the Round 21 DOM-order note on
+       setupChapterTitleCard() above for why creation order matters).
+       ========================================================== -->
+  <section class="panel about-panel chapter-title-pin-host" id="ch-outro-pin"></section>
 
 </main>
 

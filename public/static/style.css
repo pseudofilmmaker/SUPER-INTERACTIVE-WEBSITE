@@ -3005,3 +3005,85 @@ html, body {
   .career-item { grid-template-columns: 1fr; gap: 6px; }
   .career-heading-row { flex-direction: column; align-items: flex-start; }
 }
+
+/* ============================================================
+   ROUND 26 — Chapter 6 outro: video3 hard-cut hold + closing footer.
+
+   "첫번째 이미지, 마지막 커리어 부분이 페이드아웃되고나면, 첨부한 영상을
+   최적화시켜서 이어줘. 첨부한 영상의 마지막 프레임을 홀드 시켜서, 두번째
+   첨부 이미지, '홈' 페이지의 마지막화면의 정보를 똑같은 정보를 똑같은
+   효과를 입혀서 화면에 얹혀줘."
+
+   #ch-outro-pin is the pin host (see setupOutroSequence() in about.js):
+   like #section-about-hero, it hosts nothing but position:fixed
+   overlays (the video layer + the footer below), so its own CSS box
+   is zeroed out the same way -- otherwise its natural .panel height
+   (100vh + 60px/24px padding) would be appended as extra dead-scroll
+   space AFTER the pin's own animated distance, per the same root-cause
+   already documented on #section-about-hero above. */
+#ch-outro-pin {
+  min-height: 0;
+  padding: 0;
+}
+
+/* Closing contact footer -- reveals over video3's held last frame.
+   Deliberately reuses the site-wide --fg/--fg-dim palette (NOT
+   --about-violet/--about-ice) and the exact .vf-line reveal geometry
+   from the HOME page's #videos-footer-text, per "똑같은 정보를 똑같은
+   효과를 입혀서" (same info, same effect) -- this is a direct visual
+   match to HOME's own closing screen, not a re-skin in the about
+   page's own violet/ice palette. z-index sits above every other
+   about-page fixed overlay (highest here is #about-title-text at 11)
+   so it always sits on top once revealed. */
+#about-outro-footer-text {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0;
+  will-change: opacity;
+}
+.avf-inner {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.avf-line {
+  opacity: 0;
+  filter: blur(8px);
+  transform: translateY(24px);
+  font-family: var(--font-clean);
+  color: var(--fg-dim);
+  letter-spacing: 0.08em;
+  font-size: 15px;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 0 14px rgba(0,0,0,0.7);
+  will-change: opacity, transform, filter;
+}
+.avf-line[data-line="0"] {
+  color: var(--fg);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 16px;
+  margin-bottom: 4px;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 0 16px rgba(0,0,0,0.75);
+}
+.avf-line a {
+  color: inherit;
+  text-decoration: none;
+  pointer-events: auto;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+.avf-line a:hover {
+  color: var(--fg);
+  border-color: var(--accent-gold);
+}
+@media (max-width: 768px) {
+  .avf-line { font-size: 13px; }
+  .avf-line[data-line="0"] { font-size: 14px; }
+}
