@@ -1927,6 +1927,50 @@ html, body {
   backdrop-filter: none;
 }
 
+/* ============================================================
+   /photos video-hero intro (video1 campfire -> video2 starfield
+   loop, then the real page content reveals) -- see photos-hero.js.
+   Same structural "fixed media player" pattern as #fixed-bg-video
+   (HOME) / #about-bg-video-layer (ABOUT): position:fixed, z-index:0,
+   hard-cut opacity swap between stacked <video> elements, single
+   shared scrim for text legibility. Kept as its OWN independent
+   layer (not appended to any other page's video chain) since /photos
+   is a fully separate HTML document with no shared layout.
+   ============================================================ */
+#photos-hero-video-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.photos-hero-video-el {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  will-change: opacity;
+}
+.photos-hero-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(5,3,2,0) 0%, rgba(5,3,2,0.32) 82%),
+    linear-gradient(180deg, rgba(5,3,2,0.22) 0%, transparent 22%, transparent 78%, rgba(5,3,2,0.3) 100%);
+}
+/* Scroll lock while the hero plays -- the real content sits at
+   opacity:0 underneath it anyway, but this also stops any stray
+   wheel/touch scroll from moving the (empty-looking) page. Removed
+   the instant photos-hero.js's revealPhotosPage() fires. */
+body.photos-hero-locked { overflow: hidden; height: 100vh; }
+/* Once revealed, #photos-real-content paints on top of the still-
+   looping video2 backdrop -- give it its own solid-ish background so
+   long grid sections read clearly rather than showing a starfield
+   through every gap between cards. */
+body.photos-hero-revealed #photos-real-content { position: relative; z-index: 2; }
+
 .detail-page {
   min-height: 100vh;
   padding: 150px 6vw 100px;
@@ -1935,6 +1979,25 @@ html, body {
 .detail-hero {
   text-align: center;
   margin-bottom: 40px;
+}
+/* codapress.co.uk "Books by Codapress" reference: eyebrow+title on
+   the left, an "ALL BOOKS ->" pill button on the right, same row.
+   Scoped to an added modifier so /videos (still centered) is
+   untouched. */
+.detail-hero--split {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  text-align: left;
+  max-width: 1400px;
+  margin: 0 auto 40px;
+}
+.detail-hero-copy .detail-eyebrow,
+.detail-hero-copy .detail-title { text-align: left; margin: 0; }
+.detail-cta { flex-shrink: 0; }
+@media (max-width: 640px) {
+  .detail-hero--split { flex-direction: column; align-items: flex-start; gap: 16px; }
 }
 .detail-eyebrow {
   font-family: var(--font-clean);
@@ -2001,29 +2064,13 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
 }
 .detail-card.is-reel .detail-card-media {
   aspect-ratio: 9 / 16;
 }
 .detail-card-media img, .detail-card-media video {
   width: 100%; height: 100%; object-fit: cover;
-}
-/* Photos detail page ONLY -- same polaroid mat treatment as the home-page
-   teaser cards (see .thumb-frame--card .thumb-item above): cream paper
-   frame with a thicker bottom strip. Scoped to .detail-page--photos so the
-   /videos detail grid (which shares .detail-card/.detail-grid) is
-   untouched. */
-.detail-page--photos .detail-card {
-  background: linear-gradient(165deg, #fbf8f1, #f1ece0);
-  box-shadow: 0 20px 50px rgba(0,0,0,0.45), 0 2px 0 rgba(255,255,255,0.5) inset;
-  border: 1px solid rgba(0,0,0,0.06);
-}
-.detail-page--photos .detail-card-media {
-  padding: 12px 12px 0;
-}
-.detail-page--photos .detail-card-caption {
-  color: rgba(20,14,8,0.55);
-  padding: 10px 14px 16px;
 }
 .detail-card-caption {
   padding: 12px 14px;
@@ -2032,9 +2079,126 @@ html, body {
   text-transform: uppercase;
   color: var(--fg-dim);
 }
+
+/* ============================================================
+   PHOTOS card body — Codapress ("Books by Codapress") reference:
+   small top-left badge row (category + Bestseller/New pill) over
+   the media, then bold title / one-line description / "View
+   detail ->" link beneath. Replaces the old cream-polaroid-mat
+   treatment + plain uppercase caption on /photos with this
+   Codapress-style layout; /videos (which shares .detail-card/
+   .detail-grid but not .detail-page--photos) is untouched.
+   ============================================================ */
+.detail-page--photos .detail-card {
+  background: linear-gradient(150deg, #16110c, #0a0a0d 78%);
+  display: flex;
+  flex-direction: column;
+}
+.detail-page--photos .detail-card-media { flex: 0 0 auto; }
+.detail-card-badges {
+  position: absolute;
+  top: 10px; left: 10px;
+  display: flex;
+  gap: 6px;
+  z-index: 1;
+}
+.detail-badge {
+  font-family: var(--font-clean);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 4px 9px;
+  border-radius: 999px;
+  line-height: 1.4;
+}
+.detail-badge--category {
+  color: rgba(255,255,255,0.85);
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255,255,255,0.18);
+}
+.detail-badge--bestseller {
+  color: #1a0e04;
+  background: linear-gradient(90deg, var(--accent-gold), var(--accent-flame));
+  font-weight: 600;
+}
+.detail-badge--new {
+  color: #fff;
+  background: rgba(255,255,255,0.14);
+  border: 1px solid rgba(255,255,255,0.32);
+}
+.detail-card-body {
+  padding: 14px 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1 1 auto;
+}
+.detail-card-title {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 17px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--fg);
+}
+.detail-card-desc {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--fg-dim);
+  margin: 0;
+  flex: 1 1 auto;
+}
+.detail-card-link {
+  font-family: var(--font-clean);
+  font-size: 11.5px;
+  letter-spacing: 0.05em;
+  color: var(--accent-flame);
+  text-decoration: underline;
+  text-decoration-color: rgba(255,138,0,0.4);
+  text-underline-offset: 3px;
+  margin-top: 4px;
+  align-self: flex-start;
+  transition: color 0.2s ease;
+}
+.detail-card-link:hover { color: var(--accent-gold); }
+
+/* Lightbox for "View detail" links */
+.photo-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(3,2,2,0.92);
+  padding: 6vh 6vw;
+}
+.photo-lightbox.is-open { display: flex; }
+.photo-lightbox-img {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 4px;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+}
+.photo-lightbox-close {
+  position: absolute;
+  top: 22px; right: 26px;
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.25);
+  background: rgba(0,0,0,0.4);
+  color: var(--fg);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
 @media (max-width: 768px) {
   .detail-page { padding: 120px 5vw 70px; }
   .detail-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px; }
+  .detail-card-title { font-size: 15px; }
+  .detail-card-desc { font-size: 11.5px; }
 }
 
 /* ============================================================
