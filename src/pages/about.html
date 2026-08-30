@@ -14,6 +14,36 @@
 </head>
 <body>
 
+<!-- Round 22 ("영화제 로고만을 뽑아서... 외곽선에 글로우 느낌이 나게 변형"):
+     shared SVG filter def for the hollow/outline+glow logo treatment used
+     by .festival-logo-scatter below. feMorphology(erode) + feComposite
+     (SourceAlpha minus eroded-Alpha, operator="out") extracts a thin
+     RING from each solid white logo silhouette instead of keeping the
+     solid fill, then floods that ring violet and blurs a soft + a sharp
+     copy together -- this is what gives the hollow, glowing-outline look
+     (matching the reference "Awards" wordmark screenshot) rather than a
+     plain drop-shadow'd solid logo. width/height="0" + position:absolute
+     keeps this invisible/inert in layout; only <filter> is used, via
+     `filter: url(#festival-logo-outline-glow)` in style.css. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <filter id="festival-logo-outline-glow" x="-100%" y="-100%" width="300%" height="300%">
+      <feMorphology in="SourceAlpha" operator="erode" radius="1.6" result="eroded"/>
+      <feComposite in="SourceAlpha" in2="eroded" operator="out" result="ring"/>
+      <feFlood flood-color="#b48cff" flood-opacity="1" result="violet"/>
+      <feComposite in="violet" in2="ring" operator="in" result="coloredRing"/>
+      <feGaussianBlur in="coloredRing" stdDeviation="1.2" result="sharpGlow"/>
+      <feGaussianBlur in="coloredRing" stdDeviation="6" result="softGlow"/>
+      <feMerge>
+        <feMergeNode in="softGlow"/>
+        <feMergeNode in="softGlow"/>
+        <feMergeNode in="sharpGlow"/>
+        <feMergeNode in="coloredRing"/>
+      </feMerge>
+    </filter>
+  </defs>
+</svg>
+
 <header id="site-header" class="static-header about-header-transparent">
   <a class="brand" href="/">JUNE HONG</a>
   <nav class="main-nav" aria-label="primary navigation">
@@ -507,6 +537,33 @@
            that floats in and out of the starfield as a single unit. -->
       <div class="awards-crawl" id="awards-crawl">
       <div class="awards-crawl-inner">
+      <!-- Round 22 ("첫번째 이미지 뒤에는... 영화제 로고만을 뽑아서...
+           외곽선에 글로우 느낌이 나게... 랜덤하게 배치되었다가, 같이
+           본문과 함께 같이 사라지게끔"): festival logos pulled from the
+           HOME page's client-wall (same /static/logos/*.svg files,
+           limited to the 3 festivals actually credited in this page's
+           own Filmography list above -- Moscow, BIFAN, Thailand -- so
+           the scatter stays consistent with this page's own copy
+           rather than pulling in unrelated client logos). Each gets the
+           festival-logo-outline-glow filter (defined once near the top
+           of <body>) for the hollow/glowing-outline look from the
+           reference screenshot, and is scattered at a fixed random
+           position/rotation/size behind the awards list via plain CSS
+           (position:absolute inside this same .awards-crawl-inner).
+           Being INSIDE .awards-crawl-inner -- the exact element
+           setupGroupCrawl() animates opacity/transform on -- is what
+           makes the scatter rise/hold/recede and fade out together
+           with the awards text as a single unit, with no separate
+           timing logic needed. z-index/opacity are tuned low enough
+           that the scatter reads as ambient background texture, never
+           competing with the readable award entries on top of it. -->
+      <div class="festival-logo-scatter" aria-hidden="true">
+        <img class="festival-logo-scatter-item flogo-1" src="/static/logos/moscow-iff.svg" alt=""/>
+        <img class="festival-logo-scatter-item flogo-2" src="/static/logos/bifan.svg" alt=""/>
+        <img class="festival-logo-scatter-item flogo-3" src="/static/logos/itff-thailand.svg" alt=""/>
+        <img class="festival-logo-scatter-item flogo-4" src="/static/logos/moscow-iff.svg" alt=""/>
+        <img class="festival-logo-scatter-item flogo-5" src="/static/logos/bifan.svg" alt=""/>
+      </div>
       <ol class="awards-list">
         <li class="awards-item">
           <span class="awards-year">2016</span>
