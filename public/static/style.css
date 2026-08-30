@@ -2014,6 +2014,22 @@ html, body {
    applies here since photos-hero-panel IS the header-clearing first
    screen. */
 .detail-page--photos { padding-top: 0; }
+/* ROUND 3 BUG FIX: .detail-page's own `background: var(--bg)` above is
+   OPAQUE (#050506) and was being inherited by #photos-real-content
+   (which carries both .detail-page and .detail-page--photos) across
+   its ENTIRE height, not just the ordinary-content sections. Since
+   #photos-real-content sits at z-index:2 above the fixed z-index:0
+   #photos-hero-video-layer, that opaque background silently painted
+   over the persistent video2 backdrop everywhere -- including behind
+   .photos-conveyor-panel -- so video2 was never actually visible on
+   screen at all (previously misdiagnosed as a Playwright headless
+   video-capture quirk; it is a real rendering bug). Force it back to
+   transparent so the fixed video layer shows through for the WHOLE
+   page, exactly like HOME's own #scroll-container/.panel stack sitting
+   transparently over #fixed-bg-video -- .photos-hero-scrim (already
+   painted inside the video layer, in front of the video but behind
+   this content) keeps text legible over it. */
+.detail-page--photos { background: transparent; }
 /* ROUND 3: title/CTA row and filter pills now live INSIDE the same
    single-viewport .photos-conveyor-panel as the card row (see below),
    so the old margin-top:90px "extra breathing room before the title
