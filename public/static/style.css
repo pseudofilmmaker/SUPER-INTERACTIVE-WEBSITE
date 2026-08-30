@@ -2468,6 +2468,44 @@ html, body {
   color: var(--about-ice-dim);
 }
 
+/* ---------------- Round 19: school-logo crawl lockup ----------------
+   Reuses .chapter-title-card's rise/hold/shrink-fade fixed-overlay
+   mechanics (via the SAME setupChapterTitleCard() call, against its own
+   pin host #ch-edu-logo-pin) but swaps the eyebrow/heading/intro text
+   for a logo image + a short degree list, per "학교 로고 아래, 세번째
+   이미지를 적절히 배치해서 시안성을 높여줘".
+
+   Legibility fix: the source logo PNG is black wordmark text on a FULLY
+   TRANSPARENT background, which would be nearly invisible against this
+   page's dark starfield backdrop. Rather than filter-inverting the
+   artwork (which would also wreck the brand's red flame mark), the logo
+   sits on its own light rounded "plate" -- preserving the logo exactly
+   as supplied while guaranteeing contrast on any background. */
+.chapter-title-card--logo {
+  gap: 26px;
+}
+.chapter-title-card-logo-img {
+  display: block;
+  width: clamp(220px, 34vw, 480px);
+  height: auto;
+  padding: clamp(16px, 2.4vw, 26px) clamp(26px, 4vw, 42px);
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16px;
+  box-shadow: 0 0 40px rgba(238, 241, 255, 0.35), 0 0 90px rgba(157, 120, 255, 0.3);
+}
+.chapter-title-card-degree-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.chapter-title-card-degree {
+  margin: 0;
+  font-family: var(--font-clean);
+  font-size: clamp(14px, 1.6vw, 18px);
+  letter-spacing: 0.01em;
+  color: var(--about-ice-dim);
+}
+
 /* ---------------- Resting detail panels (always-legible content) ---------------- */
 .chapter-detail-panel {
   padding: 100px 6vw 120px;
@@ -2510,17 +2548,6 @@ html, body {
   line-height: 1.8;
   color: var(--fg-dim);
 }
-.chapter-detail-wrap--split {
-  max-width: 1180px;
-  display: grid;
-  grid-template-columns: minmax(240px, 360px) 1fr;
-  gap: clamp(40px, 6vw, 90px);
-  align-items: start;
-}
-@media (max-width: 900px) {
-  .chapter-detail-wrap--split { grid-template-columns: 1fr; }
-}
-
 /* ---------------- Selected Works — filmography list ---------------- */
 .filmography-list {
   list-style: none;
@@ -2591,32 +2618,6 @@ html, body {
 }
 
 /* ---------------- Education & Skills ---------------- */
-.education-list {
-  list-style: none;
-  margin: 0 0 8px;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 22px;
-}
-.education-item {
-  padding: 18px 20px;
-  border: 1px solid var(--border-soft);
-  border-radius: 10px;
-  background: rgba(255,255,255,0.02);
-}
-.education-school {
-  margin: 0 0 6px;
-  font-family: var(--font-serif);
-  font-weight: 600;
-  font-size: 18px;
-  color: var(--fg);
-}
-.education-degree {
-  margin: 0;
-  font-size: 13.5px;
-  color: var(--fg-dim);
-}
 .skills-hint {
   display: flex;
   align-items: center;

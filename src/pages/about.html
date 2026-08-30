@@ -143,6 +143,20 @@
   <p class="chapter-title-card-eyebrow">Background</p>
   <h2 class="chapter-title-card-heading">Education <em>&amp; Skills</em></h2>
 </div>
+<!-- School-logo crawl beat: rises from below, holds centered, shrinks +
+     fades away -- same rise/hold/shrink-fade pin as the chapter title
+     cards above (driven by the SAME setupChapterTitleCard() against its
+     own short pin host, ch-edu-logo-pin, further down). The degree
+     lines sit right under the logo so they read together as one
+     lockup, increasing legibility ("시안성을 높여줘") without the
+     bordered card boxes the education list used to use. -->
+<div id="ch-edu-logo-card" class="chapter-title-card chapter-title-card--logo" aria-hidden="true">
+  <img src="/static/logos/seoul-institute-of-the-arts.png" alt="Seoul Institute of the Arts" class="chapter-title-card-logo-img"/>
+  <div class="chapter-title-card-degree-list">
+    <p class="chapter-title-card-degree">B.A., Film &mdash; Dept. of Media Creation</p>
+    <p class="chapter-title-card-degree">Associate Degree, Directing &mdash; Dept. of Film</p>
+  </div>
+</div>
 <div id="ch-awards-title-card" class="chapter-title-card" aria-hidden="true">
   <p class="chapter-title-card-eyebrow">Recognition</p>
   <h2 class="chapter-title-card-heading">Awards</h2>
@@ -393,125 +407,68 @@
        ========================================================== -->
   <section class="panel about-panel chapter-title-pin-host" id="ch-edu-title-pin"></section>
 
-  <section class="panel about-panel chapter-detail-panel" id="section-ch-edu-detail" data-index="3">
-    <div class="chapter-detail-wrap chapter-detail-wrap--split">
-      <div class="edu-education-col">
-        <ul class="education-list">
-          <li class="education-item" data-reveal="true">
-            <h3 class="education-school">Seoul Institute of the Arts</h3>
-            <p class="education-degree">B.A., Film &mdash; Dept. of Media Creation</p>
-          </li>
-          <li class="education-item" data-reveal="true">
-            <h3 class="education-school">Seoul Institute of the Arts</h3>
-            <p class="education-degree">Associate Degree, Directing &mdash; Dept. of Film</p>
-          </li>
-        </ul>
-      </div>
+  <!-- School-logo crawl pin: mirrors ch-*-title-pin's rise -> hold ->
+       shrink-and-fade beat, but drives #ch-edu-logo-card (logo + degree
+       lines) instead of the eyebrow/heading text. Once THIS pin
+       releases (logo fully faded away), the skills grid below begins
+       its own reveal -- so the two never compete for attention, per
+       "로고가 사라지고 난 후에 [스킬 그리드가] 나오게". -->
+  <section class="panel about-panel chapter-title-pin-host" id="ch-edu-logo-pin"></section>
 
-      <div class="edu-skills-col">
-        <p class="skills-hint" data-reveal="true"><i class="fa-solid fa-hand-pointer"></i> Hover or tap a skill</p>
-        <div class="skills-grid" id="skills-grid" data-reveal="true">
-          <button type="button" class="skill-tile" data-skill="92" style="--skill-delay:0">
-            <span class="skill-tile-face skill-tile-face--front">
-              <img src="/static/icons/premiere-pro.svg" alt="" class="skill-icon"/>
-              <span class="skill-name">Premiere Pro</span>
-            </span>
-            <span class="skill-tile-face skill-tile-face--back">
-              <span class="skill-percent" data-target="92">0%</span>
-              <span class="skill-bar"><span class="skill-bar-fill" data-fill="92"></span></span>
-            </span>
-          </button>
-          <button type="button" class="skill-tile" data-skill="85" style="--skill-delay:1">
-            <span class="skill-tile-face skill-tile-face--front">
-              <img src="/static/icons/photoshop.svg" alt="" class="skill-icon"/>
-              <span class="skill-name">Photoshop</span>
-            </span>
-            <span class="skill-tile-face skill-tile-face--back">
-              <span class="skill-percent" data-target="85">0%</span>
-              <span class="skill-bar"><span class="skill-bar-fill" data-fill="85"></span></span>
-            </span>
-          </button>
-          <button type="button" class="skill-tile" data-skill="75" style="--skill-delay:2">
-            <span class="skill-tile-face skill-tile-face--front">
-              <img src="/static/icons/after-effects.svg" alt="" class="skill-icon"/>
-              <span class="skill-name">After Effects</span>
-            </span>
-            <span class="skill-tile-face skill-tile-face--back">
-              <span class="skill-percent" data-target="75">0%</span>
-              <span class="skill-bar"><span class="skill-bar-fill" data-fill="75"></span></span>
-            </span>
-          </button>
-          <button type="button" class="skill-tile" data-skill="80" style="--skill-delay:3">
-            <span class="skill-tile-face skill-tile-face--front">
-              <img src="/static/icons/davinci-resolve.svg" alt="" class="skill-icon"/>
-              <span class="skill-name">DaVinci Resolve</span>
-            </span>
-            <span class="skill-tile-face skill-tile-face--back">
-              <span class="skill-percent" data-target="80">0%</span>
-              <span class="skill-bar"><span class="skill-bar-fill" data-fill="80"></span></span>
-            </span>
-          </button>
-          <button type="button" class="skill-tile" data-skill="65" style="--skill-delay:4">
-            <span class="skill-tile-face skill-tile-face--front">
-              <img src="/static/icons/illustrator.svg" alt="" class="skill-icon"/>
-              <span class="skill-name">Illustrator</span>
-            </span>
-            <span class="skill-tile-face skill-tile-face--back">
-              <span class="skill-percent" data-target="65">0%</span>
-              <span class="skill-bar"><span class="skill-bar-fill" data-fill="65"></span></span>
-            </span>
-          </button>
-          <button type="button" class="skill-tile" data-skill="58" style="--skill-delay:5">
-            <span class="skill-tile-face skill-tile-face--front">
-              <img src="/static/icons/storyboard.svg" alt="" class="skill-icon"/>
-              <span class="skill-name">Storyboarding</span>
-            </span>
-            <span class="skill-tile-face skill-tile-face--back">
-              <span class="skill-percent" data-target="58">0%</span>
-              <span class="skill-bar"><span class="skill-bar-fill" data-fill="58"></span></span>
-            </span>
-          </button>
-          <button type="button" class="skill-tile" data-skill="90" style="--skill-delay:6">
-            <span class="skill-tile-face skill-tile-face--front">
-              <img src="/static/icons/camera.svg" alt="" class="skill-icon"/>
-              <span class="skill-name">Cinematography</span>
-            </span>
-            <span class="skill-tile-face skill-tile-face--back">
-              <span class="skill-percent" data-target="90">0%</span>
-              <span class="skill-bar"><span class="skill-bar-fill" data-fill="90"></span></span>
-            </span>
-          </button>
-          <button type="button" class="skill-tile" data-skill="80" style="--skill-delay:7">
-            <span class="skill-tile-face skill-tile-face--front">
-              <img src="/static/icons/dji.svg" alt="" class="skill-icon"/>
-              <span class="skill-name">Aerial Filming</span>
-            </span>
-            <span class="skill-tile-face skill-tile-face--back">
-              <span class="skill-percent" data-target="80">0%</span>
-              <span class="skill-bar"><span class="skill-bar-fill" data-fill="80"></span></span>
-            </span>
-          </button>
-          <button type="button" class="skill-tile" data-skill="100" style="--skill-delay:8">
-            <span class="skill-tile-face skill-tile-face--front">
-              <img src="/static/icons/flag-kr.svg" alt="" class="skill-icon skill-icon--flag"/>
-              <span class="skill-name">Korean</span>
-            </span>
-            <span class="skill-tile-face skill-tile-face--back">
-              <span class="skill-percent" data-target="100">0%</span>
-              <span class="skill-bar"><span class="skill-bar-fill" data-fill="100"></span></span>
-            </span>
-          </button>
-          <button type="button" class="skill-tile" data-skill="45" style="--skill-delay:9">
-            <span class="skill-tile-face skill-tile-face--front">
-              <img src="/static/icons/flag-us.svg" alt="" class="skill-icon skill-icon--flag"/>
-              <span class="skill-name">English</span>
-            </span>
-            <span class="skill-tile-face skill-tile-face--back">
-              <span class="skill-percent" data-target="45">0%</span>
-              <span class="skill-bar"><span class="skill-bar-fill" data-fill="45"></span></span>
-            </span>
-          </button>
-        </div>
+  <section class="panel about-panel chapter-detail-panel" id="section-ch-edu-detail" data-index="3">
+    <div class="chapter-detail-wrap">
+      <p class="skills-hint" data-reveal="true"><i class="fa-solid fa-hand-pointer"></i> Hover or tap a skill</p>
+      <div class="skills-grid" id="skills-grid" data-reveal="true">
+        <button type="button" class="skill-tile" data-skill="92">
+          <span class="skill-tile-face skill-tile-face--front">
+            <img src="/static/icons/premiere-pro.svg" alt="" class="skill-icon"/>
+            <span class="skill-name">Premiere Pro</span>
+          </span>
+          <span class="skill-tile-face skill-tile-face--back">
+            <span class="skill-percent" data-target="92">0%</span>
+            <span class="skill-bar"><span class="skill-bar-fill" data-fill="92"></span></span>
+          </span>
+        </button>
+        <button type="button" class="skill-tile" data-skill="85">
+          <span class="skill-tile-face skill-tile-face--front">
+            <img src="/static/icons/photoshop.svg" alt="" class="skill-icon"/>
+            <span class="skill-name">Photoshop</span>
+          </span>
+          <span class="skill-tile-face skill-tile-face--back">
+            <span class="skill-percent" data-target="85">0%</span>
+            <span class="skill-bar"><span class="skill-bar-fill" data-fill="85"></span></span>
+          </span>
+        </button>
+        <button type="button" class="skill-tile" data-skill="75">
+          <span class="skill-tile-face skill-tile-face--front">
+            <img src="/static/icons/after-effects.svg" alt="" class="skill-icon"/>
+            <span class="skill-name">After Effects</span>
+          </span>
+          <span class="skill-tile-face skill-tile-face--back">
+            <span class="skill-percent" data-target="75">0%</span>
+            <span class="skill-bar"><span class="skill-bar-fill" data-fill="75"></span></span>
+          </span>
+        </button>
+        <button type="button" class="skill-tile" data-skill="65">
+          <span class="skill-tile-face skill-tile-face--front">
+            <img src="/static/icons/illustrator.svg" alt="" class="skill-icon"/>
+            <span class="skill-name">Illustrator</span>
+          </span>
+          <span class="skill-tile-face skill-tile-face--back">
+            <span class="skill-percent" data-target="65">0%</span>
+            <span class="skill-bar"><span class="skill-bar-fill" data-fill="65"></span></span>
+          </span>
+        </button>
+        <button type="button" class="skill-tile" data-skill="80">
+          <span class="skill-tile-face skill-tile-face--front">
+            <img src="/static/icons/aerial.svg" alt="" class="skill-icon"/>
+            <span class="skill-name">Aerial Filming</span>
+          </span>
+          <span class="skill-tile-face skill-tile-face--back">
+            <span class="skill-percent" data-target="80">0%</span>
+            <span class="skill-bar"><span class="skill-bar-fill" data-fill="80"></span></span>
+          </span>
+        </button>
       </div>
     </div>
   </section>

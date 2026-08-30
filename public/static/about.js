@@ -683,6 +683,14 @@
 
   setupChapterTitleCard({ hostId: 'ch-works-title-pin', cardId: 'ch-works-title-card' });
   setupChapterTitleCard({ hostId: 'ch-edu-title-pin', cardId: 'ch-edu-title-card' });
+  // Round 19 ("두번째 이미지가 아래서 스크롤되다가 중앙에 멈춰, 사라질때는
+  // 축소및 페이드 아웃"): the school-logo lockup reuses this exact same
+  // rise -> hold -> shrink-fade beat against its own short pin host
+  // (ch-edu-logo-pin), which sits in the DOM right before the Education
+  // detail panel/skills grid -- so the skills grid's own data-reveal
+  // trigger only fires once the user has scrolled past this pin's full
+  // release point, i.e. after the logo has completely faded away.
+  setupChapterTitleCard({ hostId: 'ch-edu-logo-pin', cardId: 'ch-edu-logo-card' });
   setupChapterTitleCard({ hostId: 'ch-awards-title-pin', cardId: 'ch-awards-title-card' });
   setupChapterTitleCard({ hostId: 'ch-career-title-pin', cardId: 'ch-career-title-card' });
 
@@ -825,14 +833,31 @@
       });
     }
 
+    // Round 19 ("로고가 사라지고 난 후에 네번째 이미지가 나오게끔" -- unlike
+    // every other chapter, where the body content is INTENDED to
+    // crossfade partially with its title card while both are still
+    // partly visible, the Education chapter's skills grid must wait
+    // until the school-logo card has COMPLETELY faded away before it
+    // starts revealing at all. So this one wrap gets its reveal window
+    // anchored to the logo pin's actual release point (its trigger's
+    // "bottom" crossing the viewport top -- the exact moment the pin
+    // lets go and the card is long gone, opacity having already hit 0
+    // at FADE_END=0.88 progress) instead of the generic "top 160%->85%"
+    // window every other chapter uses.
+    const eduLogoPinHost = document.getElementById('ch-edu-logo-pin');
+    const isEduSkillsWrap = !!(eduLogoPinHost && wrap.closest('#section-ch-edu-detail'));
+    const revealSpan = Math.round(window.innerHeight * 0.6);
+
     ScrollTrigger.create({
-      trigger: wrap,
+      trigger: isEduSkillsWrap ? eduLogoPinHost : wrap,
       // starts while the wrap is still well below the viewport (during
       // the title card's HOLD_END->FADE_END fade-out window) and finishes
       // shortly after the card has fully dissolved -- same overlap shape
-      // as the title-card/filmography-item crossfade.
-      start: 'top 160%',
-      end: 'top 85%',
+      // as the title-card/filmography-item crossfade. (Education's skills
+      // grid instead starts only once the logo pin has fully released --
+      // see isEduSkillsWrap above.)
+      start: isEduSkillsWrap ? 'bottom top' : 'top 160%',
+      end: isEduSkillsWrap ? `bottom top-=${revealSpan}` : 'top 85%',
       scrub: 0.4,
       onUpdate: (self) => render(self.progress),
       onRefresh: (self) => render(self.progress),
