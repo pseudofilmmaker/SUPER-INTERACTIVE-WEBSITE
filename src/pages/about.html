@@ -539,23 +539,28 @@
       <div class="awards-crawl-inner">
       <!-- Round 22 ("영화제 로고만을 뽑아서... 외곽선에 글로우 느낌이
            나게... 같이 본문과 함께 같이 사라지게끔"), Round 23 ("영화제
-           로고는 일렬로 좀더 크게 가는 게 나을 거 같아" -- replaces the
-           original scattered/rotated layout with a single, larger,
-           horizontal row): festival logos pulled from the HOME page's
-           client-wall (same /static/logos/*.svg files, limited to the 3
-           festivals actually credited in this page's own Filmography
-           list above -- Moscow, BIFAN, Thailand -- one of each, no
-           duplicates, so the row stays consistent with this page's own
-           copy rather than pulling in unrelated client logos or
-           repeating one twice). Each gets the festival-logo-outline-glow
-           filter (defined once near the top of <body>) for the hollow/
-           glowing-outline look from the reference screenshot. Sits in
-           NORMAL FLOW above .awards-list (not absolutely positioned/
-           scattered behind it anymore), inside the same
-           .awards-crawl-inner setupGroupCrawl() already animates
-           opacity/transform on -- so the row still rises in, holds, and
-           fades out together with the award entries as a single unit,
-           with no separate timing logic needed. -->
+           로고는 일렬로 좀더 크게 가는 게 나을 거 같아" -- single
+           horizontal row instead of the original scattered/rotated
+           layout), Round 24 ("크기를 더 키우고, 투명도를 50퍼센트까지
+           떨어뜨려주고, 위치는 텍스트 뒤로, 또한 점멸하게 만들어줘" --
+           bigger again, capped at 50% opacity, moved BEHIND the award
+           text as background depth, flickering like neon signage):
+           festival logos pulled from the HOME page's client-wall (same
+           /static/logos/*.svg files, limited to the 3 festivals actually
+           credited in this page's own Filmography list above -- Moscow,
+           BIFAN, Thailand -- one of each, no duplicates, so the row
+           stays consistent with this page's own copy rather than
+           pulling in unrelated client logos or repeating one twice).
+           Each gets the festival-logo-outline-glow filter (defined once
+           near the top of <body>) for the hollow/glowing-outline look
+           from the reference screenshot, plus a CSS flicker animation
+           (see .festival-logo-row-item in style.css). Absolutely
+           positioned + centered behind .awards-list (lower z-index) via
+           style.css, inside the same .awards-crawl-inner
+           setupGroupCrawl() already animates opacity/transform on -- so
+           the row still rises in, holds, and fades out together with
+           the award entries as a single unit, with no separate timing
+           logic needed. -->
       <div class="festival-logo-row" aria-hidden="true">
         <img class="festival-logo-row-item" src="/static/logos/moscow-iff.svg" alt=""/>
         <img class="festival-logo-row-item" src="/static/logos/bifan.svg" alt=""/>

@@ -2795,31 +2795,61 @@ html, body {
 
 /* Round 22 ("영화제 로고만을 뽑아서... 외곽선에 글로우 느낌이 나게
    변형을 해서"), Round 23 ("영화제 로고는 일렬로 좀더 크게 가는 게
-   나을 거 같아" -- replaces the original scattered/rotated layout
-   below with a single centered horizontal row, larger and calmer).
-   Sits in normal flow, ABOVE .awards-list, inside the same
-   .awards-crawl-inner setupGroupCrawl() already animates opacity/
-   transform on, so the row still rises in, holds, and fades out
-   together with the award entries as a single unit -- no separate
-   timing code needed. */
+   나을 거 같아" -- single centered horizontal row instead of the
+   original scattered/rotated layout), Round 24 ("크기를 더 키우고,
+   투명도를 50퍼센트까지 떨어뜨려주고, 위치는 텍스트 뒤로, 또한
+   점멸하게 만들어줘" -- bigger again, capped at 50% opacity, moved
+   BEHIND the award text as background depth instead of sitting above
+   it in normal flow, and given a neon-style flicker instead of a
+   static glow). Absolutely positioned + centered inside
+   .awards-crawl-inner (already position:relative), with a lower
+   z-index than .awards-list so the text reads clearly on top while
+   the glowing logos sit behind it. Still inside .awards-crawl-inner
+   -- the element setupGroupCrawl() animates opacity/transform on --
+   so the whole row rises in, holds, and fades out together with the
+   award entries as one unit; no separate timing code needed. */
 .festival-logo-row {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 0;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: clamp(28px, 6vw, 64px);
-  margin: 0 0 clamp(32px, 5vw, 56px);
+  margin: 0;
+  pointer-events: none;
 }
 .festival-logo-row-item {
-  height: clamp(56px, 7vw, 96px);
+  height: clamp(90px, 12vw, 170px);
   width: auto;
   filter: url(#festival-logo-outline-glow);
-  opacity: 0.85;
+  animation: festivalLogoFlicker 4.2s ease-in-out infinite;
+}
+/* Slight stagger so the three logos don't flicker in lockstep --
+   reads as ambient neon-sign noise rather than a single synced pulse. */
+.festival-logo-row-item:nth-child(1) { animation-delay: -0.4s; }
+.festival-logo-row-item:nth-child(2) { animation-delay: -1.9s; }
+.festival-logo-row-item:nth-child(3) { animation-delay: -3.1s; }
+@keyframes festivalLogoFlicker {
+  0%, 100% { opacity: 0.5; }
+  8%       { opacity: 0.14; }
+  19%      { opacity: 0.42; }
+  27%      { opacity: 0.08; }
+  38%      { opacity: 0.5; }
+  55%      { opacity: 0.18; }
+  67%      { opacity: 0.48; }
+  81%      { opacity: 0.1; }
+  92%      { opacity: 0.36; }
 }
 @media (max-width: 560px) {
-  /* Below this, three full-size logos side by side would crowd the
-     narrow column -- shrink further and tighten the gap. */
-  .festival-logo-row { gap: 18px; margin-bottom: 28px; }
-  .festival-logo-row-item { height: 44px; }
+  /* Below this, three full-size logos side by side would overpower the
+     narrow column -- shrink and tighten the gap while keeping the same
+     behind-text/flicker treatment. */
+  .festival-logo-row { gap: 14px; }
+  .festival-logo-row-item { height: 58px; }
 }
 
 .awards-list {
