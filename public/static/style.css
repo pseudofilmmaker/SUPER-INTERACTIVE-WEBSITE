@@ -2794,89 +2794,32 @@ html, body {
 }
 
 /* Round 22 ("영화제 로고만을 뽑아서... 외곽선에 글로우 느낌이 나게
-   변형을 해서, 랜덤하게 배치되었다가, 같이 본문과 함께 같이 사라지게끔"):
-   a handful of festival logos, scattered at fixed (hand-placed, not
-   JS-randomized -- a static layout reads just as "random" here and
-   avoids any layout-shift/hydration flicker) positions/rotations/sizes
-   behind the awards list. `left: 50%; width: 100vw; transform:
-   translateX(-50%)` breaks the scatter out of .chapter-detail-wrap's
-   900px max-width so logos can drift toward the wider edges of the
-   screen -- like background texture in the starfield -- while the
-   award text itself stays readable in the centered column on top
-   (z-index below .awards-list). Absolutely positioned with `inset`
-   relative to .awards-crawl-inner (position:relative, above) --
-   the SAME element setupGroupCrawl() fades/transforms as a whole --
-   which is what makes this scatter rise in, hold and recede/fade away
-   together with the award entries as a single unit; no separate
-   timing code needed here. */
-.festival-logo-scatter {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  width: 100vw;
-  height: 100%;
-  transform: translateX(-50%);
-  pointer-events: none;
-  z-index: 0;
+   변형을 해서"), Round 23 ("영화제 로고는 일렬로 좀더 크게 가는 게
+   나을 거 같아" -- replaces the original scattered/rotated layout
+   below with a single centered horizontal row, larger and calmer).
+   Sits in normal flow, ABOVE .awards-list, inside the same
+   .awards-crawl-inner setupGroupCrawl() already animates opacity/
+   transform on, so the row still rises in, holds, and fades out
+   together with the award entries as a single unit -- no separate
+   timing code needed. */
+.festival-logo-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(28px, 6vw, 64px);
+  margin: 0 0 clamp(32px, 5vw, 56px);
 }
-.festival-logo-scatter-item {
-  position: absolute;
-  height: auto;
+.festival-logo-row-item {
+  height: clamp(56px, 7vw, 96px);
+  width: auto;
   filter: url(#festival-logo-outline-glow);
-  opacity: 0.55;
-}
-.flogo-1 {
-  top: 2%;
-  left: 6%;
-  width: 78px;
-  transform: rotate(-14deg);
-  opacity: 0.5;
-}
-.flogo-2 {
-  top: 62%;
-  left: 3%;
-  width: 96px;
-  transform: rotate(9deg);
-  opacity: 0.42;
-}
-.flogo-3 {
-  top: 8%;
-  right: 5%;
-  width: 88px;
-  transform: rotate(11deg);
-  opacity: 0.48;
-}
-.flogo-4 {
-  top: 66%;
-  right: 8%;
-  width: 68px;
-  transform: rotate(-8deg);
-  opacity: 0.4;
-}
-.flogo-5 {
-  top: 34%;
-  left: 50%;
-  width: 60px;
-  transform: translateX(-50%) rotate(4deg);
-  opacity: 0.3;
-}
-@media (max-width: 900px) {
-  /* Narrower viewports have far less room on either side of the
-     centered text column once the scatter can no longer spread past
-     it -- thin out to the 4 corner-most logos and shrink them so they
-     stay clear of the readable award text instead of overlapping it. */
-  .flogo-5 { display: none; }
-  .festival-logo-scatter-item { opacity: 0.32; }
-  .flogo-1 { width: 56px; top: 0; left: 2%; }
-  .flogo-2 { width: 64px; top: 70%; left: 1%; }
-  .flogo-3 { width: 60px; top: 4%; right: 2%; }
-  .flogo-4 { width: 50px; top: 74%; right: 3%; }
+  opacity: 0.85;
 }
 @media (max-width: 560px) {
-  /* Below this, even the corner logos start crowding the single-column
-     award entries -- drop to 2 faint accents, top corners only. */
-  .flogo-2, .flogo-4 { display: none; }
-  .festival-logo-scatter-item { opacity: 0.24; }
+  /* Below this, three full-size logos side by side would crowd the
+     narrow column -- shrink further and tighten the gap. */
+  .festival-logo-row { gap: 18px; margin-bottom: 28px; }
+  .festival-logo-row-item { height: 44px; }
 }
 
 .awards-list {

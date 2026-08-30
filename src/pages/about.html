@@ -537,32 +537,29 @@
            that floats in and out of the starfield as a single unit. -->
       <div class="awards-crawl" id="awards-crawl">
       <div class="awards-crawl-inner">
-      <!-- Round 22 ("첫번째 이미지 뒤에는... 영화제 로고만을 뽑아서...
-           외곽선에 글로우 느낌이 나게... 랜덤하게 배치되었다가, 같이
-           본문과 함께 같이 사라지게끔"): festival logos pulled from the
-           HOME page's client-wall (same /static/logos/*.svg files,
-           limited to the 3 festivals actually credited in this page's
-           own Filmography list above -- Moscow, BIFAN, Thailand -- so
-           the scatter stays consistent with this page's own copy
-           rather than pulling in unrelated client logos). Each gets the
-           festival-logo-outline-glow filter (defined once near the top
-           of <body>) for the hollow/glowing-outline look from the
-           reference screenshot, and is scattered at a fixed random
-           position/rotation/size behind the awards list via plain CSS
-           (position:absolute inside this same .awards-crawl-inner).
-           Being INSIDE .awards-crawl-inner -- the exact element
-           setupGroupCrawl() animates opacity/transform on -- is what
-           makes the scatter rise/hold/recede and fade out together
-           with the awards text as a single unit, with no separate
-           timing logic needed. z-index/opacity are tuned low enough
-           that the scatter reads as ambient background texture, never
-           competing with the readable award entries on top of it. -->
-      <div class="festival-logo-scatter" aria-hidden="true">
-        <img class="festival-logo-scatter-item flogo-1" src="/static/logos/moscow-iff.svg" alt=""/>
-        <img class="festival-logo-scatter-item flogo-2" src="/static/logos/bifan.svg" alt=""/>
-        <img class="festival-logo-scatter-item flogo-3" src="/static/logos/itff-thailand.svg" alt=""/>
-        <img class="festival-logo-scatter-item flogo-4" src="/static/logos/moscow-iff.svg" alt=""/>
-        <img class="festival-logo-scatter-item flogo-5" src="/static/logos/bifan.svg" alt=""/>
+      <!-- Round 22 ("영화제 로고만을 뽑아서... 외곽선에 글로우 느낌이
+           나게... 같이 본문과 함께 같이 사라지게끔"), Round 23 ("영화제
+           로고는 일렬로 좀더 크게 가는 게 나을 거 같아" -- replaces the
+           original scattered/rotated layout with a single, larger,
+           horizontal row): festival logos pulled from the HOME page's
+           client-wall (same /static/logos/*.svg files, limited to the 3
+           festivals actually credited in this page's own Filmography
+           list above -- Moscow, BIFAN, Thailand -- one of each, no
+           duplicates, so the row stays consistent with this page's own
+           copy rather than pulling in unrelated client logos or
+           repeating one twice). Each gets the festival-logo-outline-glow
+           filter (defined once near the top of <body>) for the hollow/
+           glowing-outline look from the reference screenshot. Sits in
+           NORMAL FLOW above .awards-list (not absolutely positioned/
+           scattered behind it anymore), inside the same
+           .awards-crawl-inner setupGroupCrawl() already animates
+           opacity/transform on -- so the row still rises in, holds, and
+           fades out together with the award entries as a single unit,
+           with no separate timing logic needed. -->
+      <div class="festival-logo-row" aria-hidden="true">
+        <img class="festival-logo-row-item" src="/static/logos/moscow-iff.svg" alt=""/>
+        <img class="festival-logo-row-item" src="/static/logos/bifan.svg" alt=""/>
+        <img class="festival-logo-row-item" src="/static/logos/itff-thailand.svg" alt=""/>
       </div>
       <ol class="awards-list">
         <li class="awards-item">
