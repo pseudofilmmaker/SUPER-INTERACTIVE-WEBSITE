@@ -2136,7 +2136,23 @@ html, body {
 .detail-card.is-reel .detail-card-media {
   aspect-ratio: 9 / 16;
 }
+/* ROUND 5 BUG FIX: .detail-card-media declares aspect-ratio:4/3 (or 9/16 for
+   .is-reel), but its img/video child was a width:100%/height:100% FLEX ITEM
+   -- that creates a circular sizing conflict where the browser sizes the
+   parent to match the CHILD's own intrinsic aspect ratio instead of
+   honoring the parent's own `aspect-ratio` declaration (measured live:
+   a 258px-wide box rendered at 387px tall, ~2x the correct 193.5px, i.e.
+   matching the source photo's ~1.5 natural ratio, not the intended 4:3).
+   On /photos' fixed-height .thumb-item (440px) that overflow silently ate
+   ~73px off the bottom of .detail-card-body via .thumb-item's own
+   overflow:hidden, clipping the description AND the "View detail ->" link
+   entirely. Taking the img/video out of flex layout with
+   position:absolute;inset:0 lets the parent's aspect-ratio be respected
+   again (verified: 258x194px, correct 4:3). Safe for /videos' .detail-card
+   too, since that markup has no other flex/media siblings relying on the
+   img's participation in layout flow. */
 .detail-card-media img, .detail-card-media video {
+  position: absolute; inset: 0;
   width: 100%; height: 100%; object-fit: cover;
 }
 .detail-card-caption {
