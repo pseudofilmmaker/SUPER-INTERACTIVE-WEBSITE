@@ -700,6 +700,15 @@
 
 </main>
 
+<!-- Reserves one extra viewport height of scroll room below the last
+     panel so #ch-outro-pin-scrub's own ScrollTrigger (end: '+=TOTAL_PX')
+     can actually reach progress 1.0. Without this, the document's max
+     scroll position falls exactly one viewport height short of the
+     pin's computed end, capping progress (and therefore the footer
+     reveal) short even at true scroll-bottom. Mirrors home.html's
+     #scroll-tail-spacer fix for the same underlying issue. -->
+<div id="scroll-tail-spacer" aria-hidden="true"></div>
+
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
 <script src="/static/about.js"></script>
