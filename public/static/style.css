@@ -2289,6 +2289,16 @@ html, body {
   margin-right: -6vw;
   height: 480px;
   overflow: hidden;
+  /* ROUND 6 fix ("컨베이어 좌우 끝에서 카드가 반쯱 잘려 보임" -- cards get
+     hard-clipped by the frame's own rectangular edge while sliding
+     in/out, since the conveyor mechanic itself always has SOME card
+     straddling each edge mid-scrub). Same mask-image edge-fade already
+     used by .client-row's logo marquee above: cards now fade to
+     transparent as they approach the left/right edge instead of being
+     abruptly cut off by a visible straight edge, so a half-visible card
+     reads as an intentional soft fade-out, not a rendering glitch. */
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.85) 10%, rgba(0,0,0,0.85) 90%, transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.85) 10%, rgba(0,0,0,0.85) 90%, transparent 100%);
 }
 @media (max-width: 768px) {
   .thumb-frame--photos-detail { height: 400px; }
