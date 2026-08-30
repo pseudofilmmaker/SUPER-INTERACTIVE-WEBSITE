@@ -2012,15 +2012,21 @@ html, body {
    150px top padding above is for pages whose first section is
    ordinary text content needing header clearance, which no longer
    applies here since photos-hero-panel IS the header-clearing first
-   screen. Extra breathing room before the "Photos" title row is
-   added back explicitly via .detail-hero--split's margin-top instead. */
+   screen. */
 .detail-page--photos { padding-top: 0; }
-.detail-page--photos .detail-hero--split { margin-top: 90px; }
+/* ROUND 3: title/CTA row and filter pills now live INSIDE the same
+   single-viewport .photos-conveyor-panel as the card row (see below),
+   so the old margin-top:90px "extra breathing room before the title
+   row" rule is replaced by the panel's own header-clearance padding-
+   top instead -- keeping .detail-hero--split's own margin at 0 lets
+   the panel's flex gap do the spacing job uniformly. */
+.detail-page--photos .detail-hero--split { margin: 0; max-width: none; }
 /* Category pills on /photos are now read-only indicators (highlighted
    automatically by the conveyor's scroll position, see
    photos-hero.js) rather than click-to-filter buttons -- drop the
    pointer/hover affordance so they don't look clickable. */
 .detail-page--photos .detail-filter-pill { cursor: default; pointer-events: none; }
+.detail-page--photos .detail-filter { margin-bottom: 0; }
 .detail-hero {
   text-align: center;
   margin-bottom: 40px;
@@ -2236,6 +2242,7 @@ html, body {
   width: 100%;
   height: 100vh;
   height: calc(var(--vh, 1vh) * 100);
+  padding-top: 76px; /* clears the fixed .static-header bar */
   display: flex;
   align-items: center;
   justify-content: center;

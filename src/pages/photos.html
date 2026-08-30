@@ -53,48 +53,53 @@
 </div>
 
 <!-- ============================================================
-     The REAL photos page -- ROUND 2 rework, per user feedback:
-     "스크롤 다운으로 넘어갈 수 있게끔해줘 ... 일렬로 나오면서 스와이프가
-     아니고 스크롤 다운으로 반응이 될 수 있게끔". Scroll is free at all
-     times (no lock/gate); #photos-hero-panel is just a transparent
-     100vh spacer over the video layer, then the page continues into
-     an ordinary opaque body. The Codapress "Books by Codapress" card
-     section is now a PINNED, scroll-scrubbed SINGLE-ROW conveyor
-     (mirrors HOME's own #section-4/photo-stack setupConveyor()
-     pattern in app.js/style.css -- .thumb-frame/.thumb-item, GSAP `x`
-     transforms driven by ScrollTrigger scrub) instead of a static
-     wrapping CSS grid -- cards slide in from the right and out to the
-     left as the user scrolls down, never via swipe. -->
+     The REAL photos page -- ROUND 3 rework, per user feedback:
+     "첫번째 첨부 이미지와 두번째 첨부 이미지는 한 화면에 보여야해" -- the
+     title/CTA/category-pill row and the card conveyor must occupy a
+     SINGLE shared viewport together (not two separate 100vh scroll
+     stops). Scroll is free at all times (no lock/gate); the video
+     hero backdrop is visible for exactly one viewport
+     (#photos-hero-panel spacer), then the very next viewport is this
+     single combined "Photos / ALL PHOTOS -> / category pills / card
+     row" panel. The Codapress "Books by Codapress" card section is a
+     PINNED, scroll-scrubbed SINGLE-ROW conveyor (mirrors HOME's own
+     #section-4/photo-stack setupConveyor() pattern in app.js/style.css
+     -- .thumb-frame/.thumb-item, GSAP `x` transforms driven by
+     ScrollTrigger scrub) instead of a static wrapping CSS grid --
+     cards slide in from the right and out to the left as the user
+     scrolls down, never via swipe. -->
 <main class="detail-page detail-page--photos" id="photos-real-content">
 
   <section class="photos-hero-panel" id="photos-hero-panel">
     <div class="scroll-cue" id="photos-scroll-cue"><span></span>SCROLL</div>
   </section>
 
-  <div class="detail-hero detail-hero--split">
-    <div class="detail-hero-copy">
-      <p class="detail-eyebrow">FULL COLLECTION</p>
-      <h1 class="detail-title">Photos</h1>
-    </div>
-    <a class="panel-pill pill-outline detail-cta" href="#photos-conveyor-section">ALL PHOTOS &rarr;</a>
-  </div>
-
-  <nav class="detail-filter" id="photos-category-filter" aria-label="photo category filter">
-    <span class="detail-filter-pill active" data-cat-index="0">Food</span>
-    <span class="detail-filter-pill" data-cat-index="1">Fashion</span>
-    <span class="detail-filter-pill" data-cat-index="2">Product</span>
-    <span class="detail-filter-pill" data-cat-index="3">Places</span>
-    <span class="detail-filter-pill" data-cat-index="4">AI</span>
-  </nav>
-
-  <!-- Pinned single-row conveyor section -- mirrors HOME's
-       .stack-panel #section-4 (id="photo-stack") structurally:
-       .thumb-frame--card wraps 10 .thumb-item cards, GSAP slides them
-       via `x` as ScrollTrigger scrubs this section's pin. Each card
-       keeps the Codapress-style badges/title/desc/"View detail" link
-       built in Round 1, now living inside .thumb-item instead of
-       .detail-card. -->
+  <!-- Pinned single-row conveyor section -- title/CTA/pills + card
+       row share this ONE 100vh panel (per user feedback), mirroring
+       HOME's .stack-panel #section-4 (id="photo-stack") structurally:
+       .thumb-frame--photos-detail wraps 10 .thumb-item cards, GSAP
+       slides them via `x` as ScrollTrigger scrubs this section's pin.
+       Each card keeps the Codapress-style category badge/title/desc/
+       "View detail" link (Bestseller/New badges removed per Round 3
+       feedback -- "베드슽 셀러, 뉴 뱃지를 절대적으로 필요치가 않아"). -->
   <section class="photos-conveyor-panel" id="photos-conveyor-section">
+
+    <div class="detail-hero detail-hero--split">
+      <div class="detail-hero-copy">
+        <p class="detail-eyebrow">FULL COLLECTION</p>
+        <h1 class="detail-title">Photos</h1>
+      </div>
+      <a class="panel-pill pill-outline detail-cta" href="#photos-conveyor-section">ALL PHOTOS &rarr;</a>
+    </div>
+
+    <nav class="detail-filter" id="photos-category-filter" aria-label="photo category filter">
+      <span class="detail-filter-pill active" data-cat-index="0">Food</span>
+      <span class="detail-filter-pill" data-cat-index="1">Fashion</span>
+      <span class="detail-filter-pill" data-cat-index="2">Product</span>
+      <span class="detail-filter-pill" data-cat-index="3">Places</span>
+      <span class="detail-filter-pill" data-cat-index="4">AI</span>
+    </nav>
+
     <div class="thumb-frame thumb-frame--photos-detail" id="photos-conveyor-frame">
 
       <div class="thumb-item" data-card-index="0" data-category="Food">
@@ -102,7 +107,6 @@
           <img src="/static/media/photos/food/food-01.jpg" alt="Golden Hour Feast" loading="lazy">
           <div class="detail-card-badges">
             <span class="detail-badge detail-badge--category">Food</span>
-            <span class="detail-badge detail-badge--bestseller">Bestseller</span>
           </div>
         </div>
         <div class="detail-card-body">
@@ -117,7 +121,6 @@
           <img src="/static/media/photos/food/food-02.jpg" alt="Street Bites" loading="lazy">
           <div class="detail-card-badges">
             <span class="detail-badge detail-badge--category">Food</span>
-            <span class="detail-badge detail-badge--new">New</span>
           </div>
         </div>
         <div class="detail-card-body">
@@ -132,7 +135,6 @@
           <img src="/static/media/photos/fashion/fashion-01.jpg" alt="Studio Light" loading="lazy">
           <div class="detail-card-badges">
             <span class="detail-badge detail-badge--category">Fashion</span>
-            <span class="detail-badge detail-badge--bestseller">Bestseller</span>
           </div>
         </div>
         <div class="detail-card-body">
@@ -147,7 +149,6 @@
           <img src="/static/media/photos/fashion/fashion-02.jpg" alt="Street Style" loading="lazy">
           <div class="detail-card-badges">
             <span class="detail-badge detail-badge--category">Fashion</span>
-            <span class="detail-badge detail-badge--new">New</span>
           </div>
         </div>
         <div class="detail-card-body">
@@ -162,7 +163,6 @@
           <img src="/static/media/photos/product/product-01.jpg" alt="Clean Lines" loading="lazy">
           <div class="detail-card-badges">
             <span class="detail-badge detail-badge--category">Product</span>
-            <span class="detail-badge detail-badge--bestseller">Bestseller</span>
           </div>
         </div>
         <div class="detail-card-body">
@@ -177,7 +177,6 @@
           <img src="/static/media/photos/product/product-02.jpg" alt="Texture Study" loading="lazy">
           <div class="detail-card-badges">
             <span class="detail-badge detail-badge--category">Product</span>
-            <span class="detail-badge detail-badge--new">New</span>
           </div>
         </div>
         <div class="detail-card-body">
@@ -192,7 +191,6 @@
           <img src="/static/media/photos/places/places-01.jpg" alt="Quiet Hours" loading="lazy">
           <div class="detail-card-badges">
             <span class="detail-badge detail-badge--category">Places</span>
-            <span class="detail-badge detail-badge--bestseller">Bestseller</span>
           </div>
         </div>
         <div class="detail-card-body">
@@ -207,7 +205,6 @@
           <img src="/static/media/photos/places/places-02.jpg" alt="City Pulse" loading="lazy">
           <div class="detail-card-badges">
             <span class="detail-badge detail-badge--category">Places</span>
-            <span class="detail-badge detail-badge--new">New</span>
           </div>
         </div>
         <div class="detail-card-body">
@@ -222,7 +219,6 @@
           <img src="/static/media/photos/ai/ai-01.jpg" alt="Synthetic Light" loading="lazy">
           <div class="detail-card-badges">
             <span class="detail-badge detail-badge--category">AI</span>
-            <span class="detail-badge detail-badge--bestseller">Bestseller</span>
           </div>
         </div>
         <div class="detail-card-body">
@@ -237,7 +233,6 @@
           <img src="/static/media/photos/ai/ai-02.jpg" alt="Digital Dream" loading="lazy">
           <div class="detail-card-badges">
             <span class="detail-badge detail-badge--category">AI</span>
-            <span class="detail-badge detail-badge--new">New</span>
           </div>
         </div>
         <div class="detail-card-body">
