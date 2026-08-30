@@ -1929,14 +1929,28 @@ html, body {
 
 /* ============================================================
    /photos video-hero intro (video1 campfire -> video2 starfield
-   loop, then the real page content reveals) -- see photos-hero.js.
-   Same structural "fixed media player" pattern as #fixed-bg-video
-   (HOME) / #about-bg-video-layer (ABOUT): position:fixed, z-index:0,
-   hard-cut opacity swap between stacked <video> elements, single
-   shared scrim for text legibility. Kept as its OWN independent
-   layer (not appended to any other page's video chain) since /photos
-   is a fully separate HTML document with no shared layout.
-   ============================================================ */
+   loop, persistent). Same structural "fixed media player" pattern as
+   #fixed-bg-video (HOME) / #about-bg-video-layer (ABOUT): position:
+   fixed, z-index:0, hard-cut opacity swap between stacked <video>
+   elements, single shared scrim for text legibility. Kept as its OWN
+   independent layer (not appended to any other page's video chain)
+   since /photos is a fully separate HTML document with no shared
+   layout.
+
+   ROUND 2 REWORK (user feedback: "스크롤 다운으로 넘어갈 수 있게끔해줘.
+   다만 두번째 영상은 계속 룹이야") -- the previous scroll-lock-until-
+   video1-ends gate has been REMOVED entirely: scrolling must be
+   possible at all times, and video2's loop is now a genuinely
+   persistent backdrop decoupled from any "revealed" state (see
+   photos-hero.js -- there is no more body.photos-hero-locked /
+   .photos-hero-revealed state machine). The real page content
+   (#photos-real-content) is simply normal scrollable document flow
+   stacked on top of this fixed layer from the very first frame;
+   #photos-hero-panel below is a transparent 100vh spacer so the
+   video plays fully unobstructed for the first viewport, then the
+   user's own scroll carries them past it into the opaque page body,
+   exactly the way HOME's #section-1 sits transparently over
+   #fixed-bg-video before later sections. */
 #photos-hero-video-layer {
   position: fixed;
   inset: 0;
@@ -1960,22 +1974,53 @@ html, body {
     radial-gradient(ellipse at 50% 45%, rgba(5,3,2,0) 0%, rgba(5,3,2,0.32) 82%),
     linear-gradient(180deg, rgba(5,3,2,0.22) 0%, transparent 22%, transparent 78%, rgba(5,3,2,0.3) 100%);
 }
-/* Scroll lock while the hero plays -- the real content sits at
-   opacity:0 underneath it anyway, but this also stops any stray
-   wheel/touch scroll from moving the (empty-looking) page. Removed
-   the instant photos-hero.js's revealPhotosPage() fires. */
-body.photos-hero-locked { overflow: hidden; height: 100vh; }
-/* Once revealed, #photos-real-content paints on top of the still-
-   looping video2 backdrop -- give it its own solid-ish background so
-   long grid sections read clearly rather than showing a starfield
-   through every gap between cards. */
-body.photos-hero-revealed #photos-real-content { position: relative; z-index: 2; }
+/* #photos-real-content must ALWAYS paint above the fixed z-index:0
+   video layer (previously this was only true once .photos-hero-
+   revealed was added post-gate; now that there is no gate, it needs
+   to be unconditional) -- position:relative puts it in the same
+   "positioned, stacked by DOM order" bucket as the fixed video layer,
+   and since it comes later in the DOM, it paints on top. */
+#photos-real-content { position: relative; z-index: 2; }
+
+/* Transparent 100vh spacer sitting as the FIRST child of
+   #photos-real-content: reserves exactly one viewport of ordinary
+   scroll distance during which the fixed video hero underneath is
+   fully unobstructed, then normal scrolling carries the page on into
+   .detail-page-content's opaque body below. Free-scrollable at all
+   times -- there is no pin/lock on this section. */
+.photos-hero-panel {
+  position: relative;
+  height: 100vh;
+  height: calc(var(--vh, 1vh) * 100);
+  background: transparent;
+}
+#photos-scroll-cue {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+}
 
 .detail-page {
   min-height: 100vh;
   padding: 150px 6vw 100px;
   background: var(--bg);
 }
+/* /photos (ROUND 2): the hero video panel must sit flush against the
+   very top of the document (so it lines up exactly with the fixed
+   full-viewport #photos-hero-video-layer behind it) -- the shared
+   150px top padding above is for pages whose first section is
+   ordinary text content needing header clearance, which no longer
+   applies here since photos-hero-panel IS the header-clearing first
+   screen. Extra breathing room before the "Photos" title row is
+   added back explicitly via .detail-hero--split's margin-top instead. */
+.detail-page--photos { padding-top: 0; }
+.detail-page--photos .detail-hero--split { margin-top: 90px; }
+/* Category pills on /photos are now read-only indicators (highlighted
+   automatically by the conveyor's scroll position, see
+   photos-hero.js) rather than click-to-filter buttons -- drop the
+   pointer/hover affordance so they don't look clickable. */
+.detail-page--photos .detail-filter-pill { cursor: default; pointer-events: none; }
 .detail-hero {
   text-align: center;
   margin-bottom: 40px;
@@ -2084,17 +2129,29 @@ body.photos-hero-revealed #photos-real-content { position: relative; z-index: 2;
    PHOTOS card body — Codapress ("Books by Codapress") reference:
    small top-left badge row (category + Bestseller/New pill) over
    the media, then bold title / one-line description / "View
-   detail ->" link beneath. Replaces the old cream-polaroid-mat
-   treatment + plain uppercase caption on /photos with this
-   Codapress-style layout; /videos (which shares .detail-card/
-   .detail-grid but not .detail-page--photos) is untouched.
+   detail ->" link beneath.
+
+   ROUND 2: the card grid on /photos was replaced by a pinned,
+   scroll-scrubbed single-row conveyor (.thumb-frame--photos-detail
+   .thumb-item, see below), so this Codapress body treatment is now
+   applied to .thumb-item instead of .detail-card. /videos (which
+   still uses the original .detail-card/.detail-grid static grid) is
+   untouched -- .detail-badge/.detail-card-body/etc. below are
+   generic classes shared by both markups.
    ============================================================ */
-.detail-page--photos .detail-card {
-  background: linear-gradient(150deg, #16110c, #0a0a0d 78%);
-  display: flex;
+.thumb-frame--photos-detail .thumb-item {
+  width: 260px;
+  height: 440px;
   flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  background: linear-gradient(150deg, #16110c, #0a0a0d 78%);
+  cursor: default;
 }
-.detail-page--photos .detail-card-media { flex: 0 0 auto; }
+.thumb-frame--photos-detail .thumb-item .detail-card-media { flex: 0 0 auto; }
+@media (max-width: 768px) {
+  .thumb-frame--photos-detail .thumb-item { width: 210px; height: 380px; }
+}
 .detail-card-badges {
   position: absolute;
   top: 10px; left: 10px;
@@ -2162,6 +2219,41 @@ body.photos-hero-revealed #photos-real-content { position: relative; z-index: 2;
   transition: color 0.2s ease;
 }
 .detail-card-link:hover { color: var(--accent-gold); }
+
+/* ============================================================
+   PHOTOS conveyor panel (ROUND 2) — pinned single-row card carousel,
+   direct adaptation of HOME's .stack-panel/#section-4/photo-stack
+   (see app.js's setupConveyor() + style.css's .thumb-frame/.thumb-item
+   rules above). Unlike HOME's version this is NOT nested inside the
+   #scroll-container "panel" system (no fixed header-clearance safe
+   zones to dodge -- /photos' header uses .static-header, which is a
+   normal top bar, not an overlay title/nav that needs padding
+   reserved around it) so the pin container here is a simpler locked-
+   100vh box with its own centered flex layout.
+   ============================================================ */
+.photos-conveyor-panel {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  height: calc(var(--vh, 1vh) * 100);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 24px;
+  overflow: hidden;
+}
+.thumb-frame--photos-detail {
+  position: relative;
+  width: calc(100% + 12vw);
+  margin-left: -6vw;
+  margin-right: -6vw;
+  height: 480px;
+  overflow: hidden;
+}
+@media (max-width: 768px) {
+  .thumb-frame--photos-detail { height: 400px; }
+}
 
 /* Lightbox for "View detail" links */
 .photo-lightbox {

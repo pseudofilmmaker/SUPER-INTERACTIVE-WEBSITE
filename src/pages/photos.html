@@ -13,6 +13,7 @@
 </head>
 <body>
 
+
 <header id="site-header" class="static-header about-header-transparent">
   <a class="brand" href="/">JUNE HONG</a>
   <nav class="main-nav" aria-label="primary navigation">
@@ -32,10 +33,14 @@
      backdrop -- same fixed position:fixed / z-index:0 "media player"
      pattern used by #fixed-bg-video (HOME) and #about-bg-video-layer
      (ABOUT), so it paints behind the header and the real page content
-     below rather than being its own separate splash screen. No scroll-
-     scrub here: the user's own spec describes a straight sequential
-     handoff + loop, not a scroll-driven scrub, so there is no
-     ScrollTrigger involved in this layer at all. -->
+     below rather than being its own separate splash screen.
+
+     ROUND 2: this layer is now a genuinely independent, ALWAYS-ON
+     backdrop -- there is no more scroll-lock gate. video2's loop
+     continues regardless of scroll position; #photos-hero-panel
+     below is just a transparent 100vh spacer that lets it show
+     through unobstructed for exactly one viewport before the user's
+     own scroll-down carries them into the real page content. -->
 <div id="photos-hero-video-layer" aria-hidden="true">
   <video class="photos-hero-video-el" id="photos-hero-video-1"
          src="/static/media/photos/photos-hero-01-campfire.mp4"
@@ -48,188 +53,208 @@
 </div>
 
 <!-- ============================================================
-     The REAL photos page. Sits gated (opacity:0, pointer-events:none,
-     scroll locked) behind the hero above until video-1 hands off to
-     video-2 -- "후에 첫번째 첨부 이미지가 뜨면서 본격적으로 포토관련
-     페이지가 시작되는 거야" -- at which point photos-hero.js adds
-     .is-revealed and this fades/rises in on top of the still-looping
-     video-2 backdrop. Header row + card badges/CTA below are modeled
-     on the referenced codapress.co.uk "Books by Codapress" section
-     (eyebrow+title left / "ALL PHOTOS →" pill right; Bestseller/New
-     badges + title + one-line description + "View detail" link per
-     card), re-mapped from books onto photo categories. -->
+     The REAL photos page -- ROUND 2 rework, per user feedback:
+     "스크롤 다운으로 넘어갈 수 있게끔해줘 ... 일렬로 나오면서 스와이프가
+     아니고 스크롤 다운으로 반응이 될 수 있게끔". Scroll is free at all
+     times (no lock/gate); #photos-hero-panel is just a transparent
+     100vh spacer over the video layer, then the page continues into
+     an ordinary opaque body. The Codapress "Books by Codapress" card
+     section is now a PINNED, scroll-scrubbed SINGLE-ROW conveyor
+     (mirrors HOME's own #section-4/photo-stack setupConveyor()
+     pattern in app.js/style.css -- .thumb-frame/.thumb-item, GSAP `x`
+     transforms driven by ScrollTrigger scrub) instead of a static
+     wrapping CSS grid -- cards slide in from the right and out to the
+     left as the user scrolls down, never via swipe. -->
 <main class="detail-page detail-page--photos" id="photos-real-content">
+
+  <section class="photos-hero-panel" id="photos-hero-panel">
+    <div class="scroll-cue" id="photos-scroll-cue"><span></span>SCROLL</div>
+  </section>
+
   <div class="detail-hero detail-hero--split">
     <div class="detail-hero-copy">
       <p class="detail-eyebrow">FULL COLLECTION</p>
       <h1 class="detail-title">Photos</h1>
     </div>
-    <a class="panel-pill pill-outline detail-cta" href="#photos-real-content">ALL PHOTOS &rarr;</a>
+    <a class="panel-pill pill-outline detail-cta" href="#photos-conveyor-section">ALL PHOTOS &rarr;</a>
   </div>
 
-  <nav class="detail-filter" aria-label="photo category filter">
-    <button class="detail-filter-pill active" data-filter="all">All</button>
-    <button class="detail-filter-pill" data-filter="Food">Food</button>
-    <button class="detail-filter-pill" data-filter="Fashion">Fashion</button>
-    <button class="detail-filter-pill" data-filter="Product">Product</button>
-    <button class="detail-filter-pill" data-filter="Places">Places</button>
-    <button class="detail-filter-pill" data-filter="AI">AI</button>
+  <nav class="detail-filter" id="photos-category-filter" aria-label="photo category filter">
+    <span class="detail-filter-pill active" data-cat-index="0">Food</span>
+    <span class="detail-filter-pill" data-cat-index="1">Fashion</span>
+    <span class="detail-filter-pill" data-cat-index="2">Product</span>
+    <span class="detail-filter-pill" data-cat-index="3">Places</span>
+    <span class="detail-filter-pill" data-cat-index="4">AI</span>
   </nav>
 
-  <div class="detail-grid">
+  <!-- Pinned single-row conveyor section -- mirrors HOME's
+       .stack-panel #section-4 (id="photo-stack") structurally:
+       .thumb-frame--card wraps 10 .thumb-item cards, GSAP slides them
+       via `x` as ScrollTrigger scrubs this section's pin. Each card
+       keeps the Codapress-style badges/title/desc/"View detail" link
+       built in Round 1, now living inside .thumb-item instead of
+       .detail-card. -->
+  <section class="photos-conveyor-panel" id="photos-conveyor-section">
+    <div class="thumb-frame thumb-frame--photos-detail" id="photos-conveyor-frame">
 
-    <div class="detail-card" data-category="Food">
-      <div class="detail-card-media">
-        <img src="/static/media/photos/food/food-01.jpg" alt="Golden Hour Feast" loading="lazy">
-        <div class="detail-card-badges">
-          <span class="detail-badge detail-badge--category">Food</span>
-          <span class="detail-badge detail-badge--bestseller">Bestseller</span>
+      <div class="thumb-item" data-card-index="0" data-category="Food">
+        <div class="detail-card-media">
+          <img src="/static/media/photos/food/food-01.jpg" alt="Golden Hour Feast" loading="lazy">
+          <div class="detail-card-badges">
+            <span class="detail-badge detail-badge--category">Food</span>
+            <span class="detail-badge detail-badge--bestseller">Bestseller</span>
+          </div>
+        </div>
+        <div class="detail-card-body">
+          <h3 class="detail-card-title">Golden Hour Feast</h3>
+          <p class="detail-card-desc">Steam rising off a rustic dinner table, lit by late afternoon sun.</p>
+          <a class="detail-card-link" href="/static/media/photos/food/food-01.jpg" data-lightbox>View detail &rarr;</a>
         </div>
       </div>
-      <div class="detail-card-body">
-        <h3 class="detail-card-title">Golden Hour Feast</h3>
-        <p class="detail-card-desc">Steam rising off a rustic dinner table, lit by late afternoon sun.</p>
-        <a class="detail-card-link" href="/static/media/photos/food/food-01.jpg" data-lightbox>View detail &rarr;</a>
-      </div>
-    </div>
 
-    <div class="detail-card" data-category="Food">
-      <div class="detail-card-media">
-        <img src="/static/media/photos/food/food-02.jpg" alt="Street Bites" loading="lazy">
-        <div class="detail-card-badges">
-          <span class="detail-badge detail-badge--category">Food</span>
-          <span class="detail-badge detail-badge--new">New</span>
+      <div class="thumb-item" data-card-index="1" data-category="Food">
+        <div class="detail-card-media">
+          <img src="/static/media/photos/food/food-02.jpg" alt="Street Bites" loading="lazy">
+          <div class="detail-card-badges">
+            <span class="detail-badge detail-badge--category">Food</span>
+            <span class="detail-badge detail-badge--new">New</span>
+          </div>
+        </div>
+        <div class="detail-card-body">
+          <h3 class="detail-card-title">Street Bites</h3>
+          <p class="detail-card-desc">Quick candid shots from night market stalls and kitchen counters.</p>
+          <a class="detail-card-link" href="/static/media/photos/food/food-02.jpg" data-lightbox>View detail &rarr;</a>
         </div>
       </div>
-      <div class="detail-card-body">
-        <h3 class="detail-card-title">Street Bites</h3>
-        <p class="detail-card-desc">Quick candid shots from night market stalls and kitchen counters.</p>
-        <a class="detail-card-link" href="/static/media/photos/food/food-02.jpg" data-lightbox>View detail &rarr;</a>
-      </div>
-    </div>
 
-    <div class="detail-card" data-category="Fashion">
-      <div class="detail-card-media">
-        <img src="/static/media/photos/fashion/fashion-01.jpg" alt="Studio Light" loading="lazy">
-        <div class="detail-card-badges">
-          <span class="detail-badge detail-badge--category">Fashion</span>
-          <span class="detail-badge detail-badge--bestseller">Bestseller</span>
+      <div class="thumb-item" data-card-index="2" data-category="Fashion">
+        <div class="detail-card-media">
+          <img src="/static/media/photos/fashion/fashion-01.jpg" alt="Studio Light" loading="lazy">
+          <div class="detail-card-badges">
+            <span class="detail-badge detail-badge--category">Fashion</span>
+            <span class="detail-badge detail-badge--bestseller">Bestseller</span>
+          </div>
+        </div>
+        <div class="detail-card-body">
+          <h3 class="detail-card-title">Studio Light</h3>
+          <p class="detail-card-desc">Editorial portraits built around structured silhouettes and shadow.</p>
+          <a class="detail-card-link" href="/static/media/photos/fashion/fashion-01.jpg" data-lightbox>View detail &rarr;</a>
         </div>
       </div>
-      <div class="detail-card-body">
-        <h3 class="detail-card-title">Studio Light</h3>
-        <p class="detail-card-desc">Editorial portraits built around structured silhouettes and shadow.</p>
-        <a class="detail-card-link" href="/static/media/photos/fashion/fashion-01.jpg" data-lightbox>View detail &rarr;</a>
-      </div>
-    </div>
 
-    <div class="detail-card" data-category="Fashion">
-      <div class="detail-card-media">
-        <img src="/static/media/photos/fashion/fashion-02.jpg" alt="Street Style" loading="lazy">
-        <div class="detail-card-badges">
-          <span class="detail-badge detail-badge--category">Fashion</span>
-          <span class="detail-badge detail-badge--new">New</span>
+      <div class="thumb-item" data-card-index="3" data-category="Fashion">
+        <div class="detail-card-media">
+          <img src="/static/media/photos/fashion/fashion-02.jpg" alt="Street Style" loading="lazy">
+          <div class="detail-card-badges">
+            <span class="detail-badge detail-badge--category">Fashion</span>
+            <span class="detail-badge detail-badge--new">New</span>
+          </div>
+        </div>
+        <div class="detail-card-body">
+          <h3 class="detail-card-title">Street Style</h3>
+          <p class="detail-card-desc">Off-duty looks captured between shows and city corners.</p>
+          <a class="detail-card-link" href="/static/media/photos/fashion/fashion-02.jpg" data-lightbox>View detail &rarr;</a>
         </div>
       </div>
-      <div class="detail-card-body">
-        <h3 class="detail-card-title">Street Style</h3>
-        <p class="detail-card-desc">Off-duty looks captured between shows and city corners.</p>
-        <a class="detail-card-link" href="/static/media/photos/fashion/fashion-02.jpg" data-lightbox>View detail &rarr;</a>
-      </div>
-    </div>
 
-    <div class="detail-card" data-category="Product">
-      <div class="detail-card-media">
-        <img src="/static/media/photos/product/product-01.jpg" alt="Clean Lines" loading="lazy">
-        <div class="detail-card-badges">
-          <span class="detail-badge detail-badge--category">Product</span>
-          <span class="detail-badge detail-badge--bestseller">Bestseller</span>
+      <div class="thumb-item" data-card-index="4" data-category="Product">
+        <div class="detail-card-media">
+          <img src="/static/media/photos/product/product-01.jpg" alt="Clean Lines" loading="lazy">
+          <div class="detail-card-badges">
+            <span class="detail-badge detail-badge--category">Product</span>
+            <span class="detail-badge detail-badge--bestseller">Bestseller</span>
+          </div>
+        </div>
+        <div class="detail-card-body">
+          <h3 class="detail-card-title">Clean Lines</h3>
+          <p class="detail-card-desc">Minimal product setups with soft box lighting and negative space.</p>
+          <a class="detail-card-link" href="/static/media/photos/product/product-01.jpg" data-lightbox>View detail &rarr;</a>
         </div>
       </div>
-      <div class="detail-card-body">
-        <h3 class="detail-card-title">Clean Lines</h3>
-        <p class="detail-card-desc">Minimal product setups with soft box lighting and negative space.</p>
-        <a class="detail-card-link" href="/static/media/photos/product/product-01.jpg" data-lightbox>View detail &rarr;</a>
-      </div>
-    </div>
 
-    <div class="detail-card" data-category="Product">
-      <div class="detail-card-media">
-        <img src="/static/media/photos/product/product-02.jpg" alt="Texture Study" loading="lazy">
-        <div class="detail-card-badges">
-          <span class="detail-badge detail-badge--category">Product</span>
-          <span class="detail-badge detail-badge--new">New</span>
+      <div class="thumb-item" data-card-index="5" data-category="Product">
+        <div class="detail-card-media">
+          <img src="/static/media/photos/product/product-02.jpg" alt="Texture Study" loading="lazy">
+          <div class="detail-card-badges">
+            <span class="detail-badge detail-badge--category">Product</span>
+            <span class="detail-badge detail-badge--new">New</span>
+          </div>
+        </div>
+        <div class="detail-card-body">
+          <h3 class="detail-card-title">Texture Study</h3>
+          <p class="detail-card-desc">Macro details that highlight material, grain, and finish.</p>
+          <a class="detail-card-link" href="/static/media/photos/product/product-02.jpg" data-lightbox>View detail &rarr;</a>
         </div>
       </div>
-      <div class="detail-card-body">
-        <h3 class="detail-card-title">Texture Study</h3>
-        <p class="detail-card-desc">Macro details that highlight material, grain, and finish.</p>
-        <a class="detail-card-link" href="/static/media/photos/product/product-02.jpg" data-lightbox>View detail &rarr;</a>
-      </div>
-    </div>
 
-    <div class="detail-card" data-category="Places">
-      <div class="detail-card-media">
-        <img src="/static/media/photos/places/places-01.jpg" alt="Quiet Hours" loading="lazy">
-        <div class="detail-card-badges">
-          <span class="detail-badge detail-badge--category">Places</span>
-          <span class="detail-badge detail-badge--bestseller">Bestseller</span>
+      <div class="thumb-item" data-card-index="6" data-category="Places">
+        <div class="detail-card-media">
+          <img src="/static/media/photos/places/places-01.jpg" alt="Quiet Hours" loading="lazy">
+          <div class="detail-card-badges">
+            <span class="detail-badge detail-badge--category">Places</span>
+            <span class="detail-badge detail-badge--bestseller">Bestseller</span>
+          </div>
+        </div>
+        <div class="detail-card-body">
+          <h3 class="detail-card-title">Quiet Hours</h3>
+          <p class="detail-card-desc">Empty streets and interiors caught in early morning stillness.</p>
+          <a class="detail-card-link" href="/static/media/photos/places/places-01.jpg" data-lightbox>View detail &rarr;</a>
         </div>
       </div>
-      <div class="detail-card-body">
-        <h3 class="detail-card-title">Quiet Hours</h3>
-        <p class="detail-card-desc">Empty streets and interiors caught in early morning stillness.</p>
-        <a class="detail-card-link" href="/static/media/photos/places/places-01.jpg" data-lightbox>View detail &rarr;</a>
-      </div>
-    </div>
 
-    <div class="detail-card" data-category="Places">
-      <div class="detail-card-media">
-        <img src="/static/media/photos/places/places-02.jpg" alt="City Pulse" loading="lazy">
-        <div class="detail-card-badges">
-          <span class="detail-badge detail-badge--category">Places</span>
-          <span class="detail-badge detail-badge--new">New</span>
+      <div class="thumb-item" data-card-index="7" data-category="Places">
+        <div class="detail-card-media">
+          <img src="/static/media/photos/places/places-02.jpg" alt="City Pulse" loading="lazy">
+          <div class="detail-card-badges">
+            <span class="detail-badge detail-badge--category">Places</span>
+            <span class="detail-badge detail-badge--new">New</span>
+          </div>
+        </div>
+        <div class="detail-card-body">
+          <h3 class="detail-card-title">City Pulse</h3>
+          <p class="detail-card-desc">Dense, layered frames from busy intersections after dark.</p>
+          <a class="detail-card-link" href="/static/media/photos/places/places-02.jpg" data-lightbox>View detail &rarr;</a>
         </div>
       </div>
-      <div class="detail-card-body">
-        <h3 class="detail-card-title">City Pulse</h3>
-        <p class="detail-card-desc">Dense, layered frames from busy intersections after dark.</p>
-        <a class="detail-card-link" href="/static/media/photos/places/places-02.jpg" data-lightbox>View detail &rarr;</a>
-      </div>
-    </div>
 
-    <div class="detail-card" data-category="AI">
-      <div class="detail-card-media">
-        <img src="/static/media/photos/ai/ai-01.jpg" alt="Synthetic Light" loading="lazy">
-        <div class="detail-card-badges">
-          <span class="detail-badge detail-badge--category">AI</span>
-          <span class="detail-badge detail-badge--bestseller">Bestseller</span>
+      <div class="thumb-item" data-card-index="8" data-category="AI">
+        <div class="detail-card-media">
+          <img src="/static/media/photos/ai/ai-01.jpg" alt="Synthetic Light" loading="lazy">
+          <div class="detail-card-badges">
+            <span class="detail-badge detail-badge--category">AI</span>
+            <span class="detail-badge detail-badge--bestseller">Bestseller</span>
+          </div>
+        </div>
+        <div class="detail-card-body">
+          <h3 class="detail-card-title">Synthetic Light</h3>
+          <p class="detail-card-desc">Generative compositions exploring color and form beyond the camera.</p>
+          <a class="detail-card-link" href="/static/media/photos/ai/ai-01.jpg" data-lightbox>View detail &rarr;</a>
         </div>
       </div>
-      <div class="detail-card-body">
-        <h3 class="detail-card-title">Synthetic Light</h3>
-        <p class="detail-card-desc">Generative compositions exploring color and form beyond the camera.</p>
-        <a class="detail-card-link" href="/static/media/photos/ai/ai-01.jpg" data-lightbox>View detail &rarr;</a>
-      </div>
-    </div>
 
-    <div class="detail-card" data-category="AI">
-      <div class="detail-card-media">
-        <img src="/static/media/photos/ai/ai-02.jpg" alt="Digital Dream" loading="lazy">
-        <div class="detail-card-badges">
-          <span class="detail-badge detail-badge--category">AI</span>
-          <span class="detail-badge detail-badge--new">New</span>
+      <div class="thumb-item" data-card-index="9" data-category="AI">
+        <div class="detail-card-media">
+          <img src="/static/media/photos/ai/ai-02.jpg" alt="Digital Dream" loading="lazy">
+          <div class="detail-card-badges">
+            <span class="detail-badge detail-badge--category">AI</span>
+            <span class="detail-badge detail-badge--new">New</span>
+          </div>
+        </div>
+        <div class="detail-card-body">
+          <h3 class="detail-card-title">Digital Dream</h3>
+          <p class="detail-card-desc">AI-assisted imagery blending photographic texture with imagination.</p>
+          <a class="detail-card-link" href="/static/media/photos/ai/ai-02.jpg" data-lightbox>View detail &rarr;</a>
         </div>
       </div>
-      <div class="detail-card-body">
-        <h3 class="detail-card-title">Digital Dream</h3>
-        <p class="detail-card-desc">AI-assisted imagery blending photographic texture with imagination.</p>
-        <a class="detail-card-link" href="/static/media/photos/ai/ai-02.jpg" data-lightbox>View detail &rarr;</a>
-      </div>
-    </div>
 
-  </div>
+    </div>
+    <div class="carousel-dots" id="photos-conveyor-dots">
+      <span class="carousel-dot active"></span><span class="carousel-dot"></span><span class="carousel-dot"></span><span class="carousel-dot"></span><span class="carousel-dot"></span><span class="carousel-dot"></span><span class="carousel-dot"></span><span class="carousel-dot"></span><span class="carousel-dot"></span><span class="carousel-dot"></span>
+    </div>
+  </section>
+
 </main>
+<div id="scroll-tail-spacer" aria-hidden="true"></div>
 
 <!-- Lightbox target for "View detail" links -->
 <div class="photo-lightbox" id="photo-lightbox" aria-hidden="true">
@@ -238,6 +263,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
 <script src="/static/detail-page.js"></script>
 <script src="/static/photos-hero.js"></script>
 </body>
