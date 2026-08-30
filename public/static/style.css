@@ -2259,6 +2259,281 @@ html, body {
 .detail-card-link:hover { color: var(--accent-gold); }
 
 /* ============================================================
+   VIDEOS "Featured Works" panel (ROUND 7) — ported from Busan Film
+   Commission's bfc.or.kr "04 추천지원작" section (.main_con4 /
+   .m4_support / .poster_on / .poster_bg), fetched and inspected
+   directly from the live site per user instruction. Structure kept:
+   a numbered section heading + "view all" link, a bordered vertical
+   auto-cycling poster carousel with a dark hover-reveal metadata
+   panel, sitting in front of a decorative staggered grid of dimmed
+   background poster thumbnails.
+
+   Reimplemented WITHOUT jQuery/slick.js (BFC's actual carousel
+   engine) since this project has no jQuery dependency anywhere and
+   deliberately stays on vanilla JS + CSS transitions / GSAP only
+   (see photos-hero.js, app.js) -- see videos-poster.js for the
+   auto-advance timer + slide-class toggling that replaces slick's
+   vertical fade/slide behavior. The CSS hover-reveal text panel
+   (sliding in from the right, matching BFC's `left:100% -> left:0`
+   technique almost verbatim) needed no such substitution, since BFC
+   itself implements that part in pure CSS :hover, not JS.
+   ============================================================ */
+.rec-works {
+  max-width: 1400px;
+  margin: 0 auto 90px;
+  position: relative;
+}
+.rec-works-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 36px;
+  flex-wrap: wrap;
+}
+.rec-works-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+.rec-works-badge {
+  flex-shrink: 0;
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-clean);
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a0e04;
+  background: linear-gradient(90deg, var(--accent-gold), var(--accent-flame));
+  margin-top: 2px;
+}
+.rec-works-title {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: clamp(26px, 3.4vw, 38px);
+  margin: 0 0 8px;
+  color: var(--fg);
+}
+.rec-works-sub {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--fg-dim);
+  margin: 0;
+  max-width: 480px;
+}
+.rec-works-more {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-clean);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  padding: 10px 20px;
+  text-decoration: none;
+  transition: all 0.25s ease;
+}
+.rec-works-more:hover { color: var(--fg); border-color: rgba(255,255,255,0.4); }
+.rec-works-more-arrow { transition: transform 0.25s ease; }
+.rec-works-more:hover .rec-works-more-arrow { transform: translateX(4px); }
+
+/* Stage: houses the decorative background grid (BFC's .poster_bg)
+   behind the bordered hero carousel (BFC's .poster_on). */
+.rec-works-stage {
+  position: relative;
+  height: 560px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 18px;
+  background: radial-gradient(ellipse at center, #14100c 0%, #050506 78%);
+}
+
+/* BFC .poster_bg: an absolute staggered grid of dimmed thumbnails
+   framing the hero poster. Ported as a simple flex row of columns
+   (some offset downward) instead of BFC's 5-col CSS grid, since this
+   panel is a fixed-height contained stage rather than BFC's full
+   page-height section. */
+.rec-poster-bg {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 0 4vw;
+  z-index: 1;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.9) 14%, rgba(0,0,0,0.9) 86%, transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.9) 14%, rgba(0,0,0,0.9) 86%, transparent 100%);
+}
+.rec-poster-bg-col {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  flex-shrink: 0;
+}
+.rec-poster-bg-col--down { transform: translateY(70px); }
+.rec-poster-bg-item {
+  width: 150px;
+  aspect-ratio: 4 / 3;
+  border-radius: 14px;
+  overflow: hidden;
+  filter: brightness(32%);
+  line-height: 0;
+}
+.rec-poster-bg-item img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
+@media (max-width: 900px) {
+  .rec-poster-bg-item { width: 110px; }
+  .rec-poster-bg-col--down { transform: translateY(46px); }
+}
+
+/* BFC .poster_on: 400px-wide bordered, rounded poster box. Fixed
+   dims kept close to BFC's own (400px wide) since it reads as a
+   "movie poster" proportion (portrait 4:3-ish crop of the 675x1200
+   reel stills already used elsewhere on /videos for REELS cards). */
+.rec-poster-on {
+  position: relative;
+  z-index: 2;
+  width: 320px;
+  height: 480px;
+  border-radius: 24px;
+  overflow: hidden;
+  border: 5px solid rgba(255,255,255,0.3);
+  box-shadow: 0 30px 70px rgba(0,0,0,0.55);
+  flex-shrink: 0;
+}
+.rec-poster-on-track {
+  position: relative;
+  width: 100%; height: 100%;
+}
+.rec-poster-slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+  pointer-events: none;
+}
+.rec-poster-slide.is-active {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.rec-poster-slide img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
+/* BFC .box .text: dark overlay panel, hidden offscreen at
+   left:100%, sliding fully into view (left:0) on hover -- kept
+   almost verbatim from BFC's own rule, including the two-stage
+   staggered reveal (heading first, then the metadata list) via
+   transition-delay. */
+.rec-poster-text {
+  position: absolute;
+  inset: 0;
+  left: 100%;
+  padding: 26px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+  background: rgba(0,0,0,0.68);
+  transition: left 0.3s ease-in;
+}
+.rec-poster-slide:hover .rec-poster-text,
+.rec-poster-slide:focus-within .rec-poster-text { left: 0; }
+.rec-poster-text h3 {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 20px;
+  line-height: 1.3;
+  color: #fff;
+  margin: 0 0 16px;
+  transform: translateX(24px);
+  opacity: 0;
+  transition: all 0.4s ease-in;
+}
+.rec-poster-slide:hover .rec-poster-text h3,
+.rec-poster-slide:focus-within .rec-poster-text h3 { transform: translateX(0); opacity: 1; transition-delay: 0.25s; }
+.rec-poster-text ul {
+  list-style: none;
+  margin: 0; padding: 0;
+  transform: translateX(24px);
+  opacity: 0;
+  transition: all 0.4s ease-in;
+}
+.rec-poster-slide:hover .rec-poster-text ul,
+.rec-poster-slide:focus-within .rec-poster-text ul { transform: translateX(0); opacity: 1; transition-delay: 0.45s; }
+.rec-poster-text ul li { display: flex; margin-bottom: 8px; }
+.rec-poster-text ul li:last-child { margin-bottom: 0; }
+.rec-poster-text .term {
+  flex-shrink: 0;
+  width: 52px;
+  font-family: var(--font-clean);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: rgba(255,255,255,0.65);
+  position: relative;
+  margin-right: 14px;
+}
+.rec-poster-text .term::after {
+  content: '';
+  display: block;
+  position: absolute;
+  top: 2px; right: -7px;
+  width: 1px; height: 12px;
+  background: rgba(255,255,255,0.4);
+}
+.rec-poster-text .desc {
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: rgba(255,255,255,0.92);
+}
+.rec-poster-on-dots {
+  position: absolute;
+  bottom: 16px; left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  display: flex;
+  gap: 7px;
+}
+.rec-poster-on-dots span {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.3);
+  transition: background 0.25s ease, transform 0.25s ease;
+}
+.rec-poster-on-dots span.is-active {
+  background: var(--accent-flame);
+  transform: scale(1.3);
+}
+@media (max-width: 900px) {
+  .rec-works-stage { height: 460px; }
+  .rec-poster-on { width: 240px; height: 380px; border-width: 4px; border-radius: 18px; }
+  .rec-poster-text .term { display: none; }
+}
+@media (max-width: 640px) {
+  .rec-works-stage { height: 400px; }
+  .rec-poster-bg { display: none; }
+  .rec-poster-on { width: 210px; height: 340px; }
+}
+
+/* ============================================================
    PHOTOS conveyor panel (ROUND 2) — pinned single-row card carousel,
    direct adaptation of HOME's .stack-panel/#section-4/photo-stack
    (see app.js's setupConveyor() + style.css's .thumb-frame/.thumb-item
