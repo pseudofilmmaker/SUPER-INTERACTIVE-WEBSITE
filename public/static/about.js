@@ -691,43 +691,61 @@
   // use the same 3D-perspective Star-Wars-crawl treatment as the hero's
   // own crawl text (CRAWL_TILT_DEG-tilted rotateX, receding).
   //
-  // ROUND 16 FIX ("두번째 이미지의 코딩을 확인해서, 이런식으로 글자의
-  // 각도가 수정돼야해" -- reference image 2 is the hero's flat, non-
-  // tilted intro paragraph; the filmography list text should read the
-  // SAME flat way, with no 3D rotateX angle at all): the rotateX tilt is
-  // removed entirely. Each .filmography-item-inner now just fades + rises
-  // a flat translateY as its own <li> scrolls into view (matching the
-  // hero crawl text's own flat, front-facing look), instead of tilting
-  // back/forward in 3D space.
+  // ROUND 16 (mis-)fix ("두번째 이미지의 코딩을 확인해서, 이런식으로
+  // 글자의 각도가 수정돼야해") had removed the rotateX tilt entirely,
+  // reading image 2 (the hero's flat intro paragraph) as a request for a
+  // fully frontal, non-tilted look.
+  //
+  // ROUND 18 REVERSAL ("현재 텍스트 각도를 정면으로 요구한적이 한번도
+  // 없어" -- flat was never actually the ask; the user supplied a real
+  // Star-Wars-crawl reference: perspective + rotateX that grows steeper
+  // as the text rises/recedes and fades, e.g. rotateX(30deg)->rotateX
+  // (45deg) while opacity goes 1->0). The tilt is restored here, tuned
+  // to the SAME family of angles already used elsewhere in this file
+  // (TILT_HOLD reuses CRAWL_TILT_DEG=22, the hero crawl's own resting
+  // angle; TILT_EDGE=34 is the deeper "receding into the distance" angle
+  // at the far entry/exit ends -- kept short of 55deg, which the hero
+  // crawl's own comment above already documents as "far too steep to
+  // read" per earlier user feedback). Only `transform` is touched here;
+  // no color/text-shadow property is modified anywhere in this function.
   function setupFilmographyCrawl() {
     const list = document.getElementById('filmography-list');
     if (!list) return;
     const items = list.querySelectorAll('.filmography-item-inner');
     if (!items.length) return;
 
+    const TILT_HOLD = CRAWL_TILT_DEG; // 22deg -- legible resting tilt
+    const TILT_EDGE = 34; // deeper tilt while entering/receding + faint
+
     items.forEach((inner) => {
       const li = inner.closest('.filmography-item');
 
       function render(p) {
         p = Math.max(0, Math.min(1, p));
-        // 0 -> 0.18: flat fade + rise-in from below.
-        // 0.18 -> 0.82: sitting fully visible while it crosses the
-        // viewport. 0.82 -> 1: flat fade + rise-out near the top.
-        let opacity, y;
+        // 0 -> 0.18: rising in from below, tilt easing from the steep
+        // "distant" angle down to the resting angle as it fades in.
+        // 0.18 -> 0.82: sitting at the resting tilt while it crosses the
+        // viewport (never fully flat -- keeps the 3D crawl look alive).
+        // 0.82 -> 1: rising out near the top, tilt deepening back toward
+        // the steep "receding into the distance" angle as it fades out.
+        let opacity, y, tilt;
         if (p < 0.18) {
           const t = easeInOut(p / 0.18);
           opacity = t;
           y = 30 * (1 - t);
+          tilt = TILT_EDGE - (TILT_EDGE - TILT_HOLD) * t;
         } else if (p < 0.82) {
           opacity = 1;
           y = 0;
+          tilt = TILT_HOLD;
         } else {
           const t = easeInOut((p - 0.82) / 0.18);
           opacity = 1 - t;
           y = -18 * t;
+          tilt = TILT_HOLD + (TILT_EDGE - TILT_HOLD) * t;
         }
         inner.style.opacity = opacity;
-        inner.style.transform = `translateY(${y}px)`;
+        inner.style.transform = `perspective(1000px) rotateX(${tilt}deg) translateY(${y}px)`;
       }
 
       gsap.set(inner, { opacity: 0 });
@@ -775,6 +793,16 @@
   document.querySelectorAll('.about-panel [data-reveal]').forEach((el) => {
     gsap.set(el, { opacity: 0, y: 28 });
   });
+  // ROUND 18 ("쥰홍 및 필모그래피로 이어지는 모든 챕터의 본문을 이렇게
+  // 처리해줘" -- the restored Star-Wars-crawl tilt above must extend to
+  // EVERY chapter's body content, not just Works' filmography list): the
+  // same perspective/rotateX treatment used in setupFilmographyCrawl()
+  // is applied here too, so Education/Awards/Career's list items also
+  // rise in and recede out on a tilted 3D plane instead of a flat one.
+  // Only `transform` is touched -- no color/text-shadow property here.
+  const REVEAL_TILT_HOLD = CRAWL_TILT_DEG; // 22deg resting tilt
+  const REVEAL_TILT_EDGE = 34; // deeper tilt while entering/exiting
+
   document.querySelectorAll('.chapter-detail-wrap').forEach((wrap) => {
     const items = Array.from(wrap.querySelectorAll('[data-reveal]'));
     if (!items.length) return;
@@ -787,8 +815,13 @@
         const span = Math.max(0.0001, 1 - lag);
         const local = Math.max(0, Math.min(1, (p - lag) / span));
         const t = easeInOut(local);
+        // tilt eases from the steep "distant" angle down to the resting
+        // angle as each item fades in (mirrors setupFilmographyCrawl()'s
+        // 0->0.18 entry leg; these items don't get a symmetric exit leg
+        // since the wrap itself is what fades the whole group out).
+        const tilt = REVEAL_TILT_EDGE - (REVEAL_TILT_EDGE - REVEAL_TILT_HOLD) * t;
         el.style.opacity = t;
-        el.style.transform = `translateY(${28 * (1 - t)}px)`;
+        el.style.transform = `perspective(1000px) rotateX(${tilt}deg) translateY(${28 * (1 - t)}px)`;
       });
     }
 
