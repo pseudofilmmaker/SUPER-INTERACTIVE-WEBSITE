@@ -2557,12 +2557,17 @@ html, body {
 }
 /* ROUND 12: grid moved onto .filmography-item-inner (the new 3D-crawl
    transform target added in about.html); .filmography-item itself now
-   only hosts the perspective + border, so the tilt/translate transform
-   on -inner never fights with the grid layout it also needs. */
+   only hosts the perspective, so the tilt/translate transform on
+   -inner never fights with the grid layout it also needs.
+   ROUND 21 ("첫번째 이미지 영역의 실선을 모두 제거해줘"): the
+   border-bottom divider between items is removed -- with items now
+   floating in/out individually against the starfield rather than
+   sitting in a flat static list, a hard rule line read as a leftover
+   from the old non-animated table layout. The list's own `gap`
+   (see .filmography-list above) still keeps items visually separated
+   without a literal line. */
 .filmography-item {
   perspective: 900px;
-  padding-bottom: 26px;
-  border-bottom: 1px solid var(--border-soft);
 }
 .filmography-item-inner {
   display: grid;
@@ -2570,10 +2575,6 @@ html, body {
   gap: 20px;
   transform-origin: 50% 100%;
   will-change: transform, opacity;
-}
-.filmography-item:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
 }
 .filmography-year {
   font-family: var(--font-clean);
@@ -2757,6 +2758,18 @@ html, body {
 }
 
 /* ---------------- Awards ---------------- */
+/* Round 21 ("모든 컨텐츠들이 중앙에 유지되었다 위로 올라가면서
+   사라지게끔"): perspective host + transform target for the whole
+   awards list's rise-in -> hold -> recede-and-fade crawl beat, driven
+   by setupGroupCrawl() in about.js. Mirrors .edu-skills-crawl /
+   .edu-skills-crawl-inner exactly. */
+.awards-crawl {
+  perspective: 1200px;
+}
+.awards-crawl-inner {
+  transform-origin: 50% 100%;
+  will-change: transform, opacity;
+}
 .awards-list {
   list-style: none;
   margin: 0;
@@ -2765,14 +2778,15 @@ html, body {
   flex-direction: column;
   gap: 22px;
 }
+/* Round 21 ("두번째 이미지 영역의 실선을 모두 제거해줘"): the
+   border-bottom divider between award entries is removed, same
+   rationale as the filmography list above -- the list's own `gap`
+   still separates entries without a static leftover rule line. */
 .awards-item {
   display: grid;
   grid-template-columns: 72px 1fr;
   gap: 20px;
-  padding-bottom: 22px;
-  border-bottom: 1px solid var(--border-soft);
 }
-.awards-item:last-child { border-bottom: none; padding-bottom: 0; }
 .awards-year {
   font-family: var(--font-clean);
   font-weight: 600;
@@ -2815,6 +2829,15 @@ html, body {
   letter-spacing: 0.05em;
   color: var(--fg-faint);
 }
+/* Round 21: same perspective host + transform target pattern as
+   .awards-crawl/.awards-crawl-inner, driven by setupGroupCrawl(). */
+.career-crawl {
+  perspective: 1200px;
+}
+.career-crawl-inner {
+  transform-origin: 50% 100%;
+  will-change: transform, opacity;
+}
 .career-list {
   list-style: none;
   margin: 0;
@@ -2823,14 +2846,14 @@ html, body {
   flex-direction: column;
   gap: 24px;
 }
+/* Round 21: border-bottom divider removed here too, for consistency
+   with Filmography/Awards now that Career shares the same floating
+   rise/hold/recede group crawl instead of a static list. */
 .career-item {
   display: grid;
   grid-template-columns: 150px 1fr;
   gap: 20px;
-  padding-bottom: 24px;
-  border-bottom: 1px solid var(--border-soft);
 }
-.career-item:last-child { border-bottom: none; padding-bottom: 0; }
 .career-year {
   font-family: var(--font-clean);
   font-weight: 600;

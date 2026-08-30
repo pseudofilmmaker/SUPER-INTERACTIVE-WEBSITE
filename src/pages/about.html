@@ -497,22 +497,32 @@
 
   <section class="panel about-panel chapter-detail-panel" id="section-ch-awards-detail" data-index="4">
     <div class="chapter-detail-wrap">
+      <!-- Round 21 ("모든 컨텐츠들이 중앙에 유지되었다 위로 올라가면서
+           사라지게끔" -- like the skills grid (Education), the whole
+           awards list now rises in, holds centered together as ONE
+           block, then recedes/fades out together, via the shared
+           setupGroupCrawl() helper in about.js. The old per-item
+           divider lines are removed (see .awards-item in style.css) --
+           they read as static-list leftovers, at odds with a block
+           that floats in and out of the starfield as a single unit. -->
+      <div class="awards-crawl" id="awards-crawl">
+      <div class="awards-crawl-inner">
       <ol class="awards-list">
-        <li class="awards-item" data-reveal="true">
+        <li class="awards-item">
           <span class="awards-year">2016</span>
           <div class="awards-body">
             <h3 class="awards-title">8th 3D KIFF (3D International Film Festival) &mdash; Special Award</h3>
             <p class="awards-project">Future Is Mine (2016, 3D) &mdash; Direction</p>
           </div>
         </li>
-        <li class="awards-item" data-reveal="true">
+        <li class="awards-item">
           <span class="awards-year">2019</span>
           <div class="awards-body">
             <h3 class="awards-title">1st VROUND VR Content Competition &mdash; Excellence Award</h3>
             <p class="awards-project">Seoul Through Quantum Physics (2019, VR) &mdash; Cinematography, Direction</p>
           </div>
         </li>
-        <li class="awards-item" data-reveal="true">
+        <li class="awards-item">
           <span class="awards-year">2019</span>
           <div class="awards-body">
             <h3 class="awards-title">1st VROUND VR Content Competition &mdash; Grand Prize</h3>
@@ -520,6 +530,8 @@
           </div>
         </li>
       </ol>
+      </div>
+      </div>
     </div>
   </section>
 
@@ -533,29 +545,37 @@
 
   <section class="panel about-panel chapter-detail-panel" id="section-ch-career-detail" data-index="5">
     <div class="chapter-detail-wrap">
+      <!-- Round 21: same rise -> hold -> recede-and-fade group crawl as
+           Awards above, applied here too for consistency across all
+           four chapter-body blocks (Filmography/Skills/Awards/Career)
+           now sharing the exact same "float in, hold centered, float
+           out" behavior instead of Career being the only one left on
+           the old one-way, no-exit generic reveal. -->
+      <div class="career-crawl" id="career-crawl">
+      <div class="career-crawl-inner">
       <ol class="career-list">
-        <li class="career-item" data-reveal="true">
+        <li class="career-item">
           <span class="career-year">2023 &mdash; Present</span>
           <div class="career-body">
             <h3 class="career-role">JK World Group <span class="career-title">&middot; Videographer / Video Editor</span> <span class="career-badge">Current</span></h3>
             <p class="career-desc">In-house video and photo production for the group&rsquo;s brand and marketing content.</p>
           </div>
         </li>
-        <li class="career-item" data-reveal="true">
+        <li class="career-item">
           <span class="career-year">2016.12 &mdash; 2022.12</span>
           <div class="career-body">
             <h3 class="career-role">Paranoi Co., Ltd. <span class="career-title">&middot; Producer, Content Development Team</span></h3>
             <p class="career-desc">Direction, cinematography, editing and immersive-media production. All projects in progress were paused due to COVID-19.</p>
           </div>
         </li>
-        <li class="career-item" data-reveal="true">
+        <li class="career-item">
           <span class="career-year">2009.12 &mdash; 2012.12</span>
           <div class="career-body">
             <h3 class="career-role">DNAdvertising <span class="career-title">&middot; Team Lead, Content Development (Co-founder)</span></h3>
             <p class="career-desc">Sales, planning and production for advertising and building-facade signage.</p>
           </div>
         </li>
-        <li class="career-item" data-reveal="true">
+        <li class="career-item">
           <span class="career-year">2007.09 &mdash; 2009.02</span>
           <div class="career-body">
             <h3 class="career-role">Yoo Si-min Editing Studio <span class="career-title">&middot; Video Editor</span></h3>
@@ -563,6 +583,8 @@
           </div>
         </li>
       </ol>
+      </div>
+      </div>
     </div>
   </section>
 

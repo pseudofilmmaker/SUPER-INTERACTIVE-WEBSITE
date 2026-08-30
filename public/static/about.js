@@ -628,8 +628,8 @@
     // THROUGH -- HOLD_END/FADE_END are widened so the card is still
     // partially opaque as the panel/filmography content peeks up and
     // starts its own independent fade-in (setupFilmographyCrawl()'s
-    // per-item ScrollTrigger, or the data-reveal group fade for the
-    // other 3 chapters), then finishes dissolving shortly after, mirroring
+    // per-item ScrollTrigger, or setupGroupCrawl()'s group crawl for
+    // the other 3 chapters), then finishes dissolving shortly after, mirroring
     // JUNE/HONG's own title-shrinks-away-as-body-text-rises-in beat.
     // Verified via Playwright: at p≈0.62 (just past the peek threshold)
     // the card is still ~0.5 opaque while the first filmography item has
@@ -687,9 +687,11 @@
   // 축소및 페이드 아웃"): the school-logo lockup reuses this exact same
   // rise -> hold -> shrink-fade beat against its own short pin host
   // (ch-edu-logo-pin), which sits in the DOM right before the Education
-  // detail panel/skills grid -- so the skills grid's own data-reveal
-  // trigger only fires once the user has scrolled past this pin's full
-  // release point, i.e. after the logo has completely faded away.
+  // detail panel/skills grid -- since this pin host also reserves its
+  // own PIN_DISTANCE of extra scroll room, the skills grid naturally
+  // only scrolls into view (and its own setupGroupCrawl() trigger only
+  // starts) once the user has scrolled past this pin's full release
+  // point, i.e. after the logo has completely faded away.
   setupChapterTitleCard({ hostId: 'ch-edu-logo-pin', cardId: 'ch-edu-logo-card' });
   setupChapterTitleCard({ hostId: 'ch-awards-title-pin', cardId: 'ch-awards-title-card' });
   setupChapterTitleCard({ hostId: 'ch-career-title-pin', cardId: 'ch-career-title-card' });
@@ -769,29 +771,42 @@
   }
   setupFilmographyCrawl();
 
-  // Round 20 ("세번째 이미지, 이건 하단에서 올라오다가, 중앙에서 멈춰서
-  // 있다가 올라가야지" -- the skills grid used to just fade in once and
-  // sit still, via the generic [data-reveal] group-reveal block below;
-  // now it must play the SAME full 3-phase crawl beat as Works'
-  // filmography items: rise up from below the viewport, hold centered
-  // (readable/interactive) for a while, then continue rising upward and
-  // recede/fade out). Mirrors setupFilmographyCrawl() almost exactly,
-  // just retuned for a single large block instead of many small list
-  // items -- the hold leg (0.28->0.72) is kept comfortably wide, and the
-  // overall trigger window ('top 100%' -> 'top -20%', i.e. ~1.2x the
-  // viewport height of scroll) is much longer than a filmography item's
-  // tight 80vh window so users have a real chance to hover/tap the 5
-  // flip-tiles (setupSkillTiles() below) while the grid is held in place.
-  function setupSkillsCrawl() {
-    const host = document.getElementById('edu-skills-crawl');
+  // ROUND 20 ("세번째 이미지, 이건 하단에서 올라오다가, 중앙에서 멈춰서
+  // 있다가 올라가야지") introduced this rise -> hold -> recede-and-fade
+  // group crawl for the Education skills grid, as a distinct beat from
+  // the one-way, no-exit generic [data-reveal] fade-in Awards/Career
+  // used to share.
+  //
+  // ROUND 21 ("첫번째/두번째 이미지 영역의 실선을 모두 제거해줘" +
+  // "세번째 이미지에서 보이는 것처럼 모든 컨텐츠들이 중앙에 유지되었다
+  // 위로 올라가면서 사라지게끔... 3초 정도 유지할 수 있게끔") extends the
+  // SAME beat to Awards and Career too (they no longer carry
+  // [data-reveal] -- that whole generic block is gone, see below), and
+  // widens the hold leg considerably so it reads as a genuine multi-
+  // second pause rather than a quick pass-through. Generalized into one
+  // reusable setupGroupCrawl() instead of three near-duplicate
+  // functions.
+  //
+  // Windowing is done in ABSOLUTE PIXELS (not vh/vw percentages) so the
+  // hold duration stays consistent across viewport heights: percentage-
+  // based windows (e.g. 'top 100%' -> 'top -20%') scale their total
+  // scroll distance with viewport height, which would make the hold
+  // feel shorter on smaller screens. HOLD_PX=2200 is tuned to
+  // approximate "3초 정도" at a typical continuous scroll speed.
+  function setupGroupCrawl(hostId, innerSelector) {
+    const host = document.getElementById(hostId);
     if (!host) return;
-    const inner = host.querySelector('.edu-skills-crawl-inner');
+    const inner = host.querySelector(innerSelector);
     if (!inner) return;
 
     const TILT_HOLD = CRAWL_TILT_DEG; // 22deg -- legible resting tilt
     const TILT_EDGE = 34; // deeper tilt while entering/receding + faint
-    const ENTRY_END = 0.28;
-    const HOLD_END = 0.72;
+    const ENTRY_PX = 320;
+    const HOLD_PX = 2200; // ~3s dwell at a typical continuous scroll speed
+    const EXIT_PX = 320;
+    const TOTAL_PX = ENTRY_PX + HOLD_PX + EXIT_PX;
+    const ENTRY_END = ENTRY_PX / TOTAL_PX;
+    const HOLD_END = (ENTRY_PX + HOLD_PX) / TOTAL_PX;
 
     function render(p) {
       p = Math.max(0, Math.min(1, p));
@@ -818,103 +833,16 @@
     gsap.set(inner, { opacity: 0 });
     ScrollTrigger.create({
       trigger: host,
-      start: 'top 100%',
-      end: 'top -20%',
+      start: 'top bottom',
+      end: '+=' + TOTAL_PX,
       scrub: 0.4,
       onUpdate: (self) => render(self.progress),
       onRefresh: (self) => render(self.progress),
     });
   }
-  setupSkillsCrawl();
-
-  /* ---------- resting content reveal (awards
-     list, career list — Works' filmography list has its own dedicated
-     setupFilmographyCrawl() above and is NOT part of this generic
-     wiring). (ROUND 15: the hero-only .about-profile-wrap panel this
-     wiring used to also cover has been deleted outright per "이 구간은
-     삭제해줘" -- see about.html/style.css -- so this now only targets
-     .chapter-detail-wrap.)
-     //
-     // ROUND 17 FIX ("1번을 진행해줘... 이건 JUNE HONG파트의 제목과
-     // 본문같은 효과로 겹쳐야해" -- this needed to genuinely crossfade
-     // with the fixed title card overlay, the same way Works' filmography
-     // list does). This used to be a ONE-TIME triggered tween: a single
-     // ScrollTrigger with a plain `start: 'top 80%'` firing a fixed-
-     // duration (0.9s) `gsap.to(...)` the instant the wrap crossed that
-     // threshold. Measured via Playwright: that threshold consistently
-     // fires only once the title card overlay has ALREADY faded to near-
-     // zero opacity (e.g. Education: card opacity ≈0.002 the instant the
-     // 'top 80%' trigger fires) -- i.e. a dead gap with neither element
-     // visible for a stretch, the exact bug already fixed for Works'
-     // filmography list back in Round 16, just never extended to these
-     // other 3 chapters until now.
-     //
-     // Converted to the SAME continuous, scroll-scrubbed architecture as
-     // setupFilmographyCrawl(): opacity is now a direct function of the
-     // wrap's own scroll position (via `scrub`), not a one-shot timed
-     // tween -- so it can genuinely overlap the title card's own scroll-
-     // driven fade-out, producing a real simultaneous-partial-opacity
-     // crossfade like JUNE/HONG's title/crawl beat. A small per-item
-     // index-based lag keeps the original staggered cascade feel. ---------- */
-  document.querySelectorAll('.about-panel [data-reveal]').forEach((el) => {
-    gsap.set(el, { opacity: 0, y: 28 });
-  });
-  // ROUND 18 ("쥰홍 및 필모그래피로 이어지는 모든 챕터의 본문을 이렇게
-  // 처리해줘" -- the restored Star-Wars-crawl tilt above must extend to
-  // EVERY chapter's body content, not just Works' filmography list): the
-  // same perspective/rotateX treatment used in setupFilmographyCrawl()
-  // is applied here too, so Education/Awards/Career's list items also
-  // rise in and recede out on a tilted 3D plane instead of a flat one.
-  // Only `transform` is touched -- no color/text-shadow property here.
-  const REVEAL_TILT_HOLD = CRAWL_TILT_DEG; // 22deg resting tilt
-  const REVEAL_TILT_EDGE = 34; // deeper tilt while entering/exiting
-
-  document.querySelectorAll('.chapter-detail-wrap').forEach((wrap) => {
-    const items = Array.from(wrap.querySelectorAll('[data-reveal]'));
-    if (!items.length) return;
-    const STAGGER = 0.12; // fraction of the scrub range each later item lags by
-
-    function render(p) {
-      p = Math.max(0, Math.min(1, p));
-      items.forEach((el, i) => {
-        const lag = i * STAGGER;
-        const span = Math.max(0.0001, 1 - lag);
-        const local = Math.max(0, Math.min(1, (p - lag) / span));
-        const t = easeInOut(local);
-        // tilt eases from the steep "distant" angle down to the resting
-        // angle as each item fades in (mirrors setupFilmographyCrawl()'s
-        // 0->0.18 entry leg; these items don't get a symmetric exit leg
-        // since the wrap itself is what fades the whole group out).
-        const tilt = REVEAL_TILT_EDGE - (REVEAL_TILT_EDGE - REVEAL_TILT_HOLD) * t;
-        el.style.opacity = t;
-        el.style.transform = `perspective(1000px) rotateX(${tilt}deg) translateY(${28 * (1 - t)}px)`;
-      });
-    }
-
-    // Round 19 added an Education-specific isEduSkillsWrap branch here
-    // (anchoring the reveal window to the school-logo pin's release
-    // point instead of the generic "top 160%->85%" window). Round 20
-    // ("세번째 이미지..." -- the skills grid now gets its own dedicated
-    // setupSkillsCrawl() crawl above, and its .skills-hint/#skills-grid
-    // children no longer carry [data-reveal]) makes that branch
-    // unreachable: `items` is now empty for Education's wrap, so the
-    // early `return` above already skips this whole block for it.
-    // Removed rather than left in as dead code -- Awards/Career (the
-    // only wraps that still reach this point) always use the plain
-    // "top 160%"/"top 85%" window, so no branching is needed any more.
-    ScrollTrigger.create({
-      trigger: wrap,
-      // starts while the wrap is still well below the viewport (during
-      // the title card's HOLD_END->FADE_END fade-out window) and finishes
-      // shortly after the card has fully dissolved -- same overlap shape
-      // as the title-card/filmography-item crossfade.
-      start: 'top 160%',
-      end: 'top 85%',
-      scrub: 0.4,
-      onUpdate: (self) => render(self.progress),
-      onRefresh: (self) => render(self.progress),
-    });
-  });
+  setupGroupCrawl('edu-skills-crawl', '.edu-skills-crawl-inner');
+  setupGroupCrawl('awards-crawl', '.awards-crawl-inner');
+  setupGroupCrawl('career-crawl', '.career-crawl-inner');
 
   /* ============================================================
      Education & Skills — interactive skill tiles. Each tile is a
