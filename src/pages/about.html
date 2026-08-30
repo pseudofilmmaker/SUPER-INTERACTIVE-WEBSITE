@@ -180,7 +180,11 @@
      lines sit right under the logo so they read together as one
      lockup, increasing legibility ("시안성을 높여줘") without the
      bordered card boxes the education list used to use. -->
-<div id="ch-edu-logo-card" class="chapter-title-card chapter-title-card--logo" aria-hidden="true">
+<!-- Round 25 ("첫번째 이미지의 학교 로고는... 외곽선에 글로우를 먹여서
+     표현해줘" -- swaps the plain drop-shadow glow below for the same
+     hollow/outline glow filter used on the Awards festival logos
+     (#festival-logo-outline-glow, defined once near the top of
+     <body>), matching the violet neon-outline reference look. --><div id="ch-edu-logo-card" class="chapter-title-card chapter-title-card--logo" aria-hidden="true">
   <img src="/static/logos/seoul-institute-of-the-arts.png" alt="Seoul Institute of the Arts" class="chapter-title-card-logo-img"/>
   <div class="chapter-title-card-degree-list">
     <p class="chapter-title-card-degree">B.A., Film &mdash; Dept. of Media Creation</p>
@@ -544,27 +548,27 @@
            layout), Round 24 ("크기를 더 키우고, 투명도를 50퍼센트까지
            떨어뜨려주고, 위치는 텍스트 뒤로, 또한 점멸하게 만들어줘" --
            bigger again, capped at 50% opacity, moved BEHIND the award
-           text as background depth, flickering like neon signage):
-           festival logos pulled from the HOME page's client-wall (same
-           /static/logos/*.svg files, limited to the 3 festivals actually
-           credited in this page's own Filmography list above -- Moscow,
-           BIFAN, Thailand -- one of each, no duplicates, so the row
-           stays consistent with this page's own copy rather than
-           pulling in unrelated client logos or repeating one twice).
-           Each gets the festival-logo-outline-glow filter (defined once
-           near the top of <body>) for the hollow/glowing-outline look
-           from the reference screenshot, plus a CSS flicker animation
-           (see .festival-logo-row-item in style.css). Absolutely
-           positioned + centered behind .awards-list (lower z-index) via
-           style.css, inside the same .awards-crawl-inner
-           setupGroupCrawl() already animates opacity/transform on -- so
-           the row still rises in, holds, and fades out together with
-           the award entries as a single unit, with no separate timing
-           logic needed. -->
+           text as background depth, flickering like neon signage),
+           Round 25 ("필름페스티벌 로고는 홋카이도 필름페스티벌도
+           추가해줘야돼" -- added Hokkaido International Film Festival,
+           the 4th festival logo asset in /static/logos/, alongside the
+           original three): festival logos pulled from the HOME page's
+           client-wall (same /static/logos/*.svg files -- Moscow, BIFAN,
+           Thailand, Hokkaido, one of each, no duplicates). Each gets
+           the festival-logo-outline-glow filter (defined once near the
+           top of <body>) for the hollow/glowing-outline look from the
+           reference screenshot, plus a CSS flicker animation (see
+           .festival-logo-row-item in style.css). Absolutely positioned
+           + centered behind .awards-list (lower z-index) via style.css,
+           inside the same .awards-crawl-inner setupGroupCrawl() already
+           animates opacity/transform on -- so the row still rises in,
+           holds, and fades out together with the award entries as a
+           single unit, with no separate timing logic needed. -->
       <div class="festival-logo-row" aria-hidden="true">
         <img class="festival-logo-row-item" src="/static/logos/moscow-iff.svg" alt=""/>
         <img class="festival-logo-row-item" src="/static/logos/bifan.svg" alt=""/>
         <img class="festival-logo-row-item" src="/static/logos/itff-thailand.svg" alt=""/>
+        <img class="festival-logo-row-item" src="/static/logos/hokkaido-iff.svg" alt=""/>
       </div>
       <ol class="awards-list">
         <li class="awards-item">
@@ -624,7 +628,7 @@
           <span class="career-year">2016.12 &mdash; 2022.12</span>
           <div class="career-body">
             <h3 class="career-role">Paranoi Co., Ltd. <span class="career-title">&middot; Producer, Content Development Team</span></h3>
-            <p class="career-desc">Direction, cinematography, editing and immersive-media production. All projects in progress were paused due to COVID-19.</p>
+            <p class="career-desc">Direction, cinematography, editing and immersive-media production.</p>
           </div>
         </li>
         <li class="career-item">
@@ -637,7 +641,7 @@
         <li class="career-item">
           <span class="career-year">2007.09 &mdash; 2009.02</span>
           <div class="career-body">
-            <h3 class="career-role">Yoo Si-min Editing Studio <span class="career-title">&middot; Video Editor</span></h3>
+            <h3 class="career-role">Simin Editing Studio <span class="career-title">&middot; Video Editor</span></h3>
             <p class="career-desc">Filming, editing and CG for web and video content production.</p>
           </div>
         </li>

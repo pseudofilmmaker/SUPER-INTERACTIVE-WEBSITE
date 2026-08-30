@@ -2478,10 +2478,17 @@ html, body {
    Round 20 ("두번째 이미지, 투명 배경으로 로고를 올려줘"): the white
    rounded "plate" background from Round 19 is removed -- the logo now
    sits directly on the starfield backdrop with a real transparent
-   background, per the source PNG. Legibility against the dark backdrop
-   is instead handled with a soft white drop-shadow/glow on the artwork
-   itself (brightens the logo's edges without adding a solid panel
-   behind it, and without touching the red flame mark's own color). */
+   background, per the source PNG.
+
+   Round 25 ("첫번째 이미지의 학교 로고는 두번째 첨부한 이미지처럼,
+   외곽선에 글로우를 먹여서 표현해줘"): the plain white drop-shadow glow
+   from Round 20 is replaced with the SAME hollow/outline-glow SVG
+   filter (#festival-logo-outline-glow, defined once near the top of
+   <body>) already used on the Awards festival-logo row -- erodes the
+   solid PNG artwork's alpha down to a thin ring, colors it violet, and
+   layers a sharp + soft blur for the neon-outline look from the
+   reference screenshot, instead of a solid glyph with a soft white
+   halo around it. */
 .chapter-title-card--logo {
   gap: 26px;
 }
@@ -2489,7 +2496,7 @@ html, body {
   display: block;
   width: clamp(220px, 34vw, 480px);
   height: auto;
-  filter: drop-shadow(0 0 18px rgba(238, 241, 255, 0.85)) drop-shadow(0 0 42px rgba(238, 241, 255, 0.5));
+  filter: url(#festival-logo-outline-glow);
 }
 .chapter-title-card-degree-list {
   display: flex;
@@ -2801,38 +2808,46 @@ html, body {
    점멸하게 만들어줘" -- bigger again, capped at 50% opacity, moved
    BEHIND the award text as background depth instead of sitting above
    it in normal flow, and given a neon-style flicker instead of a
-   static glow). Absolutely positioned + centered inside
-   .awards-crawl-inner (already position:relative), with a lower
-   z-index than .awards-list so the text reads clearly on top while
-   the glowing logos sit behind it. Still inside .awards-crawl-inner
-   -- the element setupGroupCrawl() animates opacity/transform on --
-   so the whole row rises in, holds, and fades out together with the
-   award entries as one unit; no separate timing code needed. */
+   static glow), Round 25 (adding a 4th logo -- Hokkaido -- made 4 large
+   logos too wide for the 900px .chapter-detail-wrap column they were
+   confined to, causing the outer ones to overflow past the visible
+   panel and get clipped; width:100vw breaks the row out of that
+   column, same full-bleed technique used elsewhere on this page, and
+   height is retuned so 4 logos comfortably fit across the wider
+   viewport without the individual logos vanishing to the old Round23
+   size). Absolutely positioned + centered inside .awards-crawl-inner
+   (already position:relative), with a lower z-index than .awards-list
+   so the text reads clearly on top while the glowing logos sit behind
+   it. Still inside .awards-crawl-inner -- the element
+   setupGroupCrawl() animates opacity/transform on -- so the whole row
+   rises in, holds, and fades out together with the award entries as
+   one unit; no separate timing code needed. */
 .festival-logo-row {
   position: absolute;
   top: 50%;
   left: 50%;
+  width: 100vw;
   transform: translate(-50%, -50%);
   z-index: 0;
-  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: clamp(28px, 6vw, 64px);
+  gap: clamp(20px, 4vw, 48px);
   margin: 0;
   pointer-events: none;
 }
 .festival-logo-row-item {
-  height: clamp(90px, 12vw, 170px);
+  height: clamp(72px, 9vw, 132px);
   width: auto;
   filter: url(#festival-logo-outline-glow);
   animation: festivalLogoFlicker 4.2s ease-in-out infinite;
 }
-/* Slight stagger so the three logos don't flicker in lockstep --
-   reads as ambient neon-sign noise rather than a single synced pulse. */
+/* Slight stagger so the logos don't flicker in lockstep -- reads as
+   ambient neon-sign noise rather than a single synced pulse. */
 .festival-logo-row-item:nth-child(1) { animation-delay: -0.4s; }
 .festival-logo-row-item:nth-child(2) { animation-delay: -1.9s; }
 .festival-logo-row-item:nth-child(3) { animation-delay: -3.1s; }
+.festival-logo-row-item:nth-child(4) { animation-delay: -2.6s; }
 @keyframes festivalLogoFlicker {
   0%, 100% { opacity: 0.5; }
   8%       { opacity: 0.14; }
@@ -2845,11 +2860,11 @@ html, body {
   92%      { opacity: 0.36; }
 }
 @media (max-width: 560px) {
-  /* Below this, three full-size logos side by side would overpower the
-     narrow column -- shrink and tighten the gap while keeping the same
-     behind-text/flicker treatment. */
-  .festival-logo-row { gap: 14px; }
-  .festival-logo-row-item { height: 58px; }
+  /* Below this, four full-size logos side by side would overpower the
+     narrow viewport -- shrink and tighten the gap while keeping the
+     same full-bleed/behind-text/flicker treatment. */
+  .festival-logo-row { gap: 10px; }
+  .festival-logo-row-item { height: 40px; }
 }
 
 .awards-list {
