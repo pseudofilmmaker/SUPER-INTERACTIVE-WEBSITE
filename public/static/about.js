@@ -769,7 +769,65 @@
   }
   setupFilmographyCrawl();
 
-  /* ---------- resting content reveal (education+skills grid, awards
+  // Round 20 ("세번째 이미지, 이건 하단에서 올라오다가, 중앙에서 멈춰서
+  // 있다가 올라가야지" -- the skills grid used to just fade in once and
+  // sit still, via the generic [data-reveal] group-reveal block below;
+  // now it must play the SAME full 3-phase crawl beat as Works'
+  // filmography items: rise up from below the viewport, hold centered
+  // (readable/interactive) for a while, then continue rising upward and
+  // recede/fade out). Mirrors setupFilmographyCrawl() almost exactly,
+  // just retuned for a single large block instead of many small list
+  // items -- the hold leg (0.28->0.72) is kept comfortably wide, and the
+  // overall trigger window ('top 100%' -> 'top -20%', i.e. ~1.2x the
+  // viewport height of scroll) is much longer than a filmography item's
+  // tight 80vh window so users have a real chance to hover/tap the 5
+  // flip-tiles (setupSkillTiles() below) while the grid is held in place.
+  function setupSkillsCrawl() {
+    const host = document.getElementById('edu-skills-crawl');
+    if (!host) return;
+    const inner = host.querySelector('.edu-skills-crawl-inner');
+    if (!inner) return;
+
+    const TILT_HOLD = CRAWL_TILT_DEG; // 22deg -- legible resting tilt
+    const TILT_EDGE = 34; // deeper tilt while entering/receding + faint
+    const ENTRY_END = 0.28;
+    const HOLD_END = 0.72;
+
+    function render(p) {
+      p = Math.max(0, Math.min(1, p));
+      let opacity, y, tilt;
+      if (p < ENTRY_END) {
+        const t = easeInOut(p / ENTRY_END);
+        opacity = t;
+        y = 60 * (1 - t);
+        tilt = TILT_EDGE - (TILT_EDGE - TILT_HOLD) * t;
+      } else if (p < HOLD_END) {
+        opacity = 1;
+        y = 0;
+        tilt = TILT_HOLD;
+      } else {
+        const t = easeInOut((p - HOLD_END) / (1 - HOLD_END));
+        opacity = 1 - t;
+        y = -36 * t;
+        tilt = TILT_HOLD + (TILT_EDGE - TILT_HOLD) * t;
+      }
+      inner.style.opacity = opacity;
+      inner.style.transform = `perspective(1200px) rotateX(${tilt}deg) translateY(${y}px)`;
+    }
+
+    gsap.set(inner, { opacity: 0 });
+    ScrollTrigger.create({
+      trigger: host,
+      start: 'top 100%',
+      end: 'top -20%',
+      scrub: 0.4,
+      onUpdate: (self) => render(self.progress),
+      onRefresh: (self) => render(self.progress),
+    });
+  }
+  setupSkillsCrawl();
+
+  /* ---------- resting content reveal (awards
      list, career list — Works' filmography list has its own dedicated
      setupFilmographyCrawl() above and is NOT part of this generic
      wiring). (ROUND 15: the hero-only .about-profile-wrap panel this
@@ -833,31 +891,25 @@
       });
     }
 
-    // Round 19 ("로고가 사라지고 난 후에 네번째 이미지가 나오게끔" -- unlike
-    // every other chapter, where the body content is INTENDED to
-    // crossfade partially with its title card while both are still
-    // partly visible, the Education chapter's skills grid must wait
-    // until the school-logo card has COMPLETELY faded away before it
-    // starts revealing at all. So this one wrap gets its reveal window
-    // anchored to the logo pin's actual release point (its trigger's
-    // "bottom" crossing the viewport top -- the exact moment the pin
-    // lets go and the card is long gone, opacity having already hit 0
-    // at FADE_END=0.88 progress) instead of the generic "top 160%->85%"
-    // window every other chapter uses.
-    const eduLogoPinHost = document.getElementById('ch-edu-logo-pin');
-    const isEduSkillsWrap = !!(eduLogoPinHost && wrap.closest('#section-ch-edu-detail'));
-    const revealSpan = Math.round(window.innerHeight * 0.6);
-
+    // Round 19 added an Education-specific isEduSkillsWrap branch here
+    // (anchoring the reveal window to the school-logo pin's release
+    // point instead of the generic "top 160%->85%" window). Round 20
+    // ("세번째 이미지..." -- the skills grid now gets its own dedicated
+    // setupSkillsCrawl() crawl above, and its .skills-hint/#skills-grid
+    // children no longer carry [data-reveal]) makes that branch
+    // unreachable: `items` is now empty for Education's wrap, so the
+    // early `return` above already skips this whole block for it.
+    // Removed rather than left in as dead code -- Awards/Career (the
+    // only wraps that still reach this point) always use the plain
+    // "top 160%"/"top 85%" window, so no branching is needed any more.
     ScrollTrigger.create({
-      trigger: isEduSkillsWrap ? eduLogoPinHost : wrap,
+      trigger: wrap,
       // starts while the wrap is still well below the viewport (during
       // the title card's HOLD_END->FADE_END fade-out window) and finishes
       // shortly after the card has fully dissolved -- same overlap shape
-      // as the title-card/filmography-item crossfade. (Education's skills
-      // grid instead starts only once the logo pin has fully released --
-      // see isEduSkillsWrap above.)
-      start: isEduSkillsWrap ? 'bottom top' : 'top 160%',
-      end: isEduSkillsWrap ? `bottom top-=${revealSpan}` : 'top 85%',
+      // as the title-card/filmography-item crossfade.
+      start: 'top 160%',
+      end: 'top 85%',
       scrub: 0.4,
       onUpdate: (self) => render(self.progress),
       onRefresh: (self) => render(self.progress),

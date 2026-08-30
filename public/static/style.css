@@ -2475,12 +2475,13 @@ html, body {
    for a logo image + a short degree list, per "학교 로고 아래, 세번째
    이미지를 적절히 배치해서 시안성을 높여줘".
 
-   Legibility fix: the source logo PNG is black wordmark text on a FULLY
-   TRANSPARENT background, which would be nearly invisible against this
-   page's dark starfield backdrop. Rather than filter-inverting the
-   artwork (which would also wreck the brand's red flame mark), the logo
-   sits on its own light rounded "plate" -- preserving the logo exactly
-   as supplied while guaranteeing contrast on any background. */
+   Round 20 ("두번째 이미지, 투명 배경으로 로고를 올려줘"): the white
+   rounded "plate" background from Round 19 is removed -- the logo now
+   sits directly on the starfield backdrop with a real transparent
+   background, per the source PNG. Legibility against the dark backdrop
+   is instead handled with a soft white drop-shadow/glow on the artwork
+   itself (brightens the logo's edges without adding a solid panel
+   behind it, and without touching the red flame mark's own color). */
 .chapter-title-card--logo {
   gap: 26px;
 }
@@ -2488,10 +2489,7 @@ html, body {
   display: block;
   width: clamp(220px, 34vw, 480px);
   height: auto;
-  padding: clamp(16px, 2.4vw, 26px) clamp(26px, 4vw, 42px);
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 16px;
-  box-shadow: 0 0 40px rgba(238, 241, 255, 0.35), 0 0 90px rgba(157, 120, 255, 0.3);
+  filter: drop-shadow(0 0 18px rgba(238, 241, 255, 0.85)) drop-shadow(0 0 42px rgba(238, 241, 255, 0.5));
 }
 .chapter-title-card-degree-list {
   display: flex;
@@ -2618,6 +2616,20 @@ html, body {
 }
 
 /* ---------------- Education & Skills ---------------- */
+/* Round 20 ("세번째 이미지, 이건 하단에서 올라오다가, 중앙에서 멈춰서
+   있다가 올라가야지"): perspective host + transform target for the
+   skills-grid's rise-in -> hold -> recede-and-fade crawl beat, driven
+   by setupSkillsCrawl() in about.js. Mirrors .filmography-item (host)
+   / .filmography-item-inner (target) exactly -- the outer element
+   stays untransformed (so it can be measured as a stable ScrollTrigger
+   trigger), while the inner element receives the opacity/transform. */
+.edu-skills-crawl {
+  perspective: 1200px;
+}
+.edu-skills-crawl-inner {
+  transform-origin: 50% 100%;
+  will-change: transform, opacity;
+}
 .skills-hint {
   display: flex;
   align-items: center;

@@ -154,7 +154,6 @@
   <img src="/static/logos/seoul-institute-of-the-arts.png" alt="Seoul Institute of the Arts" class="chapter-title-card-logo-img"/>
   <div class="chapter-title-card-degree-list">
     <p class="chapter-title-card-degree">B.A., Film &mdash; Dept. of Media Creation</p>
-    <p class="chapter-title-card-degree">Associate Degree, Directing &mdash; Dept. of Film</p>
   </div>
 </div>
 <div id="ch-awards-title-card" class="chapter-title-card" aria-hidden="true">
@@ -417,8 +416,21 @@
 
   <section class="panel about-panel chapter-detail-panel" id="section-ch-edu-detail" data-index="3">
     <div class="chapter-detail-wrap">
-      <p class="skills-hint" data-reveal="true"><i class="fa-solid fa-hand-pointer"></i> Hover or tap a skill</p>
-      <div class="skills-grid" id="skills-grid" data-reveal="true">
+      <!-- Round 20 ("세번째 이미지, 이건 하단에서 올라오다가, 중앙에서
+           멈춰서 있다가 올라가야지"): the skills grid no longer just
+           fades in and sits still -- it now plays the same rise-from-
+           below -> hold-centered -> continue-rising-and-recede crawl
+           beat as Works' filmography items (setupFilmographyCrawl()),
+           via a dedicated setupSkillsCrawl() in about.js targeting this
+           wrapper. Split into an outer (untransformed, hosts perspective
+           + acts as the ScrollTrigger trigger -- mirrors .filmography-item)
+           and an inner (the actual transform/opacity target -- mirrors
+           .filmography-item-inner), the same two-layer split
+           setupFilmographyCrawl() itself relies on. -->
+      <div class="edu-skills-crawl" id="edu-skills-crawl">
+      <div class="edu-skills-crawl-inner">
+      <p class="skills-hint"><i class="fa-solid fa-hand-pointer"></i> Hover or tap a skill</p>
+      <div class="skills-grid" id="skills-grid">
         <button type="button" class="skill-tile" data-skill="92">
           <span class="skill-tile-face skill-tile-face--front">
             <img src="/static/icons/premiere-pro.svg" alt="" class="skill-icon"/>
@@ -469,6 +481,8 @@
             <span class="skill-bar"><span class="skill-bar-fill" data-fill="80"></span></span>
           </span>
         </button>
+      </div>
+      </div>
       </div>
     </div>
   </section>
