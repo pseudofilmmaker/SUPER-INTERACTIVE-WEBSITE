@@ -45,9 +45,12 @@
 - **Build**: Vite + `@hono/vite-build/cloudflare-pages`
 
 ## Deployment
-- **Platform**: Cloudflare Pages
-- **Status**: 로컬 샌드박스 검증 완료 (실제 배포는 별도 진행 필요)
-- **Last Updated**: 2026-08-26
+- **Platform**: Cloudflare Pages (실제 프로덕션) + GitHub Pages (정적 임시 미리보기, `gh-pages` 브랜치)
+- **Status**:
+  - GitHub `main` 브랜치: 로컬 작업 전체 푸시 완료 (기존 origin/main과 unrelated-histories 상태였으나, 포렌식 트리해시 검증으로 origin 내용이 이미 로컬에 완전히 포함됨을 확인 후 `git merge -s ours --allow-unrelated-histories`로 안전하게 병합 및 푸시)
+  - GitHub Pages(`gh-pages` 브랜치): `src/pages/*.html`을 `/SUPER-INTERACTIVE-WEBSITE/` 베이스 경로로 재작성한 정적 export를 재빌드해 배포 완료. VIDEOS 히어로 영상 CSS 버그 수정, Featured Works 배지 제거/투명 배경, PHOTOS 히어로 영상, ABOUT 챕터 2-5 등 이전에 누락되어 있던 모든 로컬 작업이 반영됨 (Playwright 스크린샷으로 라이브 사이트 직접 검증)
+  - Cloudflare Pages 실제 프로덕션 배포는 별도 진행 필요
+- **Last Updated**: 2026-08-31
 
 ## 섹션 1-2 배경 영상 (사용자 업로드 실사 영상으로 교체 완료)
 사용자가 첨부한 3개 원본 영상(4K, 총 36MB)을 프레임 단위로 분석하여 각각의 역할을 파악하고, 웹 최적화(1080p 재인코딩 + 오디오 제거 + 스크럽 전용 GOP 구조)를 적용해 반영했습니다.
