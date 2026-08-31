@@ -2041,41 +2041,50 @@ html, body {
    painted inside the video layer, in front of the video but behind
    this content) keeps text legible over it. */
 .detail-page--photos { background: transparent; }
-/* ROUND 3: title/CTA row and filter pills now live INSIDE the same
-   single-viewport .photos-conveyor-panel as the card row (see below),
-   so the old margin-top:90px "extra breathing room before the title
-   row" rule is replaced by the panel's own header-clearance padding-
-   top instead -- keeping .detail-hero--split's own margin at 0 lets
-   the panel's flex gap do the spacing job uniformly. */
-.detail-page--photos .detail-hero--split { margin: 0; max-width: none; }
-/* Category pills on /photos are now read-only indicators (highlighted
-   automatically by the conveyor's scroll position, see
+/* ROUND 3: the (eyebrow-only, since ROUND 9) hero row and filter row
+   now live INSIDE the same single-viewport .photos-conveyor-panel as
+   the card row (see below), so the old margin-top:90px "extra
+   breathing room before the title row" rule is replaced by the
+   panel's own header-clearance padding-top instead. */
+/* ROUND 9 ("포토와 비디오의 버튼 위치를 통일시켜주고, 포토스 비디오스 글자는
+   제거해줘도 될 거 같아"): the old .detail-hero--split title+CTA row is
+   gone from BOTH pages' markup -- the "Photos"/"Videos" <h1> is
+   removed outright, and the CTA button moved down into a new
+   .detail-filter-row sitting beside each page's OWN filter nav (see
+   below), so /photos and /videos now share one consistent button
+   position + one consistent .panel-pill.pill-outline.detail-cta
+   style instead of two different button implementations
+   (.detail-cta vs. .rec-works-more) in two different structural
+   slots. .detail-hero is now just the small "FULL COLLECTION"
+   eyebrow label on both pages. */
+.detail-page--photos .detail-filter-row { margin: 0 auto 0; }
+/* Category pills INSIDE the pinned conveyor are read-only indicators
+   (highlighted automatically by the conveyor's scroll position, see
    photos-hero.js) rather than click-to-filter buttons -- drop the
-   pointer/hover affordance so they don't look clickable. */
-.detail-page--photos .detail-filter-pill { cursor: default; pointer-events: none; }
+   pointer/hover affordance so they don't look clickable. Scoped to
+   #photos-category-filter only (NOT `.detail-filter-pill` globally)
+   so the new #photos-grid-section's own real, clickable
+   [data-filter] pills below (ROUND 9's "모든 걸 동시에 볼 수 있게" grid)
+   are unaffected. */
+#photos-category-filter .detail-filter-pill { cursor: default; pointer-events: none; }
 .detail-page--photos .detail-filter { margin-bottom: 0; }
 .detail-hero {
   text-align: center;
-  margin-bottom: 40px;
+  margin-bottom: 32px;
 }
-/* codapress.co.uk "Books by Codapress" reference: eyebrow+title on
-   the left, an "ALL BOOKS ->" pill button on the right, same row.
-   Scoped to an added modifier so /videos (still centered) is
-   untouched. */
-.detail-hero--split {
+.detail-filter-row {
   display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 24px;
-  text-align: left;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
   max-width: 1400px;
-  margin: 0 auto 40px;
+  margin: 0 auto 56px;
+  flex-wrap: wrap;
 }
-.detail-hero-copy .detail-eyebrow,
-.detail-hero-copy .detail-title { text-align: left; margin: 0; }
+.detail-filter-row .detail-filter { margin-bottom: 0; flex: 1 1 auto; }
 .detail-cta { flex-shrink: 0; }
 @media (max-width: 640px) {
-  .detail-hero--split { flex-direction: column; align-items: flex-start; gap: 16px; }
+  .detail-filter-row { flex-direction: column; gap: 16px; }
 }
 .detail-eyebrow {
   font-family: var(--font-clean);
@@ -2588,6 +2597,26 @@ html, body {
 }
 @media (max-width: 768px) {
   .thumb-frame--photos-detail { height: 400px; }
+}
+
+/* ============================================================
+   ROUND 9 ("포토에서도 올 포토를 누르면, 비디오 페이지처럼 모든 걸 동시에
+   볼 수 있게끔 해줘"): #photos-grid-section -- a plain static
+   all-cards grid living AFTER the pinned conveyor panel, reusing
+   /videos' own .detail-filter (real, clickable [data-filter]
+   buttons here, unlike the conveyor's read-only pills above) +
+   .detail-grid/.detail-card vocabulary so every photo across every
+   category is viewable at once, exactly like /videos' "ALL" filter
+   view. Sits over the persistent video2 starfield backdrop like the
+   rest of #photos-real-content, so it needs the same ordinary
+   (non-100vh, non-pinned) flow padding a normal content section
+   gets elsewhere on this page. */
+.photos-grid-panel {
+  position: relative;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 40px 0 140px;
 }
 
 /* Lightbox for "View detail" links */
