@@ -2450,7 +2450,7 @@ html, body {
   justify-content: center;
   overflow: hidden;
   border-radius: 18px;
-  background: radial-gradient(ellipse at center, #14100c 0%, #050506 78%);
+  background: transparent;
 }
 
 /* BFC .poster_bg: an absolute staggered grid of dimmed thumbnails
