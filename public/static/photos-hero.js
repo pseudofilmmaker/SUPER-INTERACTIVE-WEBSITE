@@ -19,7 +19,13 @@
       두번째 영상은 계속 룹이야"), just reached via a scroll-driven scrub
       of video-1 instead of a real-time autoplay per Round 8 feedback
       ("포토에서 처음 영상 시작부터 스크롤다운으로 반응연동형 재생이
-      되어야해. 오토 플레이가 먹히는 영상이 아니구").
+      되어야해. 오토 플레이가 먹히는 영상이 아니구"). ROUND 8.1
+      follow-up ("스크롤 업에도 반응해줘야될 거 같아"): the hand-off to
+      video-2 is now REVERSIBLE — scrolling back up into the pin's own
+      range after already reaching video-2 (onEnterBack) un-hands-off
+      back to video-1's scrub, so up/down scroll stays reactive across
+      the video1<->video2 boundary too, not just within video-1's own
+      range.
 
    2) Photos conveyor: a pinned, scroll-scrubbed SINGLE-ROW card
       carousel — direct adaptation of app.js's setupConveyor()
@@ -99,9 +105,13 @@
     const scrollCue = document.getElementById('photos-scroll-cue');
 
     let handedOff = false;
-    function handToVideo2() {
+    let broken = false; // set only by the error/timeout safety net below —
+    // once video-1 is confirmed unplayable there is nothing to scrub back
+    // to, so onEnterBack must NOT try to revive it in that case.
+    function handToVideo2(isBroken) {
       if (handedOff) return;
       handedOff = true;
+      if (isBroken) broken = true;
       // Hard-cut video1 -> video2 (this site's established
       // no-crossfade convention — see setupVideosBgVideo() in app.js).
       // video2 then plays/loops forever in real time as a persistent
@@ -114,6 +124,21 @@
       video2.currentTime = 0;
       video2.play().catch(() => {});
       if (scrollCue) scrollCue.style.opacity = '0';
+    }
+
+    // Un-hand-off back to video-1's scrub when the user scrolls back UP
+    // into the pin range after having already reached video-2 (ROUND 8.1
+    // follow-up: "스크롤 업에도 반응해줘야될 거 같아" — the scrub must be
+    // reversible even across the video1->video2 boundary, not just within
+    // it). video-2 pauses and hides; video-1 reappears and resumes tracking
+    // the pin's own progress from wherever the user has scrolled back to.
+    function handBackToVideo1(p) {
+      if (!handedOff || broken) return;
+      handedOff = false;
+      video2.pause();
+      gsap.set(video2, { opacity: 0 });
+      gsap.set(video1, { opacity: 1 });
+      renderHeroScrub(p);
     }
 
     // Scroll-scrub video-1's currentTime 0 -> its own duration across
@@ -159,6 +184,15 @@
       // the correct place for the handoff, not a progress===1 check
       // inside onUpdate.
       onLeave: () => handToVideo2(),
+      // Scrolling back DOWN into the pin range from below (i.e. the
+      // user had already scrolled past it onto video-2, and is now
+      // scrolling back up into the pin's own scrub distance again) —
+      // must un-hand-off back to video-1 so the scrub is reversible
+      // across the video1->video2 boundary too, not just within it
+      // (ROUND 8.1: "스크롤 업에도 반응해줘야될 거 같아"). self.progress
+      // is ~1 right at this crossing, so video-1 resumes essentially
+      // at its own last frame -- no visible jump.
+      onEnterBack: (self) => handBackToVideo1(self.progress),
       // Scrolling back up above the pin's own start (before it has
       // even engaged) is the only rewind case that needs video-1's
       // very first frame restored explicitly -- onUpdate already
@@ -175,8 +209,8 @@
     // error, unsupported codec, etc.) don't leave the page stuck on a
     // frozen first frame forever with no way to reach the persistent
     // video-2 backdrop -- fall through after a generous timeout.
-    video1.addEventListener('error', handToVideo2);
-    setTimeout(() => { if (!handedOff && video1.readyState === 0) handToVideo2(); }, 12000);
+    video1.addEventListener('error', () => handToVideo2(true));
+    setTimeout(() => { if (!handedOff && video1.readyState === 0) handToVideo2(true); }, 12000);
   })();
 
   /* ============================================================
