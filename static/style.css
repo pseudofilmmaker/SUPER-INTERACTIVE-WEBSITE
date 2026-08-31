@@ -1620,6 +1620,24 @@ html, body {
 .thumb-item img, .thumb-item video {
   width: 100%; height: 100%; object-fit: cover;
 }
+/* PHOTOS cards only (.thumb-frame--card, section-4): the source photos
+   span a wide range of native aspect ratios (0.667 portrait up to 1.49
+   landscape) while the polaroid card box is a fixed 220:300 portrait
+   shape -- with `object-fit: cover` (the default above, still correct
+   for the VIDEOS landscape/reel carousels where the source media's own
+   ratio already matches its frame), any photo whose ratio doesn't match
+   220:300 gets cropped, worst for the landscape "places" and square
+   "product"/"fashion" shots (reported by the user: thumbnails "아직도
+   크롭되고" -- still cropped, on large screens). `contain` shows the
+   WHOLE photo unscaled/uncropped inside the card, letting the cream mat
+   background (see the polaroid override below) show through as an even
+   margin on whichever sides don't fill the box -- same idea as the mat's
+   existing padding, just now sized per-photo instead of assuming every
+   photo is already 220:300. */
+.thumb-frame--card .thumb-item img,
+.thumb-frame--card .thumb-item video {
+  object-fit: contain;
+}
 
 /* dots row (~14px) + gap (18px) + panel's own vertical padding (60px) =
    ~92px of non-frame content inside the safe area (no carousel-label on
@@ -1693,8 +1711,20 @@ html, body {
   border: 1px solid rgba(0,0,0,0.06);
   border-radius: 3px;
   padding: 14px 14px 46px;
+  /* Was `0 25px 60px rgba(0,0,0,0.55)` -- a 60px blur radius at that
+     offset/opacity paints a soft dark rectangle reaching WAY past the
+     card's own edges, which reads as a clearly visible tinted box
+     against this section's bright torch/flame background (reported by
+     the user: "사진 뒤 배경이 완전 투명이 아니야" -- the area behind the
+     photo isn't fully transparent). There is no separate overlay
+     element causing this -- it's purely this shadow. Shrinking the
+     blur radius and offset keeps the shadow tightly hugging the card
+     itself (still reads as "floating" up close) while area even a
+     short distance away from the card is left untouched/transparent;
+     the lower alpha keeps what remains from re-forming a visible tint
+     against the bright background. */
   box-shadow:
-    0 25px 60px rgba(0,0,0,0.55),
+    0 6px 16px rgba(0,0,0,0.3),
     0 2px 0 rgba(255,255,255,0.5) inset;
 }
 .thumb-frame--card .thumb-item .face-placeholder {
@@ -1897,14 +1927,240 @@ html, body {
   backdrop-filter: none;
 }
 
+/* ============================================================
+   /photos video-hero intro (video1 campfire -> video2 starfield
+   loop, persistent). Same structural "fixed media player" pattern as
+   #fixed-bg-video (HOME) / #about-bg-video-layer (ABOUT): position:
+   fixed, z-index:0, hard-cut opacity swap between stacked <video>
+   elements, single shared scrim for text legibility. Kept as its OWN
+   independent layer (not appended to any other page's video chain)
+   since /photos is a fully separate HTML document with no shared
+   layout.
+
+   ROUND 2 REWORK (user feedback: "스크롤 다운으로 넘어갈 수 있게끔해줘.
+   다만 두번째 영상은 계속 룹이야") -- the previous scroll-lock-until-
+   video1-ends gate has been REMOVED entirely: scrolling must be
+   possible at all times, and video2's loop is now a genuinely
+   persistent backdrop decoupled from any "revealed" state (see
+   photos-hero.js -- there is no more body.photos-hero-locked /
+   .photos-hero-revealed state machine). The real page content
+   (#photos-real-content) is simply normal scrollable document flow
+   stacked on top of this fixed layer from the very first frame;
+   #photos-hero-panel below is a transparent 100vh spacer so the
+   video plays fully unobstructed for the first viewport, then the
+   user's own scroll carries them past it into the opaque page body,
+   exactly the way HOME's #section-1 sits transparently over
+   #fixed-bg-video before later sections. */
+#photos-hero-video-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.photos-hero-video-el {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  will-change: opacity;
+}
+.photos-hero-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(5,3,2,0) 0%, rgba(5,3,2,0.32) 82%),
+    linear-gradient(180deg, rgba(5,3,2,0.22) 0%, transparent 22%, transparent 78%, rgba(5,3,2,0.3) 100%);
+}
+/* #photos-real-content must ALWAYS paint above the fixed z-index:0
+   video layer (previously this was only true once .photos-hero-
+   revealed was added post-gate; now that there is no gate, it needs
+   to be unconditional) -- position:relative puts it in the same
+   "positioned, stacked by DOM order" bucket as the fixed video layer,
+   and since it comes later in the DOM, it paints on top. */
+#photos-real-content { position: relative; z-index: 2; }
+
+/* PINNED for the duration of video-1's scroll scrub (ROUND 8 —
+   "포토에서 처음 영상 시작부터 스크롤다운으로 반응연동형 재생이
+   되어야해"). GSAP's pin mechanism reserves this box's OWN natural
+   height as the resting (pre/post-pin) layout space, and appends the
+   ScrollTrigger's `end: '+=140%'` distance as the actual scrubbed
+   scroll range on top of that -- so keeping this at a plain 100vh is
+   correct: it's the box the pin holds fixed on screen while
+   photos-hero.js's ScrollTrigger progresses through its own separate
+   140% scroll distance underneath. */
+.photos-hero-panel {
+  position: relative;
+  height: 100vh;
+  height: calc(var(--vh, 1vh) * 100);
+  background: transparent;
+}
+/* position:fixed (not absolute) -- while GSAP pins .photos-hero-panel
+   it wraps the element in its own pin-spacer, which would otherwise
+   make an absolutely-positioned child's "bottom" offset resolve
+   against the TALL spacer box (the full 140% scrub distance) instead
+   of the actual viewport, sending the cue far down off-screen. fixed
+   positions it against the viewport directly, immune to that wrapper,
+   exactly like HOME/ABOUT's own .scroll-cue (see style.css's shared
+   ruleset -- this ID only carries position/placement overrides). */
+#photos-scroll-cue {
+  position: fixed;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* ============================================================
+   /videos video-hero intro (ROUND 10 -- "비디오 페이지도 포토 페이지처럼
+   영상을 활용해, 비디오 포트폴리오 진입을 똑같이 만들어줘"). Structurally
+   IDENTICAL rule-for-rule to the /photos block above (see that
+   block's own comments for the full rationale) -- same "fixed media
+   player" pattern, same pin+scrub-then-hard-cut-to-persistent-loop
+   behavior (see videos-hero.js), just re-namespaced videos-hero-*
+   instead of photos-hero-* since /videos is its own separate HTML
+   document with no shared layout/state with /photos. */
+#videos-hero-video-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.videos-hero-video-el {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  will-change: opacity;
+}
+.videos-hero-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(5,3,2,0) 0%, rgba(5,3,2,0.32) 82%),
+    linear-gradient(180deg, rgba(5,3,2,0.22) 0%, transparent 22%, transparent 78%, rgba(5,3,2,0.3) 100%);
+}
+/* #videos-real-content must always paint above the fixed z-index:0
+   video layer -- same reasoning as #photos-real-content above. */
+#videos-real-content { position: relative; z-index: 2; }
+
+.videos-hero-panel {
+  position: relative;
+  height: 100vh;
+  height: calc(var(--vh, 1vh) * 100);
+  background: transparent;
+}
+#videos-scroll-cue {
+  position: fixed;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+/* /videos (ROUND 10): the hero video panel must sit flush against the
+   very top of the document, same reasoning as .detail-page--photos
+   below -- #videos-hero-panel IS the header-clearing first screen
+   now, so the shared 150px .detail-page top padding must be zeroed
+   here. NOTE: the `background: transparent` override used to also
+   live on this same line, but since .detail-page--videos and
+   .detail-page are both single-class selectors (equal specificity),
+   whichever rule comes LAST in source order wins the cascade -- and
+   .detail-page (with its opaque `background: var(--bg)`) was
+   declared AFTER this block, so it silently re-painted an opaque
+   #050506 over the entire #videos-real-content, hiding the fixed
+   z-index:0 video layer behind it completely (Turn E bug report:
+   "영상이 안 보이는데?"). Padding-top is safe to keep here since it has
+   no such conflicting later declaration; the background override has
+   been moved down to right after .detail-page--photos's own
+   background override below, so both win the cascade the same way. */
+.detail-page--videos { padding-top: 0; }
+/* .rec-works sits directly below the hero panel now (no header-
+   clearance padding above it anymore) -- give it its own top margin
+   so "Featured Works" doesn't crowd the very bottom edge of the
+   hero video. */
+.detail-page--videos .rec-works { margin-top: 40px; }
+
 .detail-page {
   min-height: 100vh;
   padding: 150px 6vw 100px;
   background: var(--bg);
 }
+/* /photos (ROUND 2): the hero video panel must sit flush against the
+   very top of the document (so it lines up exactly with the fixed
+   full-viewport #photos-hero-video-layer behind it) -- the shared
+   150px top padding above is for pages whose first section is
+   ordinary text content needing header clearance, which no longer
+   applies here since photos-hero-panel IS the header-clearing first
+   screen. */
+.detail-page--photos { padding-top: 0; }
+/* ROUND 3 BUG FIX: .detail-page's own `background: var(--bg)` above is
+   OPAQUE (#050506) and was being inherited by #photos-real-content
+   (which carries both .detail-page and .detail-page--photos) across
+   its ENTIRE height, not just the ordinary-content sections. Since
+   #photos-real-content sits at z-index:2 above the fixed z-index:0
+   #photos-hero-video-layer, that opaque background silently painted
+   over the persistent video2 backdrop everywhere -- including behind
+   .photos-conveyor-panel -- so video2 was never actually visible on
+   screen at all (previously misdiagnosed as a Playwright headless
+   video-capture quirk; it is a real rendering bug). Force it back to
+   transparent so the fixed video layer shows through for the WHOLE
+   page, exactly like HOME's own #scroll-container/.panel stack sitting
+   transparently over #fixed-bg-video -- .photos-hero-scrim (already
+   painted inside the video layer, in front of the video but behind
+   this content) keeps text legible over it. */
+.detail-page--photos { background: transparent; }
+/* ROUND E bug fix (see .detail-page--videos comment above): moved
+   here, AFTER .detail-page, so this transparent override actually
+   wins the cascade against .detail-page's opaque `var(--bg)` --
+   same fix pattern as .detail-page--photos immediately above. */
+.detail-page--videos { background: transparent; }
+/* ROUND 3: the (eyebrow-only, since ROUND 9) hero row and filter row
+   now live INSIDE the same single-viewport .photos-conveyor-panel as
+   the card row (see below), so the old margin-top:90px "extra
+   breathing room before the title row" rule is replaced by the
+   panel's own header-clearance padding-top instead. */
+/* ROUND 9 ("포토와 비디오의 버튼 위치를 통일시켜주고, 포토스 비디오스 글자는
+   제거해줘도 될 거 같아"): the old .detail-hero--split title+CTA row is
+   gone from BOTH pages' markup -- the "Photos"/"Videos" <h1> is
+   removed outright, and the CTA button moved down into a new
+   .detail-filter-row sitting beside each page's OWN filter nav (see
+   below), so /photos and /videos now share one consistent button
+   position + one consistent .panel-pill.pill-outline.detail-cta
+   style instead of two different button implementations
+   (.detail-cta vs. .rec-works-more) in two different structural
+   slots. .detail-hero is now just the small "FULL COLLECTION"
+   eyebrow label on both pages. */
+.detail-page--photos .detail-filter-row { margin: 0 auto 0; }
+/* Category pills INSIDE the pinned conveyor are read-only indicators
+   (highlighted automatically by the conveyor's scroll position, see
+   photos-hero.js) rather than click-to-filter buttons -- drop the
+   pointer/hover affordance so they don't look clickable. Scoped to
+   #photos-category-filter only (NOT `.detail-filter-pill` globally)
+   so the new #photos-grid-section's own real, clickable
+   [data-filter] pills below (ROUND 9's "모든 걸 동시에 볼 수 있게" grid)
+   are unaffected. */
+#photos-category-filter .detail-filter-pill { cursor: default; pointer-events: none; }
+.detail-page--photos .detail-filter { margin-bottom: 0; }
 .detail-hero {
   text-align: center;
-  margin-bottom: 40px;
+  margin-bottom: 32px;
+}
+.detail-filter-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  max-width: 1400px;
+  margin: 0 auto 56px;
+  flex-wrap: wrap;
+}
+.detail-filter-row .detail-filter { margin-bottom: 0; flex: 1 1 auto; }
+.detail-cta { flex-shrink: 0; }
+@media (max-width: 640px) {
+  .detail-filter-row { flex-direction: column; gap: 16px; }
 }
 .detail-eyebrow {
   font-family: var(--font-clean);
@@ -1971,29 +2227,29 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
 }
 .detail-card.is-reel .detail-card-media {
   aspect-ratio: 9 / 16;
 }
+/* ROUND 5 BUG FIX: .detail-card-media declares aspect-ratio:4/3 (or 9/16 for
+   .is-reel), but its img/video child was a width:100%/height:100% FLEX ITEM
+   -- that creates a circular sizing conflict where the browser sizes the
+   parent to match the CHILD's own intrinsic aspect ratio instead of
+   honoring the parent's own `aspect-ratio` declaration (measured live:
+   a 258px-wide box rendered at 387px tall, ~2x the correct 193.5px, i.e.
+   matching the source photo's ~1.5 natural ratio, not the intended 4:3).
+   On /photos' fixed-height .thumb-item (440px) that overflow silently ate
+   ~73px off the bottom of .detail-card-body via .thumb-item's own
+   overflow:hidden, clipping the description AND the "View detail ->" link
+   entirely. Taking the img/video out of flex layout with
+   position:absolute;inset:0 lets the parent's aspect-ratio be respected
+   again (verified: 258x194px, correct 4:3). Safe for /videos' .detail-card
+   too, since that markup has no other flex/media siblings relying on the
+   img's participation in layout flow. */
 .detail-card-media img, .detail-card-media video {
+  position: absolute; inset: 0;
   width: 100%; height: 100%; object-fit: cover;
-}
-/* Photos detail page ONLY -- same polaroid mat treatment as the home-page
-   teaser cards (see .thumb-frame--card .thumb-item above): cream paper
-   frame with a thicker bottom strip. Scoped to .detail-page--photos so the
-   /videos detail grid (which shares .detail-card/.detail-grid) is
-   untouched. */
-.detail-page--photos .detail-card {
-  background: linear-gradient(165deg, #fbf8f1, #f1ece0);
-  box-shadow: 0 20px 50px rgba(0,0,0,0.45), 0 2px 0 rgba(255,255,255,0.5) inset;
-  border: 1px solid rgba(0,0,0,0.06);
-}
-.detail-page--photos .detail-card-media {
-  padding: 12px 12px 0;
-}
-.detail-page--photos .detail-card-caption {
-  color: rgba(20,14,8,0.55);
-  padding: 10px 14px 16px;
 }
 .detail-card-caption {
   padding: 12px 14px;
@@ -2002,9 +2258,479 @@ html, body {
   text-transform: uppercase;
   color: var(--fg-dim);
 }
+
+/* ============================================================
+   PHOTOS card body — Codapress ("Books by Codapress") reference:
+   small top-left badge row (category + Bestseller/New pill) over
+   the media, then bold title / one-line description / "View
+   detail ->" link beneath.
+
+   ROUND 2: the card grid on /photos was replaced by a pinned,
+   scroll-scrubbed single-row conveyor (.thumb-frame--photos-detail
+   .thumb-item, see below), so this Codapress body treatment is now
+   applied to .thumb-item instead of .detail-card. /videos (which
+   still uses the original .detail-card/.detail-grid static grid) is
+   untouched -- .detail-badge/.detail-card-body/etc. below are
+   generic classes shared by both markups.
+   ============================================================ */
+.thumb-frame--photos-detail .thumb-item {
+  width: 260px;
+  height: 440px;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  background: linear-gradient(150deg, #16110c, #0a0a0d 78%);
+  cursor: default;
+}
+.thumb-frame--photos-detail .thumb-item .detail-card-media { flex: 0 0 auto; }
+@media (max-width: 768px) {
+  .thumb-frame--photos-detail .thumb-item { width: 210px; height: 380px; }
+}
+.detail-card-badges {
+  position: absolute;
+  top: 10px; left: 10px;
+  display: flex;
+  gap: 6px;
+  z-index: 1;
+}
+.detail-badge {
+  font-family: var(--font-clean);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 4px 9px;
+  border-radius: 999px;
+  line-height: 1.4;
+}
+.detail-badge--category {
+  color: rgba(255,255,255,0.85);
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255,255,255,0.18);
+}
+.detail-badge--bestseller {
+  color: #1a0e04;
+  background: linear-gradient(90deg, var(--accent-gold), var(--accent-flame));
+  font-weight: 600;
+}
+.detail-badge--new {
+  color: #fff;
+  background: rgba(255,255,255,0.14);
+  border: 1px solid rgba(255,255,255,0.32);
+}
+.detail-card-body {
+  padding: 14px 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1 1 auto;
+}
+.detail-card-title {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 17px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--fg);
+}
+.detail-card-desc {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--fg-dim);
+  margin: 0;
+  flex: 1 1 auto;
+}
+.detail-card-link {
+  font-family: var(--font-clean);
+  font-size: 11.5px;
+  letter-spacing: 0.05em;
+  color: var(--accent-flame);
+  text-decoration: underline;
+  text-decoration-color: rgba(255,138,0,0.4);
+  text-underline-offset: 3px;
+  margin-top: 4px;
+  align-self: flex-start;
+  transition: color 0.2s ease;
+}
+.detail-card-link:hover { color: var(--accent-gold); }
+
+/* ============================================================
+   VIDEOS "Featured Works" panel (ROUND 7) — ported from Busan Film
+   Commission's bfc.or.kr "04 추천지원작" section (.main_con4 /
+   .m4_support / .poster_on / .poster_bg), fetched and inspected
+   directly from the live site per user instruction. Structure kept:
+   a numbered section heading + "view all" link, a bordered vertical
+   auto-cycling poster carousel with a dark hover-reveal metadata
+   panel, sitting in front of a decorative staggered grid of dimmed
+   background poster thumbnails.
+
+   Reimplemented WITHOUT jQuery/slick.js (BFC's actual carousel
+   engine) since this project has no jQuery dependency anywhere and
+   deliberately stays on vanilla JS + CSS transitions / GSAP only
+   (see photos-hero.js, app.js) -- see videos-poster.js for the
+   auto-advance timer + slide-class toggling that replaces slick's
+   vertical fade/slide behavior. The CSS hover-reveal text panel
+   (sliding in from the right, matching BFC's `left:100% -> left:0`
+   technique almost verbatim) needed no such substitution, since BFC
+   itself implements that part in pure CSS :hover, not JS.
+   ============================================================ */
+.rec-works {
+  max-width: 1400px;
+  margin: 0 auto 90px;
+  position: relative;
+}
+.rec-works-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 36px;
+  flex-wrap: wrap;
+}
+.rec-works-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+.rec-works-badge {
+  flex-shrink: 0;
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-clean);
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a0e04;
+  background: linear-gradient(90deg, var(--accent-gold), var(--accent-flame));
+  margin-top: 2px;
+}
+.rec-works-title {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: clamp(26px, 3.4vw, 38px);
+  margin: 0 0 8px;
+  color: var(--fg);
+}
+.rec-works-sub {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--fg-dim);
+  margin: 0;
+  max-width: 480px;
+}
+.rec-works-more {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-clean);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  padding: 10px 20px;
+  text-decoration: none;
+  transition: all 0.25s ease;
+}
+.rec-works-more:hover { color: var(--fg); border-color: rgba(255,255,255,0.4); }
+.rec-works-more-arrow { transition: transform 0.25s ease; }
+.rec-works-more:hover .rec-works-more-arrow { transform: translateX(4px); }
+
+/* Stage: houses the decorative background grid (BFC's .poster_bg)
+   behind the bordered hero carousel (BFC's .poster_on). */
+.rec-works-stage {
+  position: relative;
+  height: 560px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 18px;
+  background: transparent;
+}
+
+/* BFC .poster_bg: an absolute staggered grid of dimmed thumbnails
+   framing the hero poster. Ported as a simple flex row of columns
+   (some offset downward) instead of BFC's 5-col CSS grid, since this
+   panel is a fixed-height contained stage rather than BFC's full
+   page-height section. */
+.rec-poster-bg {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 0 4vw;
+  z-index: 1;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.9) 14%, rgba(0,0,0,0.9) 86%, transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.9) 14%, rgba(0,0,0,0.9) 86%, transparent 100%);
+}
+.rec-poster-bg-col {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  flex-shrink: 0;
+}
+.rec-poster-bg-col--down { transform: translateY(70px); }
+.rec-poster-bg-item {
+  width: 150px;
+  aspect-ratio: 4 / 3;
+  border-radius: 14px;
+  overflow: hidden;
+  filter: brightness(32%);
+  line-height: 0;
+}
+.rec-poster-bg-item img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
+@media (max-width: 900px) {
+  .rec-poster-bg-item { width: 110px; }
+  .rec-poster-bg-col--down { transform: translateY(46px); }
+}
+
+/* BFC .poster_on: 400px-wide bordered, rounded poster box. Fixed
+   dims kept close to BFC's own (400px wide) since it reads as a
+   "movie poster" proportion (portrait 4:3-ish crop of the 675x1200
+   reel stills already used elsewhere on /videos for REELS cards). */
+.rec-poster-on {
+  position: relative;
+  z-index: 2;
+  width: 320px;
+  height: 480px;
+  border-radius: 24px;
+  overflow: hidden;
+  border: 5px solid rgba(255,255,255,0.3);
+  box-shadow: 0 30px 70px rgba(0,0,0,0.55);
+  flex-shrink: 0;
+}
+.rec-poster-on-track {
+  position: relative;
+  width: 100%; height: 100%;
+}
+.rec-poster-slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+  pointer-events: none;
+}
+.rec-poster-slide.is-active {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.rec-poster-slide img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
+/* BFC .box .text: dark overlay panel, hidden offscreen at
+   left:100%, sliding fully into view (left:0) on hover -- kept
+   almost verbatim from BFC's own rule, including the two-stage
+   staggered reveal (heading first, then the metadata list) via
+   transition-delay. */
+.rec-poster-text {
+  position: absolute;
+  inset: 0;
+  left: 100%;
+  padding: 26px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+  background: rgba(0,0,0,0.68);
+  transition: left 0.3s ease-in;
+}
+.rec-poster-slide:hover .rec-poster-text,
+.rec-poster-slide:focus-within .rec-poster-text { left: 0; }
+.rec-poster-text h3 {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 20px;
+  line-height: 1.3;
+  color: #fff;
+  margin: 0 0 16px;
+  transform: translateX(24px);
+  opacity: 0;
+  transition: all 0.4s ease-in;
+}
+.rec-poster-slide:hover .rec-poster-text h3,
+.rec-poster-slide:focus-within .rec-poster-text h3 { transform: translateX(0); opacity: 1; transition-delay: 0.25s; }
+.rec-poster-text ul {
+  list-style: none;
+  margin: 0; padding: 0;
+  transform: translateX(24px);
+  opacity: 0;
+  transition: all 0.4s ease-in;
+}
+.rec-poster-slide:hover .rec-poster-text ul,
+.rec-poster-slide:focus-within .rec-poster-text ul { transform: translateX(0); opacity: 1; transition-delay: 0.45s; }
+.rec-poster-text ul li { display: flex; margin-bottom: 8px; }
+.rec-poster-text ul li:last-child { margin-bottom: 0; }
+.rec-poster-text .term {
+  flex-shrink: 0;
+  width: 52px;
+  font-family: var(--font-clean);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: rgba(255,255,255,0.65);
+  position: relative;
+  margin-right: 14px;
+}
+.rec-poster-text .term::after {
+  content: '';
+  display: block;
+  position: absolute;
+  top: 2px; right: -7px;
+  width: 1px; height: 12px;
+  background: rgba(255,255,255,0.4);
+}
+.rec-poster-text .desc {
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: rgba(255,255,255,0.92);
+}
+.rec-poster-on-dots {
+  position: absolute;
+  bottom: 16px; left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  display: flex;
+  gap: 7px;
+}
+.rec-poster-on-dots span {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.3);
+  transition: background 0.25s ease, transform 0.25s ease;
+}
+.rec-poster-on-dots span.is-active {
+  background: var(--accent-flame);
+  transform: scale(1.3);
+}
+@media (max-width: 900px) {
+  .rec-works-stage { height: 460px; }
+  .rec-poster-on { width: 240px; height: 380px; border-width: 4px; border-radius: 18px; }
+  .rec-poster-text .term { display: none; }
+}
+@media (max-width: 640px) {
+  .rec-works-stage { height: 400px; }
+  .rec-poster-bg { display: none; }
+  .rec-poster-on { width: 210px; height: 340px; }
+}
+
+/* ============================================================
+   PHOTOS conveyor panel (ROUND 2) — pinned single-row card carousel,
+   direct adaptation of HOME's .stack-panel/#section-4/photo-stack
+   (see app.js's setupConveyor() + style.css's .thumb-frame/.thumb-item
+   rules above). Unlike HOME's version this is NOT nested inside the
+   #scroll-container "panel" system (no fixed header-clearance safe
+   zones to dodge -- /photos' header uses .static-header, which is a
+   normal top bar, not an overlay title/nav that needs padding
+   reserved around it) so the pin container here is a simpler locked-
+   100vh box with its own centered flex layout.
+   ============================================================ */
+.photos-conveyor-panel {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  height: calc(var(--vh, 1vh) * 100);
+  padding-top: 76px; /* clears the fixed .static-header bar */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 24px;
+  overflow: hidden;
+}
+.thumb-frame--photos-detail {
+  position: relative;
+  width: calc(100% + 12vw);
+  margin-left: -6vw;
+  margin-right: -6vw;
+  height: 480px;
+  overflow: hidden;
+  /* ROUND 6 fix ("컨베이어 좌우 끝에서 카드가 반쯱 잘려 보임" -- cards get
+     hard-clipped by the frame's own rectangular edge while sliding
+     in/out, since the conveyor mechanic itself always has SOME card
+     straddling each edge mid-scrub). Same mask-image edge-fade already
+     used by .client-row's logo marquee above: cards now fade to
+     transparent as they approach the left/right edge instead of being
+     abruptly cut off by a visible straight edge, so a half-visible card
+     reads as an intentional soft fade-out, not a rendering glitch. */
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.85) 10%, rgba(0,0,0,0.85) 90%, transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.85) 10%, rgba(0,0,0,0.85) 90%, transparent 100%);
+}
+@media (max-width: 768px) {
+  .thumb-frame--photos-detail { height: 400px; }
+}
+
+/* ============================================================
+   ROUND 9 ("포토에서도 올 포토를 누르면, 비디오 페이지처럼 모든 걸 동시에
+   볼 수 있게끔 해줘"): #photos-grid-section -- a plain static
+   all-cards grid living AFTER the pinned conveyor panel, reusing
+   /videos' own .detail-filter (real, clickable [data-filter]
+   buttons here, unlike the conveyor's read-only pills above) +
+   .detail-grid/.detail-card vocabulary so every photo across every
+   category is viewable at once, exactly like /videos' "ALL" filter
+   view. Sits over the persistent video2 starfield backdrop like the
+   rest of #photos-real-content, so it needs the same ordinary
+   (non-100vh, non-pinned) flow padding a normal content section
+   gets elsewhere on this page. */
+.photos-grid-panel {
+  position: relative;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 40px 0 140px;
+}
+
+/* Lightbox for "View detail" links */
+.photo-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(3,2,2,0.92);
+  padding: 6vh 6vw;
+}
+.photo-lightbox.is-open { display: flex; }
+.photo-lightbox-img {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 4px;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+}
+.photo-lightbox-close {
+  position: absolute;
+  top: 22px; right: 26px;
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.25);
+  background: rgba(0,0,0,0.4);
+  color: var(--fg);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
 @media (max-width: 768px) {
   .detail-page { padding: 120px 5vw 70px; }
   .detail-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px; }
+  .detail-card-title { font-size: 15px; }
+  .detail-card-desc { font-size: 11.5px; }
 }
 
 /* ============================================================
@@ -2119,11 +2845,15 @@ html, body {
   margin: 0;
   font-family: var(--font-sans);
   font-weight: 700;
-  /* More aggressive vw-scaling + lower ceiling than before (was
-     clamp(22px,3.4vw,40px) inside a 760px-capped box) so the full
-     sentence reliably fits one line across common desktop widths
-     without the box needing a fixed max-width at all. */
-  font-size: clamp(18px, 2.6vw, 34px);
+  /* Round 6 ("여기서 글자를 더 키워줘, 꽉찬 화면 기준으로"): sized for a full
+     large desktop viewport, not a phone-scale ceiling. Validated with a
+     canvas measureText() pass (not live DOM scrollWidth, which is unreliable
+     here since the <p> fills its 100%-width flex parent) across 900px-3000px+
+     viewport widths -- clamp(28px, 3.8vw, 92px) stays comfortably inside the
+     padded width (viewport - 2*8vw) at every width, so `white-space: nowrap`
+     below still guarantees the pre-existing Round 5 "큰화면일때는 한줄로"
+     single-line requirement while roughly doubling the old 34px ceiling. */
+  font-size: clamp(28px, 3.8vw, 92px);
   line-height: 1.4;
   color: var(--about-violet);
   text-shadow: 0 0 18px var(--about-violet-glow), 0 0 4px rgba(0,0,0,0.6);
@@ -2133,13 +2863,20 @@ html, body {
   /* Mobile: explicitly allow wrapping again and re-center/constrain the
      box, since a nowrap single line at any font size readable on a
      phone would overflow the screen width -- "모바일로 갈 때는 알아서
-     얼라인먼트를 잡아줘" (auto-align appropriately on mobile). */
+     얼라인먼트를 잡아줘" (auto-align appropriately on mobile). Round 6 also
+     bumps the mobile ceiling up (was 26px) and widens the box slightly
+     (was 560px/88vw) to give `text-wrap: balance` more room to spread the
+     9 words across evenly-weighted lines instead of default greedy
+     wrapping, which produced a lopsided split (e.g. "...long enough" /
+     "to frame it."). `text-wrap: balance` degrades gracefully to normal
+     wrap on any browser that doesn't support it. */
   .about-intro-crawl-text {
-    width: min(560px, 88vw);
+    width: min(620px, 90vw);
   }
   .about-intro-crawl-text p {
     white-space: normal;
-    font-size: clamp(19px, 5.6vw, 26px);
+    text-wrap: balance;
+    font-size: clamp(23px, 7.2vw, 40px);
   }
 }
 
@@ -2294,10 +3031,30 @@ html, body {
   text-shadow: 0 0 14px rgba(238,241,255,0.35);
 }
 
-/* ---------------- Pinned hero section (drives the whole sequence) ---------------- */
+/* ---------------- Pinned hero section (drives the whole sequence) ----------------
+   ROUND 9 FIX (part of "둘 사이에 갭을 없애줘"): this section only exists to host
+   the pin trigger — its content (.scroll-cue) is `position:fixed` and does not
+   consume layout space. But GSAP's pin mechanism reserves the trigger's OWN
+   natural CSS box height (previously 100vh/900px, inherited from .panel) as
+   extra dead-scroll space appended AFTER the pin's animated distance — even
+   though nothing is visibly happening there (everything has already reached
+   its fully-faded-out OUTRO state). Shrinking this box's own height to just
+   its padding removes that trailing dead zone. The animated scroll distance
+   itself is unchanged — about.js now computes the hero pin's `end` as a fixed
+   pixel value (620% of the viewport height) instead of a percentage of this
+   box's own height, so shrinking this box no longer also shrinks the pin's
+   own animation length. */
 #section-about-hero {
-  min-height: 100vh;
-  min-height: calc(var(--vh, 1vh) * 100);
+  min-height: 0;
+  /* ROUND 15 v3 FIX ("첫번째 이미지가 화면 밖으로 빠지면... 스크롤 다운
+     갭이 너무 커"): min-height:0 above already killed the 100vh box,
+     but this section still inherited .panel's own `padding: 60px 24px`
+     (120px total vertical), which -- exactly like the min-height dead
+     zone above it -- gets appended as extra unused scroll space right
+     after the pin releases, before Chapter 2's title card is even
+     visible. Zeroed out since this section hosts nothing but the
+     position:fixed .scroll-cue (which needs no padding at all). */
+  padding: 0;
 }
 /* #about-scroll-cue intentionally has NO overrides here — per spec
    ("홈 페이지의 스크롤과 디자인과 위치를 맞춰줘") it reuses the exact
@@ -2306,149 +3063,148 @@ html, body {
    class directly rather than maintaining a near-duplicate #about-*
    ruleset that could drift out of sync. See about.html markup. */
 
-/* ---------------- Resting profile section (photo + bio, always legible) ---------------- */
-.about-profile-panel {
-  padding: 100px 6vw 120px;
-}
-.about-profile-wrap {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: clamp(32px, 6vw, 90px);
-  max-width: 1180px;
-  width: 100%;
-  flex-wrap: wrap;
-}
-.about-profile-media {
-  flex: 0 0 auto;
-  width: min(440px, 88vw);
-}
-.about-profile-media img {
-  width: 100%;
-  height: auto;
-  display: block;
-  filter: drop-shadow(0 30px 60px rgba(0,0,0,0.55));
-}
-.about-profile-copy {
-  flex: 1 1 360px;
-  max-width: 560px;
-}
-.about-profile-eyebrow {
-  margin: 0 0 14px;
-  font-size: 12px;
-  letter-spacing: 0.3em;
-  text-transform: uppercase;
-  color: var(--about-violet);
-}
-.about-profile-name {
-  margin: 0 0 8px;
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: clamp(36px, 5vw, 58px);
-  color: var(--fg);
-}
-.about-profile-role {
-  margin: 0 0 26px;
-  font-family: var(--font-clean);
-  font-size: 14px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--fg-dim);
-}
-.about-profile-bio {
-  margin: 0;
-  font-size: clamp(15px, 1.5vw, 18px);
-  line-height: 1.85;
-  color: var(--fg-dim);
-}
-@media (max-width: 900px) {
-  .about-profile-wrap { flex-direction: column; text-align: center; }
-  .about-profile-copy { max-width: 620px; }
-}
+/* ---------------- Resting profile section — REMOVED (Round 15) ----------------
+   ROUND 15 ("이 구간은 삭제해줘"): the static "ABOUT ME / June Hong / role /
+   bio" resting panel this ruleset used to style (#section-about-profile in
+   about.html) has been deleted outright — it repeated the exact same photo
+   and bio copy the hero's own closing crawl had just shown, immediately
+   below it, in a plain non-animated layout. The .about-profile-* classes
+   are no longer referenced by any markup; this ruleset is intentionally
+   left removed rather than kept dead in the stylesheet. */
 
 /* ============================================================
    CHAPTERS 2-5 — Selected Works / Education & Skills / Awards /
-   Professional Experience. Reuses the exact same fixed-overlay +
-   scroll-progress-driven shrink/fade + teaser-overlap pattern as
-   the hero JUNE/HONG + crawl above (see setupChapterPin() in
-   about.js), generalized into shared .chapter-* classes so all
-   four chapters share one ruleset instead of four near-duplicates.
-   The starfield backdrop (#about-bg-video-layer / about-bg-video-2)
-   now stays visible + looping behind all of this — about.js no
-   longer fades that layer to 0 after chapter 1.
+   Professional Experience.
+
+   ROUND 11 REWRITE ("첫번째 이미지, 제거해줘야지... 두번째 이미지가
+   스타워즈 스크롤 스크립트처럼 나와야한다는 거야" — remove the
+   separate fixed-overlay title/teaser screen entirely; instead the
+   REAL heading + intro text of each chapter's resting detail panel
+   should itself perform the Star-Wars-crawl entrance).
+
+   Rounds 9-10 had each chapter play a duplicate title+teaser screen
+   (position:fixed, its own copy of the heading/intro text) BEFORE
+   the real content, driven by a dedicated pinned ScrollTrigger. That
+   whole approach is removed: no more .chapter-title-text /
+   .chapter-teaser-viewport fixed overlays, no more .chapter-pin-panel
+   pin stub, no more setupChapterPin()/CHAPTER_PIN_DISTANCE pin in
+   about.js. There is now only ONE copy of each chapter's heading +
+   intro text in the DOM (inside .chapter-detail-wrap below), so the
+   entire class of "duplicate text ghosting through from behind" bugs
+   these rounds were fighting is structurally impossible now.
+
+   (Round 12: the in-flow crawl-heading approach above was replaced by
+   setupChapterTitleCard() — a separately pinned fixed title card per
+   chapter with rise / hold-centered / shrink-fade phases — see
+   .chapter-title-card rules below. The real heading+intro is now plain
+   in-flow content with normal data-reveal fade-in.) The starfield
+   backdrop (#about-bg-video-layer / about-bg-video-2) still stays
+   visible + looping behind all of this.
    ============================================================ */
 
-/* ---------------- Chapter title + teaser fixed overlays ---------------- */
-.chapter-title-text {
+/* ---------------- ROUND 12: fixed, separately-pinned title card ----------------
+   Rise-from-bottom -> hold-centered-prominent-glowing -> shrink-and-fade, driven
+   by setupChapterTitleCard() in about.js against its own short pin host
+   (.chapter-title-pin-host). Reuses the hero's own JUNE/HONG glow styling so it
+   matches the requested reference screenshot. Only ONE of these + the resting
+   .chapter-detail-panel content is ever visible at a time (the pin fully
+   releases + fades out before the real panel scrolls into view), so this does
+   not reintroduce the old duplicate-text ghosting bug. ---------------- */
+.chapter-title-pin-host {
+  min-height: 0;
+}
+.chapter-title-card {
   position: fixed;
   inset: 0;
-  z-index: 11;
+  z-index: 6;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: clamp(10px, 1.6vw, 18px);
+  gap: 14px;
   text-align: center;
-  padding: 0 8vw;
+  padding: 0 6vw;
   pointer-events: none;
   opacity: 0;
   will-change: opacity, transform;
 }
-.chapter-title-eyebrow {
+.chapter-title-card-eyebrow {
   margin: 0;
   font-family: var(--font-clean);
-  font-weight: 600;
-  font-size: clamp(11px, 1.3vw, 14px);
-  letter-spacing: 0.36em;
+  font-size: 12px;
+  letter-spacing: 0.32em;
   text-transform: uppercase;
   color: var(--about-ice-dim);
 }
-.chapter-title-main {
-  margin: 0;
-  font-family: var(--font-clean);
-  font-weight: 800;
-  text-transform: uppercase;
-  font-size: clamp(40px, 8vw, 96px);
-  line-height: 1;
-  letter-spacing: 0.02em;
-  color: transparent;
-  -webkit-text-stroke: 2px var(--about-violet);
-  text-shadow: 0 0 24px var(--about-violet-glow), 0 0 60px var(--about-violet-glow);
-}
-.chapter-teaser-viewport {
-  position: fixed;
-  inset: 0;
-  z-index: 9;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 8vw;
-  pointer-events: none;
-  opacity: 0;
-  will-change: opacity;
-}
-.chapter-teaser-text {
-  width: min(760px, 82vw);
-  text-align: center;
-  will-change: transform, opacity;
-}
-.chapter-teaser-text p {
+.chapter-title-card-heading {
   margin: 0;
   font-family: var(--font-serif);
-  font-weight: 600;
-  font-size: clamp(19px, 3vw, 30px);
-  line-height: 1.55;
-  color: var(--about-ice);
-  text-shadow: 0 0 14px rgba(238,241,255,0.35);
+  font-weight: 700;
+  font-size: clamp(40px, 7vw, 96px);
+  color: transparent;
+  -webkit-text-stroke: 1.6px var(--about-violet);
+  text-shadow: 0 0 24px var(--about-violet-glow), 0 0 60px var(--about-violet-glow);
+}
+.chapter-title-card-heading em {
+  font-style: italic;
+  color: transparent;
+  -webkit-text-stroke: 1.6px var(--about-ice);
+  text-shadow: 0 0 24px rgba(238,241,255,0.5), 0 0 60px rgba(238,241,255,0.3);
 }
 @media (max-width: 768px) {
-  .chapter-title-main { -webkit-text-stroke: 1.4px var(--about-violet); }
+  .chapter-title-card-heading { -webkit-text-stroke: 1.1px var(--about-violet); }
+  .chapter-title-card-heading em { -webkit-text-stroke: 1.1px var(--about-ice); }
+}
+.chapter-title-card-intro {
+  margin: 8px 0 0;
+  max-width: 640px;
+  font-family: var(--font-clean);
+  font-size: clamp(14px, 1.4vw, 17px);
+  line-height: 1.8;
+  color: var(--about-ice-dim);
 }
 
-/* ---------------- Pinned title-beat panels (empty stubs driving the pin) ---------------- */
-.chapter-pin-panel {
-  min-height: 100vh;
-  min-height: calc(var(--vh, 1vh) * 100);
+/* ---------------- Round 19: school-logo crawl lockup ----------------
+   Reuses .chapter-title-card's rise/hold/shrink-fade fixed-overlay
+   mechanics (via the SAME setupChapterTitleCard() call, against its own
+   pin host #ch-edu-logo-pin) but swaps the eyebrow/heading/intro text
+   for a logo image + a short degree list, per "학교 로고 아래, 세번째
+   이미지를 적절히 배치해서 시안성을 높여줘".
+
+   Round 20 ("두번째 이미지, 투명 배경으로 로고를 올려줘"): the white
+   rounded "plate" background from Round 19 is removed -- the logo now
+   sits directly on the starfield backdrop with a real transparent
+   background, per the source PNG.
+
+   Round 25 ("첫번째 이미지의 학교 로고는 두번째 첨부한 이미지처럼,
+   외곽선에 글로우를 먹여서 표현해줘"): the plain white drop-shadow glow
+   from Round 20 is replaced with the SAME hollow/outline-glow SVG
+   filter (#festival-logo-outline-glow, defined once near the top of
+   <body>) already used on the Awards festival-logo row -- erodes the
+   solid PNG artwork's alpha down to a thin ring, colors it violet, and
+   layers a sharp + soft blur for the neon-outline look from the
+   reference screenshot, instead of a solid glyph with a soft white
+   halo around it. */
+.chapter-title-card--logo {
+  gap: 26px;
+}
+.chapter-title-card-logo-img {
+  display: block;
+  width: clamp(220px, 34vw, 480px);
+  height: auto;
+  filter: url(#festival-logo-outline-glow);
+}
+.chapter-title-card-degree-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.chapter-title-card-degree {
+  margin: 0;
+  font-family: var(--font-clean);
+  font-size: clamp(14px, 1.6vw, 18px);
+  letter-spacing: 0.01em;
+  color: var(--about-ice-dim);
 }
 
 /* ---------------- Resting detail panels (always-legible content) ---------------- */
@@ -2470,7 +3226,13 @@ html, body {
   color: var(--about-violet);
 }
 .chapter-detail-heading {
-  margin: 0 0 20px;
+  /* ROUND 12 FIX ("제목과 본문이 붙은 거야?" -- title and body text
+     were reading as visually stuck together): margin-bottom widened
+     (20px -> clamp(28px,4vw,44px)) so the heading always has clear
+     breathing room above the intro paragraph/list, scaling with
+     viewport instead of a small fixed gap that could look tight on
+     narrower/taller viewports. */
+  margin: 0 0 clamp(28px, 4vw, 44px);
   font-family: var(--font-serif);
   font-weight: 700;
   font-size: clamp(32px, 4.6vw, 52px);
@@ -2481,23 +3243,12 @@ html, body {
   color: var(--about-ice);
 }
 .chapter-detail-intro {
-  margin: 0 0 40px;
+  margin: 0 0 clamp(36px, 5vw, 56px);
   max-width: 720px;
   font-size: clamp(15px, 1.5vw, 18px);
   line-height: 1.8;
   color: var(--fg-dim);
 }
-.chapter-detail-wrap--split {
-  max-width: 1180px;
-  display: grid;
-  grid-template-columns: minmax(240px, 360px) 1fr;
-  gap: clamp(40px, 6vw, 90px);
-  align-items: start;
-}
-@media (max-width: 900px) {
-  .chapter-detail-wrap--split { grid-template-columns: 1fr; }
-}
-
 /* ---------------- Selected Works — filmography list ---------------- */
 .filmography-list {
   list-style: none;
@@ -2507,16 +3258,26 @@ html, body {
   flex-direction: column;
   gap: 26px;
 }
+/* ROUND 12: grid moved onto .filmography-item-inner (the new 3D-crawl
+   transform target added in about.html); .filmography-item itself now
+   only hosts the perspective, so the tilt/translate transform on
+   -inner never fights with the grid layout it also needs.
+   ROUND 21 ("첫번째 이미지 영역의 실선을 모두 제거해줘"): the
+   border-bottom divider between items is removed -- with items now
+   floating in/out individually against the starfield rather than
+   sitting in a flat static list, a hard rule line read as a leftover
+   from the old non-animated table layout. The list's own `gap`
+   (see .filmography-list above) still keeps items visually separated
+   without a literal line. */
 .filmography-item {
+  perspective: 900px;
+}
+.filmography-item-inner {
   display: grid;
   grid-template-columns: 92px 1fr;
   gap: 20px;
-  padding-bottom: 26px;
-  border-bottom: 1px solid var(--border-soft);
-}
-.filmography-item:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
+  transform-origin: 50% 100%;
+  will-change: transform, opacity;
 }
 .filmography-year {
   font-family: var(--font-clean);
@@ -2554,36 +3315,39 @@ html, body {
   color: var(--fg-faint);
 }
 @media (max-width: 560px) {
-  .filmography-item { grid-template-columns: 1fr; gap: 4px; }
+  .filmography-item-inner { grid-template-columns: 1fr; gap: 4px; }
   .filmography-year { padding-top: 0; }
 }
 
 /* ---------------- Education & Skills ---------------- */
-.education-list {
-  list-style: none;
-  margin: 0 0 8px;
-  padding: 0;
+/* Round 20 ("세번째 이미지, 이건 하단에서 올라오다가, 중앙에서 멈춰서
+   있다가 올라가야지"): perspective host + transform target for the
+   skills-grid's rise-in -> hold -> recede-and-fade crawl beat, driven
+   by setupGroupCrawl() in about.js. Mirrors .filmography-item (host)
+   / .filmography-item-inner (target) exactly -- the outer element
+   stays untransformed (so it can be measured as a stable ScrollTrigger
+   trigger), while the inner element receives the opacity/transform.
+
+   ROUND 21 BUGFIX: setupGroupCrawl() now uses `pin:true` (see about.js
+   comment there for why the earlier un-pinned version silently scrolled
+   the block off-screen while its opacity math still read 1). Because
+   the pin trigger is anchored at 'top top' (required for clean pin-to-
+   pin handoff with the adjacent chapter-title-card pins), the host
+   itself must be a full-viewport-tall flex-center box so its content
+   still reads as vertically centered for the whole pinned hold, exactly
+   like .chapter-title-pin-host's own cards do. */
+.edu-skills-crawl {
+  perspective: 1200px;
+  min-height: 100vh;
+  min-height: calc(var(--vh, 1vh) * 100);
   display: flex;
-  flex-direction: column;
-  gap: 22px;
+  align-items: center;
+  justify-content: center;
 }
-.education-item {
-  padding: 18px 20px;
-  border: 1px solid var(--border-soft);
-  border-radius: 10px;
-  background: rgba(255,255,255,0.02);
-}
-.education-school {
-  margin: 0 0 6px;
-  font-family: var(--font-serif);
-  font-weight: 600;
-  font-size: 18px;
-  color: var(--fg);
-}
-.education-degree {
-  margin: 0;
-  font-size: 13.5px;
-  color: var(--fg-dim);
+.edu-skills-crawl-inner {
+  width: 100%;
+  transform-origin: 50% 100%;
+  will-change: transform, opacity;
 }
 .skills-hint {
   display: flex;
@@ -2712,7 +3476,96 @@ html, body {
 }
 
 /* ---------------- Awards ---------------- */
+/* Round 21 ("모든 컨텐츠들이 중앙에 유지되었다 위로 올라가면서
+   사라지게끔"): perspective host + transform target for the whole
+   awards list's rise-in -> hold -> recede-and-fade crawl beat, driven
+   by setupGroupCrawl() in about.js. Mirrors .edu-skills-crawl /
+   .edu-skills-crawl-inner exactly. */
+.awards-crawl {
+  perspective: 1200px;
+  min-height: 100vh;
+  min-height: calc(var(--vh, 1vh) * 100);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.awards-crawl-inner {
+  position: relative;
+  width: 100%;
+  transform-origin: 50% 100%;
+  will-change: transform, opacity;
+}
+
+/* Round 22 ("영화제 로고만을 뽑아서... 외곽선에 글로우 느낌이 나게
+   변형을 해서"), Round 23 ("영화제 로고는 일렬로 좀더 크게 가는 게
+   나을 거 같아" -- single centered horizontal row instead of the
+   original scattered/rotated layout), Round 24 ("크기를 더 키우고,
+   투명도를 50퍼센트까지 떨어뜨려주고, 위치는 텍스트 뒤로, 또한
+   점멸하게 만들어줘" -- bigger again, capped at 50% opacity, moved
+   BEHIND the award text as background depth instead of sitting above
+   it in normal flow, and given a neon-style flicker instead of a
+   static glow), Round 25 (adding a 4th logo -- Hokkaido -- made 4 large
+   logos too wide for the 900px .chapter-detail-wrap column they were
+   confined to, causing the outer ones to overflow past the visible
+   panel and get clipped; width:100vw breaks the row out of that
+   column, same full-bleed technique used elsewhere on this page, and
+   height is retuned so 4 logos comfortably fit across the wider
+   viewport without the individual logos vanishing to the old Round23
+   size). Absolutely positioned + centered inside .awards-crawl-inner
+   (already position:relative), with a lower z-index than .awards-list
+   so the text reads clearly on top while the glowing logos sit behind
+   it. Still inside .awards-crawl-inner -- the element
+   setupGroupCrawl() animates opacity/transform on -- so the whole row
+   rises in, holds, and fades out together with the award entries as
+   one unit; no separate timing code needed. */
+.festival-logo-row {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100vw;
+  transform: translate(-50%, -50%);
+  z-index: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(20px, 4vw, 48px);
+  margin: 0;
+  pointer-events: none;
+}
+.festival-logo-row-item {
+  height: clamp(72px, 9vw, 132px);
+  width: auto;
+  filter: url(#festival-logo-outline-glow);
+  animation: festivalLogoFlicker 4.2s ease-in-out infinite;
+}
+/* Slight stagger so the logos don't flicker in lockstep -- reads as
+   ambient neon-sign noise rather than a single synced pulse. */
+.festival-logo-row-item:nth-child(1) { animation-delay: -0.4s; }
+.festival-logo-row-item:nth-child(2) { animation-delay: -1.9s; }
+.festival-logo-row-item:nth-child(3) { animation-delay: -3.1s; }
+.festival-logo-row-item:nth-child(4) { animation-delay: -2.6s; }
+@keyframes festivalLogoFlicker {
+  0%, 100% { opacity: 0.5; }
+  8%       { opacity: 0.14; }
+  19%      { opacity: 0.42; }
+  27%      { opacity: 0.08; }
+  38%      { opacity: 0.5; }
+  55%      { opacity: 0.18; }
+  67%      { opacity: 0.48; }
+  81%      { opacity: 0.1; }
+  92%      { opacity: 0.36; }
+}
+@media (max-width: 560px) {
+  /* Below this, four full-size logos side by side would overpower the
+     narrow viewport -- shrink and tighten the gap while keeping the
+     same full-bleed/behind-text/flicker treatment. */
+  .festival-logo-row { gap: 10px; }
+  .festival-logo-row-item { height: 40px; }
+}
+
 .awards-list {
+  position: relative;
+  z-index: 1;
   list-style: none;
   margin: 0;
   padding: 0;
@@ -2720,14 +3573,15 @@ html, body {
   flex-direction: column;
   gap: 22px;
 }
+/* Round 21 ("두번째 이미지 영역의 실선을 모두 제거해줘"): the
+   border-bottom divider between award entries is removed, same
+   rationale as the filmography list above -- the list's own `gap`
+   still separates entries without a static leftover rule line. */
 .awards-item {
   display: grid;
   grid-template-columns: 72px 1fr;
   gap: 20px;
-  padding-bottom: 22px;
-  border-bottom: 1px solid var(--border-soft);
 }
-.awards-item:last-child { border-bottom: none; padding-bottom: 0; }
 .awards-year {
   font-family: var(--font-clean);
   font-weight: 600;
@@ -2770,6 +3624,21 @@ html, body {
   letter-spacing: 0.05em;
   color: var(--fg-faint);
 }
+/* Round 21: same perspective host + transform target pattern as
+   .awards-crawl/.awards-crawl-inner, driven by setupGroupCrawl(). */
+.career-crawl {
+  perspective: 1200px;
+  min-height: 100vh;
+  min-height: calc(var(--vh, 1vh) * 100);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.career-crawl-inner {
+  width: 100%;
+  transform-origin: 50% 100%;
+  will-change: transform, opacity;
+}
 .career-list {
   list-style: none;
   margin: 0;
@@ -2778,14 +3647,14 @@ html, body {
   flex-direction: column;
   gap: 24px;
 }
+/* Round 21: border-bottom divider removed here too, for consistency
+   with Filmography/Awards now that Career shares the same floating
+   rise/hold/recede group crawl instead of a static list. */
 .career-item {
   display: grid;
   grid-template-columns: 150px 1fr;
   gap: 20px;
-  padding-bottom: 24px;
-  border-bottom: 1px solid var(--border-soft);
 }
-.career-item:last-child { border-bottom: none; padding-bottom: 0; }
 .career-year {
   font-family: var(--font-clean);
   font-weight: 600;
@@ -2831,4 +3700,86 @@ html, body {
 @media (max-width: 640px) {
   .career-item { grid-template-columns: 1fr; gap: 6px; }
   .career-heading-row { flex-direction: column; align-items: flex-start; }
+}
+
+/* ============================================================
+   ROUND 26 — Chapter 6 outro: video3 hard-cut hold + closing footer.
+
+   "첫번째 이미지, 마지막 커리어 부분이 페이드아웃되고나면, 첨부한 영상을
+   최적화시켜서 이어줘. 첨부한 영상의 마지막 프레임을 홀드 시켜서, 두번째
+   첨부 이미지, '홈' 페이지의 마지막화면의 정보를 똑같은 정보를 똑같은
+   효과를 입혀서 화면에 얹혀줘."
+
+   #ch-outro-pin is the pin host (see setupOutroSequence() in about.js):
+   like #section-about-hero, it hosts nothing but position:fixed
+   overlays (the video layer + the footer below), so its own CSS box
+   is zeroed out the same way -- otherwise its natural .panel height
+   (100vh + 60px/24px padding) would be appended as extra dead-scroll
+   space AFTER the pin's own animated distance, per the same root-cause
+   already documented on #section-about-hero above. */
+#ch-outro-pin {
+  min-height: 0;
+  padding: 0;
+}
+
+/* Closing contact footer -- reveals over video3's held last frame.
+   Deliberately reuses the site-wide --fg/--fg-dim palette (NOT
+   --about-violet/--about-ice) and the exact .vf-line reveal geometry
+   from the HOME page's #videos-footer-text, per "똑같은 정보를 똑같은
+   효과를 입혀서" (same info, same effect) -- this is a direct visual
+   match to HOME's own closing screen, not a re-skin in the about
+   page's own violet/ice palette. z-index sits above every other
+   about-page fixed overlay (highest here is #about-title-text at 11)
+   so it always sits on top once revealed. */
+#about-outro-footer-text {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0;
+  will-change: opacity;
+}
+.avf-inner {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.avf-line {
+  opacity: 0;
+  filter: blur(8px);
+  transform: translateY(24px);
+  font-family: var(--font-clean);
+  color: var(--fg-dim);
+  letter-spacing: 0.08em;
+  font-size: 15px;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 0 14px rgba(0,0,0,0.7);
+  will-change: opacity, transform, filter;
+}
+.avf-line[data-line="0"] {
+  color: var(--fg);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 16px;
+  margin-bottom: 4px;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 0 16px rgba(0,0,0,0.75);
+}
+.avf-line a {
+  color: inherit;
+  text-decoration: none;
+  pointer-events: auto;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+.avf-line a:hover {
+  color: var(--fg);
+  border-color: var(--accent-gold);
+}
+@media (max-width: 768px) {
+  .avf-line { font-size: 13px; }
+  .avf-line[data-line="0"] { font-size: 14px; }
 }

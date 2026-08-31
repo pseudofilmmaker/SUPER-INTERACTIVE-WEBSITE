@@ -1,1 +1,345 @@
-<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/><title>Be the ONE | Visual Storyteller Portfolio</title><meta name="description" content="Be the ONE — Visual Storyteller Portfolio"/><link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="true"/><link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&amp;family=Fraunces:ital,opsz,wght@0,9..144,100..900;1,9..144,100..900&amp;family=Playfair+Display:ital,wght@0,400..900;1,400..900&amp;display=swap" rel="stylesheet"/><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css"/><link href="/SUPER-INTERACTIVE-WEBSITE/static/style.css" rel="stylesheet"/></head><body><header id="site-header" class="static-header"><a class="brand" href="/SUPER-INTERACTIVE-WEBSITE/">JUNE HONG</a><nav class="main-nav" aria-label="primary navigation"><a href="/SUPER-INTERACTIVE-WEBSITE/">HOME</a><a href="/SUPER-INTERACTIVE-WEBSITE/photos/" class="active">PHOTOS</a><a href="/SUPER-INTERACTIVE-WEBSITE/videos/">VIDEOS</a><a href="/SUPER-INTERACTIVE-WEBSITE/about/">ABOUT ME</a></nav></header><main class="detail-page detail-page--photos"><div class="detail-hero"><p class="detail-eyebrow">FULL COLLECTION</p><h1 class="detail-title">Photos</h1></div><nav class="detail-filter" aria-label="photo category filter"><button class="detail-filter-pill active" data-filter="all">All</button><button class="detail-filter-pill" data-filter="Food">Food</button><button class="detail-filter-pill" data-filter="Fashion">Fashion</button><button class="detail-filter-pill" data-filter="Product">Product</button><button class="detail-filter-pill" data-filter="Places">Places</button><button class="detail-filter-pill" data-filter="AI">AI</button></nav><div class="detail-grid"><div class="detail-card" data-category="Food"><div class="detail-card-media"><img src="/SUPER-INTERACTIVE-WEBSITE/static/media/photos/food/food-01.jpg" alt="Food" loading="lazy"></div><div class="detail-card-caption">Food</div></div><div class="detail-card" data-category="Food"><div class="detail-card-media"><img src="/SUPER-INTERACTIVE-WEBSITE/static/media/photos/food/food-02.jpg" alt="Food" loading="lazy"></div><div class="detail-card-caption">Food</div></div><div class="detail-card" data-category="Fashion"><div class="detail-card-media"><img src="/SUPER-INTERACTIVE-WEBSITE/static/media/photos/fashion/fashion-01.jpg" alt="Fashion" loading="lazy"></div><div class="detail-card-caption">Fashion</div></div><div class="detail-card" data-category="Fashion"><div class="detail-card-media"><img src="/SUPER-INTERACTIVE-WEBSITE/static/media/photos/fashion/fashion-02.jpg" alt="Fashion" loading="lazy"></div><div class="detail-card-caption">Fashion</div></div><div class="detail-card" data-category="Product"><div class="detail-card-media"><img src="/SUPER-INTERACTIVE-WEBSITE/static/media/photos/product/product-01.jpg" alt="Product" loading="lazy"></div><div class="detail-card-caption">Product</div></div><div class="detail-card" data-category="Product"><div class="detail-card-media"><img src="/SUPER-INTERACTIVE-WEBSITE/static/media/photos/product/product-02.jpg" alt="Product" loading="lazy"></div><div class="detail-card-caption">Product</div></div><div class="detail-card" data-category="Places"><div class="detail-card-media"><img src="/SUPER-INTERACTIVE-WEBSITE/static/media/photos/places/places-01.jpg" alt="Places" loading="lazy"></div><div class="detail-card-caption">Places</div></div><div class="detail-card" data-category="Places"><div class="detail-card-media"><img src="/SUPER-INTERACTIVE-WEBSITE/static/media/photos/places/places-02.jpg" alt="Places" loading="lazy"></div><div class="detail-card-caption">Places</div></div><div class="detail-card" data-category="AI"><div class="detail-card-media"><img src="/SUPER-INTERACTIVE-WEBSITE/static/media/photos/ai/ai-01.jpg" alt="AI" loading="lazy"></div><div class="detail-card-caption">AI</div></div><div class="detail-card" data-category="AI"><div class="detail-card-media"><img src="/SUPER-INTERACTIVE-WEBSITE/static/media/photos/ai/ai-02.jpg" alt="AI" loading="lazy"></div><div class="detail-card-caption">AI</div></div></div></main><script src="/SUPER-INTERACTIVE-WEBSITE/static/detail-page.js"></script></body></html>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>Be the ONE | Visual Storyteller Portfolio</title>
+<meta name="description" content="Be the ONE — Visual Storyteller Portfolio"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="true"/>
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,100..900;1,9..144,100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css"/>
+<link href="/SUPER-INTERACTIVE-WEBSITE/static/style.css" rel="stylesheet"/>
+</head>
+<body>
+
+
+<header id="site-header" class="static-header about-header-transparent">
+  <a class="brand" href="/SUPER-INTERACTIVE-WEBSITE/">JUNE HONG</a>
+  <nav class="main-nav" aria-label="primary navigation">
+    <a href="/SUPER-INTERACTIVE-WEBSITE/">HOME</a>
+    <a href="/SUPER-INTERACTIVE-WEBSITE/photos/" class="active">PHOTOS</a>
+    <a href="/SUPER-INTERACTIVE-WEBSITE/videos/">VIDEOS</a>
+    <a href="/SUPER-INTERACTIVE-WEBSITE/about/">ABOUT ME</a>
+  </nav>
+</header>
+
+<!-- ============================================================
+     PHOTOS video-hero intro ("첫번째 영상과 두번째 영상이 이어지고,
+     두번째 영상을 룹으로 돌리면서"): video-1 (campfire pulling back
+     into the Milky Way) plays; once it reaches its own end,
+     photos-hero.js hard-cuts to video-2 (a seamless starfield loop)
+     and sets it to loop forever as the page's persistent full-bleed
+     backdrop -- same fixed position:fixed / z-index:0 "media player"
+     pattern used by #fixed-bg-video (HOME) and #about-bg-video-layer
+     (ABOUT), so it paints behind the header and the real page content
+     below rather than being its own separate splash screen.
+
+     ROUND 8 (user feedback: "포토에서 처음 영상 시작부터 스크롤다운으로
+     반응연동형 재생이 되어야해. 오토 플레이가 먹히는 영상이 아니구"):
+     video-1 no longer autoplays in real time -- it has NO `autoplay`
+     attribute at all now. Its `currentTime` is instead scrubbed
+     0 -> duration directly off the pinned #photos-hero-panel's own
+     ScrollTrigger progress (same "pin + scrub currentTime 1:1" pattern
+     HOME's setupFixedBgVideo()/cubeScrubRenderer uses for bg-video-1a),
+     so scrolling down through this section plays the clip forward and
+     scrolling back up rewinds it -- there is no time-based playback
+     driving it at all. #photos-hero-panel is now PINNED for the
+     duration of that scrub (photos-hero.js) rather than being a plain
+     transparent spacer; once the pin releases (video-1 has reached its
+     own end), the layer hard-cuts to video-2, which THEN plays/loops
+     forever in real time as the persistent backdrop behind the rest of
+     the page, exactly as before. -->
+<div id="photos-hero-video-layer" aria-hidden="true">
+  <video class="photos-hero-video-el" id="photos-hero-video-1"
+         src="/SUPER-INTERACTIVE-WEBSITE/static/media/photos/photos-hero-01-campfire.mp4"
+         poster="/SUPER-INTERACTIVE-WEBSITE/static/media/photos/photos-hero-01-poster.jpg"
+         muted playsinline preload="auto"></video>
+  <video class="photos-hero-video-el" id="photos-hero-video-2"
+         src="/SUPER-INTERACTIVE-WEBSITE/static/media/photos/photos-hero-02-starfield-loop.mp4"
+         muted playsinline preload="auto" loop></video>
+  <div class="photos-hero-scrim"></div>
+</div>
+
+<!-- ============================================================
+     The REAL photos page -- ROUND 3 rework, per user feedback:
+     "첫번째 첨부 이미지와 두번째 첨부 이미지는 한 화면에 보여야해" -- the
+     title/CTA/category-pill row and the card conveyor must occupy a
+     SINGLE shared viewport together (not two separate 100vh scroll
+     stops). Scroll is free at all times (no lock/gate); the video
+     hero backdrop is visible for exactly one viewport
+     (#photos-hero-panel spacer), then the very next viewport is this
+     single combined "Photos / ALL PHOTOS -> / category pills / card
+     row" panel. The Codapress "Books by Codapress" card section is a
+     PINNED, scroll-scrubbed SINGLE-ROW conveyor (mirrors HOME's own
+     #section-4/photo-stack setupConveyor() pattern in app.js/style.css
+     -- .thumb-frame/.thumb-item, GSAP `x` transforms driven by
+     ScrollTrigger scrub) instead of a static wrapping CSS grid --
+     cards slide in from the right and out to the left as the user
+     scrolls down, never via swipe. -->
+<main class="detail-page detail-page--photos" id="photos-real-content">
+
+  <section class="photos-hero-panel" id="photos-hero-panel">
+    <div class="scroll-cue" id="photos-scroll-cue"><span></span>SCROLL</div>
+  </section>
+
+  <!-- Pinned single-row conveyor section -- title/CTA/pills + card
+       row share this ONE 100vh panel (per user feedback), mirroring
+       HOME's .stack-panel #section-4 (id="photo-stack") structurally:
+       .thumb-frame--photos-detail wraps 10 .thumb-item cards, GSAP
+       slides them via `x` as ScrollTrigger scrubs this section's pin.
+       Each card keeps the Codapress-style category badge/title/desc/
+       "View detail" link (Bestseller/New badges removed per Round 3
+       feedback -- "베드슽 셀러, 뉴 뱃지를 절대적으로 필요치가 않아"). -->
+  <section class="photos-conveyor-panel" id="photos-conveyor-section">
+
+    <div class="detail-hero">
+      <p class="detail-eyebrow">FULL COLLECTION</p>
+    </div>
+
+    <!-- ROUND 9 ("포토와 비디오의 버튼 위치를 통일시켜주고, 포토스 비디오스 글자는
+         제거해줘도 될 거 같아"): the "Photos" <h1> is gone (see .detail-hero
+         above, now eyebrow-only, mirroring /videos' own now-title-less
+         .detail-hero), and the CTA button has moved out of the old
+         title row into THIS row, sitting directly beside the (read-only,
+         conveyor-position-indicator) category pills -- /videos' own
+         "View All Videos" button now lives in the exact same structural
+         slot (a .detail-filter-row beside ITS filter nav, right above
+         its grid), so both pages' CTA now shares one consistent position
+         + one consistent .panel-pill.pill-outline.detail-cta style. -->
+    <div class="detail-filter-row">
+      <nav class="detail-filter" id="photos-category-filter" aria-label="photo category filter">
+        <span class="detail-filter-pill active" data-cat-index="0">Food</span>
+        <span class="detail-filter-pill" data-cat-index="1">Fashion</span>
+        <span class="detail-filter-pill" data-cat-index="2">Product</span>
+        <span class="detail-filter-pill" data-cat-index="3">Places</span>
+        <span class="detail-filter-pill" data-cat-index="4">AI</span>
+      </nav>
+      <a class="panel-pill pill-outline detail-cta" href="#photos-grid-section">ALL PHOTOS &rarr;</a>
+    </div>
+
+    <div class="thumb-frame thumb-frame--photos-detail" id="photos-conveyor-frame">
+
+      <div class="thumb-item" data-card-index="0" data-category="Food">
+        <div class="detail-card-media">
+          <img src="/SUPER-INTERACTIVE-WEBSITE/static/media/photos/food/food-01.jpg" alt="Golden Hour Feast" loading="lazy">
+          <div class="detail-card-badges">
+            <span class="detail-badge detail-badge--category">Food</span>
+          </div>
+        </div>
+        <div class="detail-card-body">
+          <h3 class="detail-card-title">Golden Hour Feast</h3>
+          <p class="detail-card-desc">Steam rising off a rustic dinner table, lit by late afternoon sun.</p>
+          <a class="detail-card-link" href="/SUPER-INTERACTIVE-WEBSITE/static/media/photos/food/food-01.jpg" data-lightbox>View detail &rarr;</a>
+        </div>
+      </div>
+
+      <div class="thumb-item" data-card-index="1" data-category="Food">
+        <div class="detail-card-media">
+          <img src="/SUPER-INTERACTIVE-WEBSITE/static/media/photos/food/food-02.jpg" alt="Street Bites" loading="lazy">
+          <div class="detail-card-badges">
+            <span class="detail-badge detail-badge--category">Food</span>
+          </div>
+        </div>
+        <div class="detail-card-body">
+          <h3 class="detail-card-title">Street Bites</h3>
+          <p class="detail-card-desc">Quick candid shots from night market stalls and kitchen counters.</p>
+          <a class="detail-card-link" href="/SUPER-INTERACTIVE-WEBSITE/static/media/photos/food/food-02.jpg" data-lightbox>View detail &rarr;</a>
+        </div>
+      </div>
+
+      <div class="thumb-item" data-card-index="2" data-category="Fashion">
+        <div class="detail-card-media">
+          <img src="/SUPER-INTERACTIVE-WEBSITE/static/media/photos/fashion/fashion-01.jpg" alt="Studio Light" loading="lazy">
+          <div class="detail-card-badges">
+            <span class="detail-badge detail-badge--category">Fashion</span>
+          </div>
+        </div>
+        <div class="detail-card-body">
+          <h3 class="detail-card-title">Studio Light</h3>
+          <p class="detail-card-desc">Editorial portraits built around structured silhouettes and shadow.</p>
+          <a class="detail-card-link" href="/SUPER-INTERACTIVE-WEBSITE/static/media/photos/fashion/fashion-01.jpg" data-lightbox>View detail &rarr;</a>
+        </div>
+      </div>
+
+      <div class="thumb-item" data-card-index="3" data-category="Fashion">
+        <div class="detail-card-media">
+          <img src="/SUPER-INTERACTIVE-WEBSITE/static/media/photos/fashion/fashion-02.jpg" alt="Street Style" loading="lazy">
+          <div class="detail-card-badges">
+            <span class="detail-badge detail-badge--category">Fashion</span>
+          </div>
+        </div>
+        <div class="detail-card-body">
+          <h3 class="detail-card-title">Street Style</h3>
+          <p class="detail-card-desc">Off-duty looks captured between shows and city corners.</p>
+          <a class="detail-card-link" href="/SUPER-INTERACTIVE-WEBSITE/static/media/photos/fashion/fashion-02.jpg" data-lightbox>View detail &rarr;</a>
+        </div>
+      </div>
+
+      <div class="thumb-item" data-card-index="4" data-category="Product">
+        <div class="detail-card-media">
+          <img src="/SUPER-INTERACTIVE-WEBSITE/static/media/photos/product/product-01.jpg" alt="Clean Lines" loading="lazy">
+          <div class="detail-card-badges">
+            <span class="detail-badge detail-badge--category">Product</span>
+          </div>
+        </div>
+        <div class="detail-card-body">
+          <h3 class="detail-card-title">Clean Lines</h3>
+          <p class="detail-card-desc">Minimal product setups with soft box lighting and negative space.</p>
+          <a class="detail-card-link" href="/SUPER-INTERACTIVE-WEBSITE/static/media/photos/product/product-01.jpg" data-lightbox>View detail &rarr;</a>
+        </div>
+      </div>
+
+      <div class="thumb-item" data-card-index="5" data-category="Product">
+        <div class="detail-card-media">
+          <img src="/SUPER-INTERACTIVE-WEBSITE/static/media/photos/product/product-02.jpg" alt="Texture Study" loading="lazy">
+          <div class="detail-card-badges">
+            <span class="detail-badge detail-badge--category">Product</span>
+          </div>
+        </div>
+        <div class="detail-card-body">
+          <h3 class="detail-card-title">Texture Study</h3>
+          <p class="detail-card-desc">Macro details that highlight material, grain, and finish.</p>
+          <a class="detail-card-link" href="/SUPER-INTERACTIVE-WEBSITE/static/media/photos/product/product-02.jpg" data-lightbox>View detail &rarr;</a>
+        </div>
+      </div>
+
+      <div class="thumb-item" data-card-index="6" data-category="Places">
+        <div class="detail-card-media">
+          <img src="/SUPER-INTERACTIVE-WEBSITE/static/media/photos/places/places-01.jpg" alt="Quiet Hours" loading="lazy">
+          <div class="detail-card-badges">
+            <span class="detail-badge detail-badge--category">Places</span>
+          </div>
+        </div>
+        <div class="detail-card-body">
+          <h3 class="detail-card-title">Quiet Hours</h3>
+          <p class="detail-card-desc">Empty streets and interiors caught in early morning stillness.</p>
+          <a class="detail-card-link" href="/SUPER-INTERACTIVE-WEBSITE/static/media/photos/places/places-01.jpg" data-lightbox>View detail &rarr;</a>
+        </div>
+      </div>
+
+      <div class="thumb-item" data-card-index="7" data-category="Places">
+        <div class="detail-card-media">
+          <img src="/SUPER-INTERACTIVE-WEBSITE/static/media/photos/places/places-02.jpg" alt="City Pulse" loading="lazy">
+          <div class="detail-card-badges">
+            <span class="detail-badge detail-badge--category">Places</span>
+          </div>
+        </div>
+        <div class="detail-card-body">
+          <h3 class="detail-card-title">City Pulse</h3>
+          <p class="detail-card-desc">Dense, layered frames from busy intersections after dark.</p>
+          <a class="detail-card-link" href="/SUPER-INTERACTIVE-WEBSITE/static/media/photos/places/places-02.jpg" data-lightbox>View detail &rarr;</a>
+        </div>
+      </div>
+
+      <div class="thumb-item" data-card-index="8" data-category="AI">
+        <div class="detail-card-media">
+          <img src="/SUPER-INTERACTIVE-WEBSITE/static/media/photos/ai/ai-01.jpg" alt="Synthetic Light" loading="lazy">
+          <div class="detail-card-badges">
+            <span class="detail-badge detail-badge--category">AI</span>
+          </div>
+        </div>
+        <div class="detail-card-body">
+          <h3 class="detail-card-title">Synthetic Light</h3>
+          <p class="detail-card-desc">Generative compositions exploring color and form beyond the camera.</p>
+          <a class="detail-card-link" href="/SUPER-INTERACTIVE-WEBSITE/static/media/photos/ai/ai-01.jpg" data-lightbox>View detail &rarr;</a>
+        </div>
+      </div>
+
+      <div class="thumb-item" data-card-index="9" data-category="AI">
+        <div class="detail-card-media">
+          <img src="/SUPER-INTERACTIVE-WEBSITE/static/media/photos/ai/ai-02.jpg" alt="Digital Dream" loading="lazy">
+          <div class="detail-card-badges">
+            <span class="detail-badge detail-badge--category">AI</span>
+          </div>
+        </div>
+        <div class="detail-card-body">
+          <h3 class="detail-card-title">Digital Dream</h3>
+          <p class="detail-card-desc">AI-assisted imagery blending photographic texture with imagination.</p>
+          <a class="detail-card-link" href="/SUPER-INTERACTIVE-WEBSITE/static/media/photos/ai/ai-02.jpg" data-lightbox>View detail &rarr;</a>
+        </div>
+      </div>
+
+    </div>
+    <div class="carousel-dots" id="photos-conveyor-dots">
+      <span class="carousel-dot active"></span><span class="carousel-dot"></span><span class="carousel-dot"></span><span class="carousel-dot"></span><span class="carousel-dot"></span><span class="carousel-dot"></span><span class="carousel-dot"></span><span class="carousel-dot"></span><span class="carousel-dot"></span><span class="carousel-dot"></span>
+    </div>
+  </section>
+
+  <!-- ROUND 9 ("포토에서도 올 포토를 누르면, 비디오 페이지처럼 모든 걸 동시에
+       볼 수 있게끔 해줘"): "ALL PHOTOS ->" above now targets THIS section
+       instead of its old no-op self-anchor -- a plain static all-cards
+       grid, structurally identical to /videos' own #video-grid (same
+       .detail-grid/.detail-card/.detail-filter-pill[data-filter] click-
+       to-filter vocabulary, driven by the SAME shared detail-page.js
+       logic with zero code changes there), so every photo across every
+       category is viewable at once here, exactly like /videos' "ALL"
+       filter reveals its full multi-category grid. -->
+  <section class="photos-grid-panel" id="photos-grid-section" aria-label="all photos">
+    <nav class="detail-filter" aria-label="all photos category filter">
+      <button class="detail-filter-pill active" data-filter="all">All</button>
+      <button class="detail-filter-pill" data-filter="Food">Food</button>
+      <button class="detail-filter-pill" data-filter="Fashion">Fashion</button>
+      <button class="detail-filter-pill" data-filter="Product">Product</button>
+      <button class="detail-filter-pill" data-filter="Places">Places</button>
+      <button class="detail-filter-pill" data-filter="AI">AI</button>
+    </nav>
+    <div class="detail-grid" id="photos-grid">
+      <div class="detail-card" data-category="Food">
+        <div class="detail-card-media"><img src="/SUPER-INTERACTIVE-WEBSITE/static/media/photos/food/food-01.jpg" alt="Golden Hour Feast" loading="lazy"></div>
+        <div class="detail-card-caption">Golden Hour Feast</div>
+      </div>
+      <div class="detail-card" data-category="Food">
+        <div class="detail-card-media"><img src="/SUPER-INTERACTIVE-WEBSITE/static/media/photos/food/food-02.jpg" alt="Street Bites" loading="lazy"></div>
+        <div class="detail-card-caption">Street Bites</div>
+      </div>
+      <div class="detail-card" data-category="Fashion">
+        <div class="detail-card-media"><img src="/SUPER-INTERACTIVE-WEBSITE/static/media/photos/fashion/fashion-01.jpg" alt="Studio Light" loading="lazy"></div>
+        <div class="detail-card-caption">Studio Light</div>
+      </div>
+      <div class="detail-card" data-category="Fashion">
+        <div class="detail-card-media"><img src="/SUPER-INTERACTIVE-WEBSITE/static/media/photos/fashion/fashion-02.jpg" alt="Street Style" loading="lazy"></div>
+        <div class="detail-card-caption">Street Style</div>
+      </div>
+      <div class="detail-card" data-category="Product">
+        <div class="detail-card-media"><img src="/SUPER-INTERACTIVE-WEBSITE/static/media/photos/product/product-01.jpg" alt="Clean Lines" loading="lazy"></div>
+        <div class="detail-card-caption">Clean Lines</div>
+      </div>
+      <div class="detail-card" data-category="Product">
+        <div class="detail-card-media"><img src="/SUPER-INTERACTIVE-WEBSITE/static/media/photos/product/product-02.jpg" alt="Texture Study" loading="lazy"></div>
+        <div class="detail-card-caption">Texture Study</div>
+      </div>
+      <div class="detail-card" data-category="Places">
+        <div class="detail-card-media"><img src="/SUPER-INTERACTIVE-WEBSITE/static/media/photos/places/places-01.jpg" alt="Quiet Hours" loading="lazy"></div>
+        <div class="detail-card-caption">Quiet Hours</div>
+      </div>
+      <div class="detail-card" data-category="Places">
+        <div class="detail-card-media"><img src="/SUPER-INTERACTIVE-WEBSITE/static/media/photos/places/places-02.jpg" alt="City Pulse" loading="lazy"></div>
+        <div class="detail-card-caption">City Pulse</div>
+      </div>
+      <div class="detail-card" data-category="AI">
+        <div class="detail-card-media"><img src="/SUPER-INTERACTIVE-WEBSITE/static/media/photos/ai/ai-01.jpg" alt="Synthetic Light" loading="lazy"></div>
+        <div class="detail-card-caption">Synthetic Light</div>
+      </div>
+      <div class="detail-card" data-category="AI">
+        <div class="detail-card-media"><img src="/SUPER-INTERACTIVE-WEBSITE/static/media/photos/ai/ai-02.jpg" alt="Digital Dream" loading="lazy"></div>
+        <div class="detail-card-caption">Digital Dream</div>
+      </div>
+    </div>
+  </section>
+
+</main>
+<div id="scroll-tail-spacer" aria-hidden="true"></div>
+
+<!-- Lightbox target for "View detail" links -->
+<div class="photo-lightbox" id="photo-lightbox" aria-hidden="true">
+  <button class="photo-lightbox-close" type="button" aria-label="Close">&times;</button>
+  <img class="photo-lightbox-img" id="photo-lightbox-img" src="" alt=""/>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+<script src="/SUPER-INTERACTIVE-WEBSITE/static/detail-page.js"></script>
+<script src="/SUPER-INTERACTIVE-WEBSITE/static/photos-hero.js"></script>
+</body>
+</html>

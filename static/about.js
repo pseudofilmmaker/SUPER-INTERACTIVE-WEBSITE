@@ -68,6 +68,7 @@
   const layer = document.getElementById('about-bg-video-layer');
   const video1 = document.getElementById('about-bg-video-1');
   const video2 = document.getElementById('about-bg-video-2');
+  const video3 = document.getElementById('about-bg-video-3'); // Round 26 outro clip
   const introCrawlViewport = document.getElementById('about-intro-crawl-viewport');
   const introCrawlText = document.getElementById('about-intro-crawl-text');
   const titleEl = document.getElementById('about-title-text');
@@ -190,17 +191,17 @@
   const TITLE_IN_START = 0.53;
   const TITLE_IN_END = 0.59;
   const TITLE_OUT_START = 0.64;
-  // Round 8 ("축소되면서 사라져서, 아래 텍스트가 더 겹치는 구간이 있을
-  // 수 있게" -- the title+photo group should shrink away as it exits,
-  // not just fade, AND the exit should take longer so there's more
-  // sustained overlap time with the crawl text underneath). Widened
-  // from 0.68 to 0.76 -- nearly doubles the OUT window's duration,
-  // giving far more scroll distance during which JUNE/HONG (now also
-  // scaling down, see the titleScale block in renderAboutHero) is
-  // still at least partially visible on top of the already-fully-
-  // opaque crawl text (see CRAWL_IN_END, still pinned to
-  // TITLE_OUT_START so the crawl's own entrance timing is unaffected).
-  const TITLE_OUT_END = 0.76;
+  // ROUND 14 REVERSAL of the Round 7-8 "deliberate overlap" design
+  // ("겹치면서 올라가는 건 좀 아닌 거 같은데? 제목과 본문의 구간을
+  // 명확히 분리"). Rounds 7-8 had WIDENED this window specifically so
+  // the closing bio crawl underneath would spend a long stretch
+  // visually overlapping JUNE/HONG while it faded out. The user has
+  // now reversed that call: the title and the body text must occupy
+  // clearly SEPARATE scroll segments with no simultaneous on-screen
+  // overlap. Narrowed back down to the original, normal, prompt
+  // fade-out width (was widened to 0.76 in Round 8 specifically to
+  // create overlap time — that reason no longer applies).
+  const TITLE_OUT_END = 0.68;
 
   // Profile-photo reveal — Round 3 item 2: now LAYERED behind the
   // title (same IN/OUT window, stacked underneath via z-index in
@@ -211,50 +212,83 @@
   const PHOTO_OUT_END = TITLE_OUT_END;
 
   // Closing opening crawl — 3D perspective paragraph receding up/back
-  // into the starfield, carrying the full bio copy. Opacity ramps in
-  // over a short window; the perspective translateY itself is a
-  // continuous function of p across the WHOLE remaining span so the
-  // recede motion reads as one continuous scroll-driven camera move.
+  // into the starfield, carrying the full bio copy.
   //
-  // Round 7 ("자막과 june hong이 겹쳐야된다" -- the crawl copy and the
-  // JUNE/HONG title must actually OVERLAP on screen together, not just
-  // cross paths in a symmetric linear crossfade). Round 6's version
-  // aliased CRAWL_IN_START/END to TITLE_OUT_START/END directly, which
-  // made the two opacities sum to ~1 the whole time (a pure dissolve
-  // handoff) -- both are only ever "visible" at a diminished, blended
-  // opacity at any given instant, which does not read as a real
-  // overlap. Fixed by making the crawl fade in FASTER, finishing
-  // BEFORE the title's own fade-out completes: the crawl starts
-  // rising a moment before TITLE_OUT_START and is already at FULL
-  // opacity (1) by TITLE_OUT_START, so for the entire
-  // TITLE_OUT_START -> TITLE_OUT_END span the crawl sits fully visible
-  // UNDERNEATH the title while the title itself gradually fades away
-  // on top of it -- a genuine, sustained overlap window, not a
-  // transient crossfade point.
-  const CRAWL_IN_START = TITLE_OUT_START - 0.03;
-  const CRAWL_IN_END = TITLE_OUT_START;
+  // ROUND 14 REDESIGN ("겹치면서 올라가는 건 좀 아닌 거 같은데? 제목과
+  // 본문의 구간을 명확히 분리하고, 본문은 화면의 위까지 스크롤업되서
+  // 사라지는 걸 유의"). Rounds 7-8-13 all iterated on a design where
+  // this crawl was DELIBERATELY made to overlap the fading JUNE/HONG
+  // title on screen at the same time, fully opaque and legible for a
+  // long stretch. Round 14's fix moved the crawl to start only AFTER
+  // TITLE_OUT_END plus a deliberate no-text gap (CRAWL_GAP), so the
+  // handoff read as two totally separate scenes.
+  //
+  // ROUND 15 REFINEMENT ("제목이 페이드 될 때, 본문이 이미 올라오고
+  // 있어야지" — while the title is still fading, the crawl body should
+  // ALREADY be rising). First attempt at this (CRAWL_IN_START ==
+  // TITLE_OUT_START, 0.08-wide fade-in) was still WRONG per follow-up
+  // feedback ("겹치는 구간이 하나도 없잖아?" — there is NO overlapping
+  // segment at all): starting the crawl's fade-in exactly when the
+  // title starts fading meant the crawl was still only ~0-30% opaque
+  // AND still positioned far below the visible viewport for most of
+  // the title's own fade window — technically nonzero opacity, but not
+  // actually VISIBLE on screen at the same time as the title, so it
+  // never read as a real overlap.
+  //
+  // ROUND 15 FIX (v2): the crawl's entrance now starts BEFORE the
+  // title even begins fading (CRAWL_LEAD) and finishes shortly AFTER
+  // (CRAWL_IN_END = TITLE_OUT_START + CRAWL_LEAD), so it is centered
+  // on TITLE_OUT_START rather than starting there. That guarantees
+  // that at the exact moment the title starts to disappear, the crawl
+  // is already ~50% opaque and roughly halfway risen into view, and
+  // by TITLE_OUT_START + CRAWL_LEAD (still inside the title's own
+  // fade-out window) the crawl has finished rising to its fully
+  // visible resting spot — so for the back half of the title's own
+  // fade, both the (dimming) title and the (now fully up) crawl are
+  // genuinely on screen together, a real crossfade rather than a
+  // same-instant coincidence of two invisible-to-each-other windows.
+  const CRAWL_LEAD = 0.02;
+  const CRAWL_IN_START = TITLE_OUT_START - CRAWL_LEAD; // = 0.62
+  // Entry leg: fades in while rising from off-screen-bottom
+  // (CRAWL_Y_START) up to a genuinely on-screen, comfortably legible
+  // resting spot (CRAWL_Y_VISIBLE) — finishes at TITLE_OUT_START +
+  // CRAWL_LEAD (0.66), i.e. still inside the title's own 0.64->0.68
+  // fade-out window, so the crawl is fully up and legible while the
+  // title is still visibly (if dimly) on screen for the last stretch
+  // of its own fade.
+  const CRAWL_IN_END = TITLE_OUT_START + CRAWL_LEAD; // = 0.66
   const CRAWL_RUN_START = CRAWL_IN_START;
-  const CRAWL_RUN_END = 0.995;
-  const CRAWL_Y_START = 78; // vh, bottom of viewport (fully hidden)
-  // ROUND 7 FOLLOW-UP FIX: opacity reaching 1 by CRAWL_IN_END is not
-  // enough on its own -- the translateY sweep from CRAWL_Y_START(78vh)
-  // to CRAWL_Y_END(-60vh) used to run linearly across the ENTIRE
-  // remaining span (CRAWL_RUN_START -> CRAWL_RUN_END, i.e. all the way
-  // to 0.995), so at CRAWL_IN_END the text was still barely off its
-  // 78vh starting point -- fully opaque but still sitting off-screen
-  // below the viewport, so no visual overlap actually occurred despite
-  // the opacity math being correct. Fixed by splitting the Y motion
-  // into two legs: an ENTRY leg (CRAWL_RUN_START -> CRAWL_ENTRY_END,
-  // the same window as the opacity fade-in) that quickly carries the
-  // text from 78vh up to CRAWL_Y_VISIBLE -- a position that is
-  // genuinely on-screen and overlaps the lower half of the JUNE/HONG
-  // title -- followed by the original slow RECEDE leg (CRAWL_ENTRY_END
-  // -> CRAWL_RUN_END) continuing on from CRAWL_Y_VISIBLE up to
-  // CRAWL_Y_END. This guarantees "fully opaque" and "actually on
-  // screen, overlapping the title" happen at the same moment.
   const CRAWL_ENTRY_END = CRAWL_IN_END;
-  const CRAWL_Y_VISIBLE = 26; // vh -- on-screen, overlapping lower title
-  const CRAWL_Y_END = -60; // vh, receded up past the top
+  const CRAWL_Y_START = 78; // vh, bottom of viewport (fully hidden)
+  const CRAWL_Y_VISIBLE = 24; // vh -- on-screen, comfortably legible resting spot
+  // Recede leg.
+  //
+  // ROUND 15 v4 (REVERTED): first attempt at fixing the "hard slice at
+  // the frame edge" bug shrank the travel distance (-150 -> -20vh), but
+  // the user rejected this ("화면 끝까지 올라가는 건 유지하고" — KEEP the
+  // full climb all the way up, off the top of the screen). The actual
+  // ask was narrower: keep the full-height climb, just make sure the
+  // fade is generous ENOUGH by the time it reaches the top edge that the
+  // disappearance reads as a graceful dissolve rather than a hard cut
+  // ("끝에 갔을 때 충분히 페이드를 걸어서 어색하게 사라지지 않게").
+  //
+  // ROUND 15 v5 FIX: CRAWL_Y_END restored to -150vh (full climb kept).
+  // The real bug was simply that the fade window (OUTRO_START..OUTRO_END)
+  // used to only span the FINAL 10% of the pin (0.90->1) while the
+  // physical climb had already been running the whole time at full
+  // opacity — so the visible portion of text was still 100% opaque as
+  // it slid past the top edge and got clipped by #about-crawl-viewport's
+  // overflow:hidden, reading as an abrupt cutoff. Fixed by moving
+  // CRAWL_FADE_START much earlier (0.70, right after the rise settles at
+  // CRAWL_ENTRY_END=0.66) so the fade runs across the ENTIRE climb this
+  // time, not just its tail — opacity is already well under 0.3 by the
+  // time the text's top line nears the viewport's top edge (verified via
+  // Playwright: rect.top crosses 0 around p=0.80-0.85, where opacity is
+  // already ~0.2-0.05), so whatever gets clipped is already faint enough
+  // that the clip line itself is not perceptible.
+  const CRAWL_FADE_START = 0.70;
+  const CRAWL_RUN_END = 1;
+  const CRAWL_Y_END = -150; // vh, full climb off past the top edge, as originally requested
   // Shallow, legible tilt matching the pichiworld reference screenshot
   // (was 55deg — far too steep to read, per user feedback). Kept as a
   // named constant here so the JS-driven inline transform and the CSS
@@ -264,8 +298,8 @@
 
   // All the HERO-ONLY overlays (prologue line, title+photo, crawl)
   // fade out right before this first pin releases, so the handoff
-  // into the plain, non-animated profile section below reads as a
-  // clean scene change rather than an abrupt jump.
+  // into Chapter 2 (Selected Works) below reads as a clean scene
+  // change rather than an abrupt jump.
   //
   // CHAPTERS 2-5 FIX ("두번째 별이 점멸하는 영상이 뒤에 룹으로 깔리는
   // 거를 잊지 말아줘"): #about-bg-video-layer (which now shows only
@@ -273,8 +307,59 @@
   // must stay visible as the persistent backdrop behind ALL of the
   // new chapters, not just chapter 1 -- so it is NO LONGER faded to 0
   // here. Only the hero's own foreground overlays fade at OUTRO.
-  const OUTRO_START = 0.94;
-  const OUTRO_END = 1.0;
+  //
+  // ROUND 12 FIX ("사진도 이름도 모두, 위에 겹치는 걸 없애줘야되는
+  // 거야" -- the hero's own fixed-position crawl text was still fully
+  // opaque and ghosting on top of the real, then-still-existing
+  // .about-profile-wrap resting section -- same photo, same name,
+  // same tagline -- once that section had already scrolled into view
+  // underneath it). Fixed at the time by moving this fade window
+  // earlier, well before that section's measured peek-in point.
+  //
+  // ROUND 13 ADJUSTMENT ("위쪽까지 스크롤되다가 사라져야지"): the
+  // crawl's own upward recede (CRAWL_Y_END=-150vh) now finishes
+  // physically carrying the text off past the top edge at
+  // CRAWL_RUN_END -- BEFORE this opacity fade ever starts, so
+  // OUTRO_START is pinned to start no earlier than that, with
+  // OUTRO_END given a small amount of room after it purely as an
+  // already-off-screen opacity cleanup, not the thing doing the
+  // visible "disappearing" anymore.
+  //
+  // ROUND 14 NOTE: CRAWL_RUN_END moved out to 0.90 to make room for
+  // the separated title/gap/crawl beats within the same total hero
+  // pin length, which pushed this window later too; HERO_PIN_DISTANCE
+  // below was widened (6.2 -> 7.4 * viewport height) in lockstep.
+  //
+  // ROUND 15 NOTE: the .about-profile-wrap section this ghosting fix
+  // originally guarded against has since been deleted outright ("이
+  // 구간은 삭제해줘" -- see about.html/style.css), so that specific
+  // safety-margin rationale no longer applies. HERO_PIN_DISTANCE is
+  // left at 7.4x regardless -- it still exists to give the hero's own
+  // internal beats (title fade, overlapping crawl entrance, crawl
+  // hold, crawl recede) comfortable scroll runway, which is unrelated
+  // to the now-removed section and still holds.
+  //
+  // ROUND 15 v3 FIX ("첫번째 이미지가 화면 밖으로 빠지면... 스크롤 다운
+  // 갭이 너무 커" -- once the crawl scrolls off-screen, the gap before
+  // Chapter 2's title fully appears feels far too long). Root cause:
+  // OUTRO_END used to be 0.94, leaving a full unused 0.94->1.0 tail
+  // where the pin was still held but NOTHING was on screen any more
+  // (crawl already faded to opacity 0, nothing else animating) --
+  // pure dead scroll before the pin even released into Chapter 2.
+  // Fixed by letting the opacity cleanup run all the way to the very
+  // end of the pin (OUTRO_END = 1) instead of finishing early and
+  // leaving a silent tail -- same fade, just no longer front-loaded
+  // with unused scroll room after it.
+  //
+  // ROUND 15 v4 FIX ("올라가다가 페이드아웃을 걸어서"): OUTRO_START used
+  // to be pinned to CRAWL_RUN_END (i.e. the fade only began once the
+  // rise had ALREADY finished), which is exactly what produced the
+  // "opaque text sliced by the frame edge" bug -- the fade and the rise
+  // never overlapped. Now driven by the dedicated CRAWL_FADE_START
+  // (0.76) defined above instead, so the fade runs DURING the second
+  // half of the (now much shorter) rise, not after it.
+  const OUTRO_START = CRAWL_FADE_START;
+  const OUTRO_END = 1;
 
   const easeInOut = gsap.parseEase('power2.inOut');
 
@@ -406,10 +491,13 @@
     }
 
     // ---- opening crawl (3D perspective, continuous recede) ----
-    // Round 7 follow-up: Y motion now runs in two legs (see the long
-    // comment on CRAWL_ENTRY_END above) so the text is genuinely
-    // ON SCREEN — not just opaque — by the time it needs to overlap
-    // the fading-out JUNE/HONG title.
+    // Y motion runs in two legs — an ENTRY leg (rise from off-screen-
+    // bottom to the on-screen resting spot, matched to the opacity
+    // fade-in, and per Round 15 now straddling the title's own
+    // fade-out window (see CRAWL_LEAD/CRAWL_IN_START above) so there
+    // is a real, visible overlap between the two rather than a clean
+    // handoff) followed by a RECEDE leg (continue rising all the way
+    // past the top edge, well after the title has fully cleared).
     if (crawlViewport && crawlText) {
       const co = windowedOpacity(p, CRAWL_IN_START, CRAWL_IN_END, OUTRO_START, OUTRO_END);
       crawlViewport.style.opacity = co;
@@ -432,11 +520,28 @@
 
   renderAboutHero(0);
 
+  // ROUND 9 FIX ("둘 사이에 갭을 없애줘" — remove the scroll-distance gap
+  // between the hero's closing crawl fading out and Chapter 2's title
+  // appearing). `end` used to be a PERCENTAGE ('+=620%'), which GSAP
+  // resolves against the trigger element's (#section-about-hero) own CSS
+  // box height. That box has now been shrunk to ~0 (see #section-about-hero
+  // in style.css — it only ever existed to host this pin, its real content
+  // is all `position:fixed`), so the percentage basis is gone too. Switched
+  // to an explicit PIXEL distance instead, computed once from the viewport
+  // height at load time so the animation's own pacing/feel is unchanged
+  // from before (620% of a 100vh box = 6.2 * innerHeight).
+  // ROUND 14: widened from 6.2 -> 7.4 to give the now fully-separated
+  // title / gap / crawl-entry / crawl-hold-and-recede beats enough
+  // scroll runway that none of them feel rushed, while keeping the
+  // same safety margin below the real #section-about-profile peek-in
+  // point that Round 12 established (re-verified via Playwright below
+  // after this change).
+  const HERO_PIN_DISTANCE = Math.round(window.innerHeight * 7.4);
   ScrollTrigger.create({
     id: 'about-hero-pin',
     trigger: heroSection,
     start: 'top top',
-    end: '+=620%',
+    end: '+=' + HERO_PIN_DISTANCE,
     pin: true,
     scrub: 0.5,
     onUpdate: (self) => renderAboutHero(self.progress),
@@ -445,119 +550,521 @@
 
   /* ============================================================
      CHAPTERS 2-5 — Selected Works / Education & Skills / Awards /
-     Professional Experience. Each chapter reuses the exact same
-     "title shrinks + fades away while a flat teaser line rises in
-     and genuinely overlaps it" pattern proven out above on the hero
-     JUNE/HONG + crawl sequence, generalized into one function driven
-     by its own short pinned ScrollTrigger (the chapter's own empty
-     .chapter-pin-panel section) instead of the hero's single giant
-     pin. The persistent starfield backdrop (#about-bg-video-layer)
-     is untouched here -- it now stays visible across every chapter,
-     see the OUTRO fix above.
+     Professional Experience.
+
+     ROUND 11 REWRITE ("첫번째 이미지, 제거해줘야지... 두번째 이미지가
+     스타워즈 스크롤 스크립트처럼 나와야한다는 거야"). Rounds 9-10 had
+     each chapter play a SEPARATE, duplicate title+teaser screen
+     (fixed overlay, its own copy of the heading/intro text) driven by
+     its own pinned ScrollTrigger, BEFORE the real content scrolled
+     into view below it. The user pointed out that whole extra screen
+     is unwanted — instead, the REAL heading+intro (the actual content
+     shown in .chapter-detail-wrap) should itself play the Star-Wars-
+     crawl motion as it scrolls naturally into view.
+     setupChapterPin() (the pinned duplicate-overlay approach) and its
+     TITLE_ and TEASER_ timing constants are removed entirely, replaced
+     by setupChapterCrawlHeading() below: a plain (non-pinned) scrub
+     ScrollTrigger attached directly to the real chapter heading/intro
+     elements, tied to their own natural top-of-viewport scroll position.
+     (Round 12: further replaced by setupChapterTitleCard() — a separately
+     pinned rise/hold/shrink title card per chapter — see below.)
+     Because there is now only ONE copy of this text in the DOM (no
+     fixed duplicate sitting on top of anything), the entire class of
+     "duplicate text ghosting through from behind" bug that Rounds 9-10
+     were fighting cannot occur here — nothing else can ever render
+     underneath this text, because nothing else is drawn twice.
      ============================================================ */
-  function setupChapterPin(cfg) {
-    const pinSection = document.getElementById(cfg.pinSectionId);
-    const titleEl = document.getElementById(cfg.titleId);
-    const teaserViewport = document.getElementById(cfg.teaserViewportId);
-    const teaserText = document.getElementById(cfg.teaserTextId);
-    if (!pinSection || !titleEl) return;
+  // ROUND 12 REPLACEMENT ("제목은 세번째 이미지처럼 화면아래서 올라오다,
+  // 가운데 고정, 축소되면서 사라지고"): setupChapterCrawlHeading() (the
+  // in-place scrub tilt) is replaced by setupChapterTitleCard() — a
+  // SHORT, separately-pinned ScrollTrigger (its own small pin host,
+  // .chapter-title-pin-host, ~1.4x viewport height of scroll) that
+  // drives a fixed, large glowing #ch-*-title-card overlay through a
+  // distinct 3-phase beat: (1) IN -- rises up from below the viewport
+  // while fading in; (2) HOLD -- sits flat, fully opaque and centered,
+  // at full prominent scale; (3) OUT -- shrinks + fades away. Once this
+  // pin releases the card is already fully faded out (opacity 0)
+  // before the real, plain, always-legible .chapter-detail-panel
+  // heading (a separate, smaller, non-fixed copy of the same text)
+  // scrolls into view below -- so the two are never on screen at the
+  // same time, avoiding the Round 9-10 "duplicate text ghosting" bug.
+  function setupChapterTitleCard(cfg) {
+    const hostEl = document.getElementById(cfg.hostId);
+    const cardEl = document.getElementById(cfg.cardId);
+    if (!hostEl || !cardEl) return;
 
-    // Title: fades/rises in, holds, then shrinks-while-fading away —
-    // identical shape to the hero JUNE/HONG title's own outScale
-    // treatment (see TITLE_OUT_* / outScale above).
-    const TITLE_IN_START = 0.08;
-    const TITLE_IN_END = 0.26;
-    const TITLE_OUT_START = 0.48;
-    const TITLE_OUT_END = 0.80;
-
-    // Teaser: starts rising in a moment BEFORE the title begins its
-    // exit and is already at full opacity by TITLE_OUT_START — same
-    // "genuine overlap, not a crossfade" fix as CRAWL_IN_START/END
-    // above — then holds through the rest of the pin and only clears
-    // right at the very end, just before release.
-    const TEASER_IN_START = TITLE_OUT_START - 0.05;
-    const TEASER_IN_END = TITLE_OUT_START;
-    const TEASER_OUT_START = 0.93;
-    const TEASER_OUT_END = 1.0;
-    const TEASER_Y_START = 46; // vh, rises up to 0 (on-screen, overlapping title)
+    // ROUND 15 v3 FIX ("첫번째 두번째 이미지 사이의 스크롤 다운 갭이 너무
+    // 커" -- the gap between the crawl exiting and this chapter title card
+    // reading as "fully there" felt too long): IN_END used to be 0.30,
+    // meaning the card didn't reach full opacity until 30% through its own
+    // pin. Shortened so the rise+fade-in resolves much faster once this
+    // pin starts, without changing the HOLD or OUT phases at all.
+    //
+    // ROUND 16 FIX ("이렇게 겹치는게 아니구, 뒤에 셀렉티드 워크는 본문이
+    // 올라오기 전에 축소되면서 페이드인돼야지" -- at the time, this was
+    // read as "the two must NEVER be visible at the same time", so
+    // PIN_DISTANCE was widened to 2.4x viewport and FADE_END pulled all
+    // the way in to p=0.46, opening a dead, empty scroll gap where
+    // NEITHER the card nor the body content was visible.
+    //
+    // ROUND 17 REVERSAL ("이건 JUNE HONG파트의 제목과 본문같은 효과로
+    // 겹쳐야해" -- this must overlap the same way JUNE/HONG's own
+    // title-fade-out/crawl-fade-in DOES: a genuine crossfade where both
+    // are simultaneously on screen at partial opacity, not a hard split
+    // with a dead gap in between). Measured the hero's own reference
+    // behavior via Playwright: JUNE/HONG's title opacity is still ~0.94
+    // at the exact instant the crawl paragraph underneath has already
+    // reached ~0.94 opacity too -- a real, sustained overlap window, not
+    // a same-instant coincidence of two barely-visible edges.
+    //
+    // ROOT CAUSE (unchanged from Round 16's analysis): with `pin:true`,
+    // GSAP reserves exactly PIN_DISTANCE of extra scroll room after
+    // hostEl, so the panel that follows in the DOM (.chapter-detail-
+    // panel) inevitably starts peeking up from the BOTTOM edge of the
+    // viewport once the pin's own progress crosses
+    // `1 - viewportHeight/PIN_DISTANCE` -- at PIN_DISTANCE=2.4x, that
+    // threshold sits at p≈0.583. Round 16 treated that peek-up point as
+    // a bug to dodge (fading the card all the way out well BEFORE it);
+    // Round 17 instead treats it as the crossfade midpoint to fade
+    // THROUGH -- HOLD_END/FADE_END are widened so the card is still
+    // partially opaque as the panel/filmography content peeks up and
+    // starts its own independent fade-in (setupFilmographyCrawl()'s
+    // per-item ScrollTrigger, or setupGroupCrawl()'s group crawl for
+    // the other 3 chapters), then finishes dissolving shortly after, mirroring
+    // JUNE/HONG's own title-shrinks-away-as-body-text-rises-in beat.
+    // Verified via Playwright: at p≈0.62 (just past the peek threshold)
+    // the card is still ~0.5 opaque while the first filmography item has
+    // already reached ~0.4-0.6 opacity underneath -- a real, visible
+    // crossfade, not two disjoint states.
+    const IN_END = 0.07;
+    const HOLD_END = 0.55;
+    const FADE_END = 0.88;
+    const RISE_VH = 46;
 
     function render(p) {
       p = Math.max(0, Math.min(1, p));
+      let opacity, y, scale;
+      if (p < IN_END) {
+        const t = easeInOut(p / IN_END);
+        opacity = t;
+        y = RISE_VH * (1 - t);
+        scale = 1;
+      } else if (p < HOLD_END) {
+        opacity = 1;
+        y = 0;
+        scale = 1;
+      } else if (p < FADE_END) {
+        const t = easeInOut((p - HOLD_END) / (FADE_END - HOLD_END));
+        opacity = 1 - t;
+        y = 0;
+        scale = 1 - 0.42 * t;
+      } else {
+        opacity = 0;
+        y = 0;
+        scale = 0.58;
+      }
+      cardEl.style.opacity = opacity;
+      cardEl.style.transform = `translateY(${y}vh) scale(${scale})`;
+    }
 
-      const to = windowedOpacity(p, TITLE_IN_START, TITLE_IN_END, TITLE_OUT_START, TITLE_OUT_END);
-      titleEl.style.opacity = to;
-      const outP = Math.max(0, Math.min(1, (p - TITLE_OUT_START) / (TITLE_OUT_END - TITLE_OUT_START)));
-      const outScale = 1 - 0.38 * easeInOut(outP);
-      const inP = Math.max(0, Math.min(1, (p - TITLE_IN_START) / (TITLE_IN_END - TITLE_IN_START)));
-      const riseY = (1 - easeInOut(inP)) * 24; // rises up into place on entry
-      titleEl.style.transform = `translateY(${riseY}px) scale(${outScale})`;
+    render(0);
 
-      if (teaserViewport && teaserText) {
-        const co = windowedOpacity(p, TEASER_IN_START, TEASER_IN_END, TEASER_OUT_START, TEASER_OUT_END);
-        teaserViewport.style.opacity = co;
-        const entryP = Math.max(0, Math.min(1, (p - TEASER_IN_START) / (TEASER_IN_END - TEASER_IN_START)));
-        const y = TEASER_Y_START * (1 - easeInOut(entryP));
-        teaserText.style.transform = `translateY(${y}vh)`;
+    const PIN_DISTANCE = Math.round(window.innerHeight * 2.4);
+    ScrollTrigger.create({
+      id: cfg.hostId + '-pin',
+      trigger: hostEl,
+      start: 'top top',
+      end: '+=' + PIN_DISTANCE,
+      pin: true,
+      scrub: 0.4,
+      onUpdate: (self) => render(self.progress),
+      onRefresh: (self) => render(self.progress),
+    });
+  }
+
+  // ROUND 21 NOTE: these setupChapterTitleCard()/setupFilmographyCrawl()/
+  // setupGroupCrawl() calls (this block, plus the two further down where
+  // each function happens to be DEFINED) must be invoked in the SAME
+  // order the sections actually appear in the DOM. GSAP computes each
+  // `pin:true` ScrollTrigger's scroll-position window (and inserts its
+  // pin-spacer into the DOM's flow) at CREATION time, using whatever
+  // extra scroll room earlier-created pins have already reserved -- it
+  // is NOT re-derived from final DOM order afterwards. Discovered via
+  // Playwright: with setupGroupCrawl('edu-skills-crawl', ...) called
+  // AFTER setupChapterTitleCard() had already run for every chapter
+  // title (including ch-awards-title-pin, which sits AFTER edu-skills-
+  // crawl in the DOM), ch-awards-title-pin's cached pin window was short
+  // by exactly edu-skills-crawl's own pinned distance (2840px) -- so it
+  // fired ~2840px too EARLY and visibly overlapped/bled through the
+  // still-pinned, still-holding skills grid underneath it. Calling
+  // setupGroupCrawl() for each block immediately before the
+  // setupChapterTitleCard() call for the NEXT chapter's title (mirroring
+  // their real top-to-bottom DOM sequence) fixes this with no change to
+  // either function's own internals.
+  setupChapterTitleCard({ hostId: 'ch-works-title-pin', cardId: 'ch-works-title-card' });
+  setupChapterTitleCard({ hostId: 'ch-edu-title-pin', cardId: 'ch-edu-title-card' });
+  // Round 19 ("두번째 이미지가 아래서 스크롤되다가 중앙에 멈춰, 사라질때는
+  // 축소및 페이드 아웃"): the school-logo lockup reuses this exact same
+  // rise -> hold -> shrink-fade beat against its own short pin host
+  // (ch-edu-logo-pin), which sits in the DOM right before the Education
+  // detail panel/skills grid -- since this pin host also reserves its
+  // own PIN_DISTANCE of extra scroll room, the skills grid naturally
+  // only scrolls into view (and its own setupGroupCrawl() trigger only
+  // starts) once the user has scrolled past this pin's full release
+  // point, i.e. after the logo has completely faded away.
+  setupChapterTitleCard({ hostId: 'ch-edu-logo-pin', cardId: 'ch-edu-logo-card' });
+  setupGroupCrawl('edu-skills-crawl', '.edu-skills-crawl-inner');
+  setupChapterTitleCard({ hostId: 'ch-awards-title-pin', cardId: 'ch-awards-title-card' });
+  setupGroupCrawl('awards-crawl', '.awards-crawl-inner');
+  setupChapterTitleCard({ hostId: 'ch-career-title-pin', cardId: 'ch-career-title-card' });
+  setupGroupCrawl('career-crawl', '.career-crawl-inner');
+  // ROUND 26: the new Chapter 6 outro pin (video3 hard-cut + hold-on-
+  // last-frame + footer reveal) is the LAST section in the DOM, so its
+  // setupOutroSequence() call must be the LAST setup call here too --
+  // see the ROUND 21 NOTE above on why pin:true creation order matters.
+  setupOutroSequence();
+
+  // ROUND 12 ("년도별 작업 내역은... 3디로 공간을 활용해 화면아래서부터
+  // 올라와서 화면위로 계속 올라가야지"): filmography list items used to
+  // use the same 3D-perspective Star-Wars-crawl treatment as the hero's
+  // own crawl text (CRAWL_TILT_DEG-tilted rotateX, receding).
+  //
+  // ROUND 16 (mis-)fix ("두번째 이미지의 코딩을 확인해서, 이런식으로
+  // 글자의 각도가 수정돼야해") had removed the rotateX tilt entirely,
+  // reading image 2 (the hero's flat intro paragraph) as a request for a
+  // fully frontal, non-tilted look.
+  //
+  // ROUND 18 REVERSAL ("현재 텍스트 각도를 정면으로 요구한적이 한번도
+  // 없어" -- flat was never actually the ask; the user supplied a real
+  // Star-Wars-crawl reference: perspective + rotateX that grows steeper
+  // as the text rises/recedes and fades, e.g. rotateX(30deg)->rotateX
+  // (45deg) while opacity goes 1->0). The tilt is restored here, tuned
+  // to the SAME family of angles already used elsewhere in this file
+  // (TILT_HOLD reuses CRAWL_TILT_DEG=22, the hero crawl's own resting
+  // angle; TILT_EDGE=34 is the deeper "receding into the distance" angle
+  // at the far entry/exit ends -- kept short of 55deg, which the hero
+  // crawl's own comment above already documents as "far too steep to
+  // read" per earlier user feedback). Only `transform` is touched here;
+  // no color/text-shadow property is modified anywhere in this function.
+  function setupFilmographyCrawl() {
+    const list = document.getElementById('filmography-list');
+    if (!list) return;
+    const items = list.querySelectorAll('.filmography-item-inner');
+    if (!items.length) return;
+
+    const TILT_HOLD = CRAWL_TILT_DEG; // 22deg -- legible resting tilt
+    const TILT_EDGE = 34; // deeper tilt while entering/receding + faint
+
+    items.forEach((inner) => {
+      const li = inner.closest('.filmography-item');
+
+      function render(p) {
+        p = Math.max(0, Math.min(1, p));
+        // 0 -> 0.18: rising in from below, tilt easing from the steep
+        // "distant" angle down to the resting angle as it fades in.
+        // 0.18 -> 0.82: sitting at the resting tilt while it crosses the
+        // viewport (never fully flat -- keeps the 3D crawl look alive).
+        // 0.82 -> 1: rising out near the top, tilt deepening back toward
+        // the steep "receding into the distance" angle as it fades out.
+        let opacity, y, tilt;
+        if (p < 0.18) {
+          const t = easeInOut(p / 0.18);
+          opacity = t;
+          y = 30 * (1 - t);
+          tilt = TILT_EDGE - (TILT_EDGE - TILT_HOLD) * t;
+        } else if (p < 0.82) {
+          opacity = 1;
+          y = 0;
+          tilt = TILT_HOLD;
+        } else {
+          const t = easeInOut((p - 0.82) / 0.18);
+          opacity = 1 - t;
+          y = -18 * t;
+          tilt = TILT_HOLD + (TILT_EDGE - TILT_HOLD) * t;
+        }
+        inner.style.opacity = opacity;
+        inner.style.transform = `perspective(1000px) rotateX(${tilt}deg) translateY(${y}px)`;
+      }
+
+      gsap.set(inner, { opacity: 0 });
+      ScrollTrigger.create({
+        trigger: li,
+        start: 'top 95%',
+        end: 'top 15%',
+        scrub: 0.4,
+        onUpdate: (self) => render(self.progress),
+        onRefresh: (self) => render(self.progress),
+      });
+    });
+  }
+  setupFilmographyCrawl();
+
+  // ROUND 20 ("세번째 이미지, 이건 하단에서 올라오다가, 중앙에서 멈춰서
+  // 있다가 올라가야지") introduced this rise -> hold -> recede-and-fade
+  // group crawl for the Education skills grid, as a distinct beat from
+  // the one-way, no-exit generic [data-reveal] fade-in Awards/Career
+  // used to share.
+  //
+  // ROUND 21 ("첫번째/두번째 이미지 영역의 실선을 모두 제거해줘" +
+  // "세번째 이미지에서 보이는 것처럼 모든 컨텐츠들이 중앙에 유지되었다
+  // 위로 올라가면서 사라지게끔... 3초 정도 유지할 수 있게끔") extends the
+  // SAME beat to Awards and Career too (they no longer carry
+  // [data-reveal] -- that whole generic block is gone, see below), and
+  // widens the hold leg considerably so it reads as a genuine multi-
+  // second pause rather than a quick pass-through. Generalized into one
+  // reusable setupGroupCrawl() instead of three near-duplicate
+  // functions.
+  //
+  // Windowing is done in ABSOLUTE PIXELS (not vh/vw percentages) so the
+  // hold duration stays consistent across viewport heights: percentage-
+  // based windows (e.g. 'top 100%' -> 'top -20%') scale their total
+  // scroll distance with viewport height, which would make the hold
+  // feel shorter on smaller screens. HOLD_PX=2200 is tuned to
+  // approximate "3초 정도" at a typical continuous scroll speed.
+  //
+  // ROUND 21 BUGFIX (found while verifying the above via Playwright,
+  // BEFORE reporting back): the very first version of this function had
+  // NO `pin`, so it just mapped scroll PROGRESS across a large virtual
+  // window (start:'top bottom' -> end:'+=2840px') onto opacity/transform,
+  // while the host itself kept scrolling through the viewport at NORMAL
+  // (unpinned) speed -- i.e. it physically exited the viewport after
+  // only ~1 viewport-height of scroll, long before the math's ~2200px
+  // "hold" leg had elapsed. Measured directly: at scrollY=17800 the
+  // Awards block's computed opacity was 1, but getBoundingClientRect().top
+  // was -493px (already fully scrolled past, off the top of the screen)
+  // -- opacity was "correct" per the render() math, but the element
+  // wasn't there to see it on. `pin:true` (anchored at 'center center',
+  // the same mechanism setupChapterTitleCard() already relies on for its
+  // own rise->hold->fade cards) freezes the host at mid-viewport for the
+  // ENTIRE TOTAL_PX window, so the hold is now a genuine, visible dwell
+  // rather than a same-opacity-value coincidence on a block that has
+  // already left the screen.
+  function setupGroupCrawl(hostId, innerSelector) {
+    const host = document.getElementById(hostId);
+    if (!host) return;
+    const inner = host.querySelector(innerSelector);
+    if (!inner) return;
+
+    const TILT_HOLD = CRAWL_TILT_DEG; // 22deg -- legible resting tilt
+    const TILT_EDGE = 34; // deeper tilt while entering/receding + faint
+    const ENTRY_PX = 320;
+    const HOLD_PX = 2200; // ~3s dwell at a typical continuous scroll speed
+    const EXIT_PX = 320;
+    const TOTAL_PX = ENTRY_PX + HOLD_PX + EXIT_PX;
+    const ENTRY_END = ENTRY_PX / TOTAL_PX;
+    const HOLD_END = (ENTRY_PX + HOLD_PX) / TOTAL_PX;
+
+    function render(p) {
+      p = Math.max(0, Math.min(1, p));
+      let opacity, y, tilt;
+      if (p < ENTRY_END) {
+        const t = easeInOut(p / ENTRY_END);
+        opacity = t;
+        y = 60 * (1 - t);
+        tilt = TILT_EDGE - (TILT_EDGE - TILT_HOLD) * t;
+      } else if (p < HOLD_END) {
+        opacity = 1;
+        y = 0;
+        tilt = TILT_HOLD;
+      } else {
+        const t = easeInOut((p - HOLD_END) / (1 - HOLD_END));
+        opacity = 1 - t;
+        y = -36 * t;
+        tilt = TILT_HOLD + (TILT_EDGE - TILT_HOLD) * t;
+      }
+      inner.style.opacity = opacity;
+      inner.style.transform = `perspective(1200px) rotateX(${tilt}deg) translateY(${y}px)`;
+    }
+
+    render(0);
+    // `start: 'top top'` (not 'center center') is deliberate: it exactly
+    // mirrors setupChapterTitleCard()'s own pin trigger, which is the
+    // ONLY way consecutive pin:true ScrollTriggers hand off cleanly in
+    // this file. With sequential DOM sections, a 'top top' pin's start
+    // scroll position is always exactly the previous pin's release point
+    // (GSAP's pin-spacer makes this exact), so back-to-back pins never
+    // overlap. 'center center' was tried first and triggered ~viewportH/2
+    // EARLY (while the block is still only half-scrolled-up), which
+    // overlapped with the still-active ch-awards-title-pin card
+    // immediately after Education's skills grid -- both pinned/visible
+    // at once, confirmed via Playwright (ScrollTrigger window
+    // 14161-17001 for the grid vs. 14971-16891 for the Awards title
+    // card) and a screenshot showing the "Awards" title bleeding through
+    // over the still-pinned skills grid. Vertical centering during the
+    // hold is instead handled by the host's own CSS (min-height:100vh +
+    // flex centering, see .edu-skills-crawl/.awards-crawl/.career-crawl
+    // in style.css) rather than by the pin's start keyword.
+    ScrollTrigger.create({
+      id: hostId + '-crawl',
+      trigger: host,
+      start: 'top top',
+      end: '+=' + TOTAL_PX,
+      pin: true,
+      pinSpacing: true,
+      scrub: 0.4,
+      onUpdate: (self) => render(self.progress),
+      onRefresh: (self) => render(self.progress),
+    });
+  }
+  // (invocations moved up above, interleaved with setupChapterTitleCard()
+  // in real DOM order -- see the ROUND 21 NOTE there for why order
+  // matters for pin:true ScrollTriggers.)
+
+  /* ============================================================
+     ROUND 26 — Chapter 6 outro: video3 hard-cut + scrub + hold-on-
+     last-frame + closing footer reveal.
+
+     User's request ("첫번째 이미지, 마지막 커리어 부분이 페이드아웃되고
+     나면, 첨부한 영상을 최적화시켜서 이어줘. 첨부한 영상의 마지막
+     프레임을 홀드 시켜서, 두번째 첨부 이미지, '홈' 페이지의 마지막화면의
+     정보를 똑같은 정보를 똑같은 효과를 입혀서 화면에 얹혀줘") breaks into
+     four pieces, each handled by a distinct block below:
+
+     1) HARD CUT (renderCut/its own zero-width ScrollTrigger): the
+        moment #ch-outro-pin's own top reaches the top of the viewport
+        (i.e. right as Career's own group crawl finishes receding and
+        this pin takes over), video2 (the persistent looping starfield
+        backdrop) is instantly swapped for video3 (the new, optimized
+        forest/campfire clip) -- a true binary opacity swap, matching
+        the site's dominant hard-cut-only video-chain convention (see
+        setupBgLayerHandoff() in app.js for the reference pattern),
+        NOT the one-off dissolve used for the video1->video2 handoff
+        above (that dissolve is a deliberate exception scoped only to
+        that specific pair, per the DISSOLVE_WIDTH comment).
+
+        This MUST be its own separate, non-pinned ScrollTrigger rather
+        than logic inside the main scrub renderer below: that renderer
+        is also called once synchronously at setup time via render(0)
+        (same as every other setup*() function in this file, so the
+        very first paint already reflects the correct starting state)
+        -- if the video2->video3 swap lived there, that same call would
+        flip the backdrop to video3 immediately on page load, long
+        before the user has scrolled anywhere near Chapter 6. Gating it
+        behind a real ScrollTrigger (which only reports progress=1
+        once actual scroll position crosses the boundary) avoids that.
+
+     2) SCRUB (seekVideo3, within render() below): once cut in, video3
+        scrubs 1:1 with scroll across the pin's first SCRUB_PX of
+        travel, exactly like video1's own seekVideo1() above.
+
+     3) HOLD ON LAST FRAME: videoLocal is clamped to 1 once scroll
+        passes SCRUB_END, so video3's visible frame simply stops
+        advancing (holds on its true last frame) for the remaining
+        HOLD_PX of this pin's travel -- video3's own final ~2s are
+        already a near-static campfire-under-stars hold (confirmed via
+        analyze_media_content), so freezing at the literal last frame
+        (rather than an earlier SCENE_HOLD_POINT the way HOME's v16
+        does, which needed to dodge unwanted motion later in that
+        clip) reads cleanly with no jump.
+
+     4) FOOTER REVEAL, keyed to the RAW (unclamped) pRaw rather than
+        videoLocal -- exactly mirroring HOME's local16Raw/SCENE_HOLD_
+        POINT split in renderVideosChain() (app.js): even though the
+        on-screen video frame has stopped moving once pRaw exceeds
+        SCRUB_END, pRaw itself keeps advancing 0->1 across the rest of
+        the pin, so the footer still progressively reveals as the user
+        keeps scrolling past the frozen scene rather than freezing too.
+        Uses the identical FL_COUNT/FL_BAND line-stagger formula (blur
+        + translateY + opacity) as HOME's own footerLines.forEach() —
+        same effect, same 4 lines of contact text, per "똑같은 정보를
+        똑같은 효과를 입혀서 화면에 얹혀줘". Once revealed it stays
+        visible (no OUT window) -- a real footer, not an ephemeral
+        "moment" overlay -- same design choice as HOME's own footer.
+     ============================================================ */
+  function setupOutroSequence() {
+    const host = document.getElementById('ch-outro-pin');
+    const footerEl = document.getElementById('about-outro-footer-text');
+    if (!host || !video3) return;
+    const footerLines = footerEl ? gsap.utils.toArray(footerEl.querySelectorAll('.avf-line')) : [];
+
+    blobifySeekableVideo(video3, 0);
+    prewarmSeek(video3, 0);
+    gsap.set(video3, { opacity: 0 });
+
+    const V3_DURATION = 4.0; // ffprobe-confirmed re-encode duration (96 frames @ 24fps)
+    function seekVideo3(localP) {
+      const t = Math.max(0, Math.min(1, localP)) * V3_DURATION;
+      if (video3.readyState > 0 && Number.isFinite(t)) {
+        video3.currentTime = t;
+      }
+    }
+
+    // ---- (1) hard cut: video2 -> video3, at the exact scroll position
+    // this pin's own host reaches the top of the viewport. Same
+    // zero-width-ScrollTrigger-boundary pattern as setupBgLayerHandoff()
+    // in app.js -- start === end means self.progress can only ever be
+    // exactly 0 (above this point) or exactly 1 (at/past it).
+    function renderCut(p) {
+      const cut = Math.round(Math.max(0, Math.min(1, p)));
+      video2.style.opacity = 1 - cut;
+      video3.style.opacity = cut;
+      if (cut && video3.paused) video3.play().catch(() => {});
+    }
+    ScrollTrigger.create({
+      id: 'outro-bg-cut',
+      trigger: host,
+      start: 'top top',
+      end: 'top top',
+      scrub: true,
+      onUpdate: (self) => renderCut(self.progress),
+      onRefresh: (self) => renderCut(self.progress),
+    });
+
+    // ---- (2)-(4): scrub + hold + footer, in absolute pixels (same
+    // convention as setupGroupCrawl's ENTRY_PX/HOLD_PX/EXIT_PX, for the
+    // same reason -- consistent feel across viewport heights).
+    const SCRUB_PX = 1200; // video3's own scroll-scrub runway
+    const HOLD_PX = 2000; // extra travel while the last frame holds + footer reveals
+    const TOTAL_PX = SCRUB_PX + HOLD_PX;
+    const SCRUB_END = SCRUB_PX / TOTAL_PX;
+    const FOOTER_IN_START = SCRUB_END + 0.05;
+    const FOOTER_IN_END = 0.85;
+
+    function render(pRaw) {
+      pRaw = Math.max(0, Math.min(1, pRaw));
+      const videoLocal = SCRUB_END > 0 ? Math.min(pRaw / SCRUB_END, 1) : 1;
+      seekVideo3(videoLocal);
+
+      let fo = 0;
+      if (pRaw >= FOOTER_IN_START) {
+        fo = pRaw < FOOTER_IN_END
+          ? (pRaw - FOOTER_IN_START) / (FOOTER_IN_END - FOOTER_IN_START)
+          : 1;
+      }
+      fo = Math.max(0, Math.min(1, fo));
+
+      if (footerEl) {
+        footerEl.style.opacity = fo > 0.01 ? 1 : 0;
+        if (footerLines.length) {
+          const FL_COUNT = footerLines.length;
+          const FL_BAND = 1 / (FL_COUNT * 0.6);
+          footerLines.forEach((line, i) => {
+            const bandStart = (i / FL_COUNT) * (1 - FL_BAND) * 0.6;
+            const lp = Math.max(0, Math.min(1, (fo - bandStart) / FL_BAND));
+            line.style.opacity = lp;
+            line.style.transform = `translateY(${(1 - lp) * 24}px)`;
+            line.style.filter = `blur(${(1 - lp) * 8}px)`;
+          });
+        }
       }
     }
 
     render(0);
 
     ScrollTrigger.create({
-      id: cfg.pinSectionId + '-pin',
-      trigger: pinSection,
+      id: 'ch-outro-pin-scrub',
+      trigger: host,
       start: 'top top',
-      end: '+=180%',
+      end: '+=' + TOTAL_PX,
       pin: true,
-      scrub: 0.5,
+      pinSpacing: true,
+      scrub: 0.4,
       onUpdate: (self) => render(self.progress),
       onRefresh: (self) => render(self.progress),
     });
   }
-
-  setupChapterPin({
-    pinSectionId: 'section-ch-works-hero',
-    titleId: 'ch-works-title-text',
-    teaserViewportId: 'ch-works-teaser-viewport',
-    teaserTextId: 'ch-works-teaser-text',
-  });
-  setupChapterPin({
-    pinSectionId: 'section-ch-edu-hero',
-    titleId: 'ch-edu-title-text',
-    teaserViewportId: 'ch-edu-teaser-viewport',
-    teaserTextId: 'ch-edu-teaser-text',
-  });
-  setupChapterPin({
-    pinSectionId: 'section-ch-awards-hero',
-    titleId: 'ch-awards-title-text',
-    teaserViewportId: 'ch-awards-teaser-viewport',
-    teaserTextId: 'ch-awards-teaser-text',
-  });
-  setupChapterPin({
-    pinSectionId: 'section-ch-career-hero',
-    titleId: 'ch-career-title-text',
-    teaserViewportId: 'ch-career-teaser-viewport',
-    teaserTextId: 'ch-career-teaser-text',
-  });
-
-  /* ---------- resting content reveal (profile + all 4 chapter detail
-     sections) — generalized from the hero-only .about-profile-wrap
-     wiring to every .chapter-detail-wrap as well, so the filmography
-     list, education+skills grid, awards list and career list all get
-     the same staggered fade/rise-in on scroll. ---------- */
-  document.querySelectorAll('.about-panel [data-reveal]').forEach((el) => {
-    gsap.set(el, { opacity: 0, y: 28 });
-  });
-  document.querySelectorAll('.about-profile-wrap, .chapter-detail-wrap').forEach((wrap) => {
-    const items = wrap.querySelectorAll('[data-reveal]');
-    if (!items.length) return;
-    ScrollTrigger.create({
-      trigger: wrap,
-      start: 'top 80%',
-      onEnter: () => gsap.to(items, { opacity: 1, y: 0, duration: 0.9, stagger: 0.08, ease: 'power3.out' }),
-      onEnterBack: () => gsap.to(items, { opacity: 1, y: 0, duration: 0.9, stagger: 0.08, ease: 'power3.out' }),
-    });
-  });
+  // (invoked above, immediately after setupGroupCrawl('career-crawl', ...)
+  // -- see the ROUND 26 comment there for why it must be called last.)
 
   /* ============================================================
      Education & Skills — interactive skill tiles. Each tile is a

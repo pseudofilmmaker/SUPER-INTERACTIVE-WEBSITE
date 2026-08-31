@@ -14,6 +14,36 @@
 </head>
 <body>
 
+<!-- Round 22 ("영화제 로고만을 뽑아서... 외곽선에 글로우 느낌이 나게 변형"):
+     shared SVG filter def for the hollow/outline+glow logo treatment used
+     by .festival-logo-scatter below. feMorphology(erode) + feComposite
+     (SourceAlpha minus eroded-Alpha, operator="out") extracts a thin
+     RING from each solid white logo silhouette instead of keeping the
+     solid fill, then floods that ring violet and blurs a soft + a sharp
+     copy together -- this is what gives the hollow, glowing-outline look
+     (matching the reference "Awards" wordmark screenshot) rather than a
+     plain drop-shadow'd solid logo. width/height="0" + position:absolute
+     keeps this invisible/inert in layout; only <filter> is used, via
+     `filter: url(#festival-logo-outline-glow)` in style.css. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <filter id="festival-logo-outline-glow" x="-100%" y="-100%" width="300%" height="300%">
+      <feMorphology in="SourceAlpha" operator="erode" radius="1.6" result="eroded"/>
+      <feComposite in="SourceAlpha" in2="eroded" operator="out" result="ring"/>
+      <feFlood flood-color="#b48cff" flood-opacity="1" result="violet"/>
+      <feComposite in="violet" in2="ring" operator="in" result="coloredRing"/>
+      <feGaussianBlur in="coloredRing" stdDeviation="1.2" result="sharpGlow"/>
+      <feGaussianBlur in="coloredRing" stdDeviation="6" result="softGlow"/>
+      <feMerge>
+        <feMergeNode in="softGlow"/>
+        <feMergeNode in="softGlow"/>
+        <feMergeNode in="sharpGlow"/>
+        <feMergeNode in="coloredRing"/>
+      </feMerge>
+    </filter>
+  </defs>
+</svg>
+
 <header id="site-header" class="static-header about-header-transparent">
   <a class="brand" href="/SUPER-INTERACTIVE-WEBSITE/">JUNE HONG</a>
   <nav class="main-nav" aria-label="primary navigation">
@@ -42,10 +72,42 @@
      item 7) has been removed along with its <canvas> element -- the
      real starfield-loop footage IS the backdrop now, so a second,
      synthetic starfield drawn on top of it was redundant. -->
+<!-- ROUND 26 ("첫번째 이미지, 마지막 커리어 부분이 페이드아웃되고나면,
+     첨부한 영상을 최적화시켜서 이어줘"): a third clip, about-bg-video-3
+     (re-encoded from the user's uploaded 4K forest/campfire footage to
+     this site's standard 1920x1080/h264/no-audio background-video spec
+     -- see about-bg-03-forest-descent.mp4 + its poster), hard-cuts in
+     to replace the still-looping starfield (video2) right at the start
+     of the new Chapter 6 outro pin below (setupOutroSequence() in
+     about.js), same zero-width-ScrollTrigger-boundary hard-cut pattern
+     as setupBgLayerHandoff() on the HOME page -- NOT the dissolve used
+     for the video1->video2 handoff above, since that dissolve is a
+     one-time deliberate exception scoped only to that pair. -->
 <div id="about-bg-video-layer" aria-hidden="true">
   <video class="about-bg-video-el" id="about-bg-video-1" src="/SUPER-INTERACTIVE-WEBSITE/static/media/about/about-bg-01-campfire-to-galaxy.mp4" poster="/SUPER-INTERACTIVE-WEBSITE/static/media/about/about-bg-01-poster.jpg" muted playsinline preload="auto"></video>
   <video class="about-bg-video-el" id="about-bg-video-2" src="/SUPER-INTERACTIVE-WEBSITE/static/media/about/about-bg-02-starfield-loop.mp4" muted playsinline preload="auto" loop></video>
+  <video class="about-bg-video-el" id="about-bg-video-3" src="/SUPER-INTERACTIVE-WEBSITE/static/media/about/about-bg-03-forest-descent.mp4" poster="/SUPER-INTERACTIVE-WEBSITE/static/media/about/about-bg-03-poster.jpg" muted playsinline preload="auto"></video>
   <div class="about-bg-scrim"></div>
+</div>
+
+<!-- ROUND 26 ("첨부한 영상의 마지막 프레임을 홀드 시켜서... '홈' 페이지의
+     마지막화면의 정보를... 똑같은 효과를 입혀서 화면에 얹혀줘"): the
+     closing contact/footer overlay, revealed once video3 (above) has
+     scrubbed through to its own last frame and holds there -- exact
+     same 4-line copyright/email/phone/address text and the same
+     line-staggered opacity+blur+translateY reveal effect as the HOME
+     page's own #videos-footer-text (see .vf-line reveal formula in
+     app.js's renderVideosChain(), ported here as setupOutroSequence()
+     in about.js). Uses the site-wide --fg/--fg-dim palette (not the
+     about-page's own --about-violet/--about-ice) so it matches HOME's
+     actual footer look exactly, per "똑같은 정보를 똑같은 효과". -->
+<div id="about-outro-footer-text" aria-hidden="true">
+  <div class="avf-inner">
+    <div class="avf-line" data-line="0">&copy; 2026 JUNE HONG &mdash; HONG JOONSEONG</div>
+    <div class="avf-line" data-line="1"><a href="mailto:pseudofilmmaker@gmail.com">pseudofilmmaker@gmail.com</a></div>
+    <div class="avf-line" data-line="2"><a href="tel:+12368666081">+1 236 866 6081</a></div>
+    <div class="avf-line" data-line="3">Vancouver, CANADA</div>
+  </div>
 </div>
 
 <!-- Prologue line -- Round 4 item 1 ("No genre holds still long enough
@@ -112,62 +174,63 @@
 </div>
 
 <!-- ============================================================
-     CHAPTERS 2-5 — reuse the exact same "title shrinks + fades
-     away while a flat teaser line rises in and genuinely overlaps
-     it" pattern proven out on the hero JUNE/HONG + crawl sequence
-     above (see setupChapterPin() in about.js). Each chapter gets
-     its own fixed title/teaser overlay pair here, then a pinned
-     hero section (title beat) followed by a plain, always-legible
-     "detail" resting section (the full data) further down in
-     <main>. The starfield loop (about-bg-video-2) now persists as
-     the backdrop behind ALL of these chapters, not just the hero
-     -- "두번째 별이 점멸하는 영상이 뒤에 룹으로 깔리는 거를 잊지
-     말아줘" -- since about.js no longer fades #about-bg-video-layer
-     out at the end of chapter 1.
-     ============================================================ -->
+     ROUND 12 REWRITE ("제목은 세번째 이미지처럼 화면아래서 올라오다,
+     가운데 고정, 축소되면서 사라지고" — each chapter's title card
+     should rise up from the bottom of the screen, hold fixed/pinned
+     and prominent dead-center, then shrink and fade away — a
+     distinct 3-phase beat, matching the large glowing centered
+     JUNE/HONG-style reference screenshot, NOT the Round 11 in-place
+     scrub tilt).
 
-<!-- ---- Chapter 2: Selected Works ---- -->
-<div id="ch-works-title-text" class="chapter-title-text" aria-hidden="true">
-  <p class="chapter-title-eyebrow">FILMOGRAPHY &middot; 2007&ndash;PRESENT</p>
-  <h2 class="chapter-title-main">Selected Works</h2>
+     Each chapter gets its own small, separately-pinned title-card
+     overlay (position:fixed, driven by setupChapterTitleCard() in
+     about.js via a SHORT dedicated ScrollTrigger pin — much shorter
+     than the hero's own pin, just enough scroll distance for the
+     rise -> hold -> shrink beat to play out) that shows ONLY the
+     eyebrow + heading in the large glowing display style. Once its
+     pin releases, the REAL content below (chapter-detail-panel,
+     further down in <main>) is already a plain, always-legible,
+     normally-spaced heading + intro + list — a separate, smaller
+     copy of the eyebrow/heading text, but NEVER on screen at the same
+     time as the big fixed title card (the fixed card's pin has
+     already fully released and faded out by the time the real panel
+     content scrolls into view), so this does not reintroduce the
+     Round 9-10 "duplicate text ghosting" bug that Round 11 fixed. -->
+<div id="ch-works-title-card" class="chapter-title-card" aria-hidden="true">
+  <p class="chapter-title-card-eyebrow">Portfolio</p>
+  <h2 class="chapter-title-card-heading">Selected <em>Filmography</em></h2>
+  <p class="chapter-title-card-intro">Since 2023, I&rsquo;ve handled cinematography, aerial filming and editing at JK World Group &mdash; covering brand films, reels, event recaps and photography across the group&rsquo;s family of companies.</p>
 </div>
-<div id="ch-works-teaser-viewport" class="chapter-teaser-viewport" aria-hidden="true">
-  <div class="chapter-teaser-text" id="ch-works-teaser-text">
-    <p>Since 2023, I&rsquo;ve handled cinematography, aerial filming and editing at JK World Group &mdash; covering brand films, reels, event recaps and photography across the group&rsquo;s family of companies.</p>
+<div id="ch-edu-title-card" class="chapter-title-card" aria-hidden="true">
+  <p class="chapter-title-card-eyebrow">Background</p>
+  <h2 class="chapter-title-card-heading">Education <em>&amp; Skills</em></h2>
+</div>
+<!-- School-logo crawl beat: rises from below, holds centered, shrinks +
+     fades away -- same rise/hold/shrink-fade pin as the chapter title
+     cards above (driven by the SAME setupChapterTitleCard() against its
+     own short pin host, ch-edu-logo-pin, further down). The degree
+     lines sit right under the logo so they read together as one
+     lockup, increasing legibility ("시안성을 높여줘") without the
+     bordered card boxes the education list used to use. -->
+<!-- Round 25 ("첫번째 이미지의 학교 로고는... 외곽선에 글로우를 먹여서
+     표현해줘" -- swaps the plain drop-shadow glow below for the same
+     hollow/outline glow filter used on the Awards festival logos
+     (#festival-logo-outline-glow, defined once near the top of
+     <body>), matching the violet neon-outline reference look. --><div id="ch-edu-logo-card" class="chapter-title-card chapter-title-card--logo" aria-hidden="true">
+  <img src="/SUPER-INTERACTIVE-WEBSITE/static/logos/seoul-institute-of-the-arts.png" alt="Seoul Institute of the Arts" class="chapter-title-card-logo-img"/>
+  <div class="chapter-title-card-degree-list">
+    <p class="chapter-title-card-degree">B.A., Film &mdash; Dept. of Media Creation</p>
   </div>
 </div>
-
-<!-- ---- Chapter 3: Education & Skills ---- -->
-<div id="ch-edu-title-text" class="chapter-title-text" aria-hidden="true">
-  <p class="chapter-title-eyebrow">BACKGROUND</p>
-  <h2 class="chapter-title-main">Education &amp; Skills</h2>
+<div id="ch-awards-title-card" class="chapter-title-card" aria-hidden="true">
+  <p class="chapter-title-card-eyebrow">Recognition</p>
+  <h2 class="chapter-title-card-heading">Awards</h2>
+  <p class="chapter-title-card-intro">Festival selections are credited alongside each project in Selected Filmography above &mdash; this list is reserved for actual prizes.</p>
 </div>
-<div id="ch-edu-teaser-viewport" class="chapter-teaser-viewport" aria-hidden="true">
-  <div class="chapter-teaser-text" id="ch-edu-teaser-text">
-    <p>Two degrees in film, and a decade of sets that taught me the rest.</p>
-  </div>
-</div>
-
-<!-- ---- Chapter 4: Awards ---- -->
-<div id="ch-awards-title-text" class="chapter-title-text" aria-hidden="true">
-  <p class="chapter-title-eyebrow">RECOGNITION</p>
-  <h2 class="chapter-title-main">Awards</h2>
-</div>
-<div id="ch-awards-teaser-viewport" class="chapter-teaser-viewport" aria-hidden="true">
-  <div class="chapter-teaser-text" id="ch-awards-teaser-text">
-    <p>The work speaks first. These are the rooms it&rsquo;s been recognized in.</p>
-  </div>
-</div>
-
-<!-- ---- Chapter 5: Professional Experience ---- -->
-<div id="ch-career-title-text" class="chapter-title-text" aria-hidden="true">
-  <p class="chapter-title-eyebrow">CAREER</p>
-  <h2 class="chapter-title-main">Professional Experience</h2>
-</div>
-<div id="ch-career-teaser-viewport" class="chapter-teaser-viewport" aria-hidden="true">
-  <div class="chapter-teaser-text" id="ch-career-teaser-text">
-    <p>Four companies, one throughline &mdash; always behind the camera, always building something.</p>
-  </div>
+<div id="ch-career-title-card" class="chapter-title-card" aria-hidden="true">
+  <p class="chapter-title-card-eyebrow">Career</p>
+  <h2 class="chapter-title-card-heading">Professional <em>Experience</em></h2>
+  <p class="chapter-title-card-intro">Employment history, most recent first</p>
 </div>
 
 <main id="about-scroll-container">
@@ -184,187 +247,217 @@
   <!-- Extra pinned-scroll runway so the coded starfield handoff, the
        profile-photo reveal, and the crawl all have room to play out
        (see PHOTO_IN_*/STARFIELD_* windows in about.js) before the pin
-       releases into the resting profile section below. -->
+       releases directly into Chapter 2 below. -->
 
-  <!-- Resting content -- the crawl's dramatic reveal lands here in a
-       normal, readable, non-animated layout: the profile photo (black
-       background already removed) alongside the same bio copy, so the
-       actual content is always accessible even without scroll-linked
-       motion. -->
-  <section class="panel about-panel about-profile-panel" id="section-about-profile" data-index="1">
-    <div class="about-profile-wrap" data-reveal="true">
-      <div class="about-profile-media">
-        <img src="/SUPER-INTERACTIVE-WEBSITE/static/media/about/june-hong-profile.png" alt="June Hong holding a professional cinema camera rig" loading="lazy"/>
-      </div>
-      <div class="about-profile-copy">
-        <p class="about-profile-eyebrow" data-reveal="true">ABOUT ME</p>
-        <h2 class="about-profile-name" data-reveal="true">June Hong</h2>
-        <p class="about-profile-role" data-reveal="true">Director &middot; Videographer &middot; Photographer &middot; Editor</p>
-        <p class="about-profile-bio" data-reveal="true">I tell stories across documentary, VR, commercial and narrative film. Every project is a collaboration &mdash; but when it calls for it, I can carry the full production myself, from concept to color. That range has earned recognition in Korea&rsquo;s VR competitions, with official selections at film festivals in Moscow, Bucheon and Thailand.</p>
-      </div>
-    </div>
-  </section>
+  <!-- ROUND 15 ("이 구간은 삭제해줘"): the static, non-animated resting
+       "ABOUT ME / June Hong / ... bio" profile panel that used to sit
+       here (repeating the exact same photo + name + role + bio copy
+       the hero's own crawl had just finished showing) has been removed
+       outright. The hero's pinned crawl sequence above is now the ONLY
+       place this photo/bio content appears -- once its pin releases,
+       scroll goes directly into Chapter 2 (Selected Filmography) below. See
+       about.js: HERO_PIN_DISTANCE/OUTRO_* no longer need to keep a
+       safety margin against this panel's old peek-in point, since it
+       no longer exists to ghost against. -->
 
   <!-- ==========================================================
-       Chapter 2 — Selected Works. Pinned title beat (JS-driven,
-       same shrink+fade-away/teaser-overlap pattern as the hero)
-       followed by a plain, always-legible filmography list.
+       Chapter 2 — Selected Filmography. ROUND 12: a short pinned host
+       section drives the fixed #ch-works-title-card's rise -> hold
+       -> shrink-and-fade beat (setupChapterTitleCard() in about.js),
+       then releases into the plain, always-legible detail panel
+       below.
        ========================================================== -->
-  <section class="panel about-panel chapter-pin-panel" id="section-ch-works-hero" data-index="2"></section>
+  <section class="panel about-panel chapter-title-pin-host" id="ch-works-title-pin"></section>
 
-  <section class="panel about-panel chapter-detail-panel" id="section-ch-works-detail" data-index="3">
-    <div class="chapter-detail-wrap" data-reveal="true">
-      <p class="chapter-detail-eyebrow" data-reveal="true">Filmography</p>
-      <h2 class="chapter-detail-heading" data-reveal="true">Selected <em>Works</em></h2>
-      <p class="chapter-detail-intro" data-reveal="true">Since 2023, I&rsquo;ve handled cinematography, aerial filming and editing at JK World Group &mdash; covering brand films, reels, event recaps and photography across the group&rsquo;s family of companies.</p>
-
-      <ol class="filmography-list">
-        <li class="filmography-item" data-reveal="true">
+  <section class="panel about-panel chapter-detail-panel" id="section-ch-works-detail" data-index="2">
+    <div class="chapter-detail-wrap">
+      <ol class="filmography-list" id="filmography-list">
+        <li class="filmography-item">
+          <div class="filmography-item-inner">
           <span class="filmography-year">2022</span>
           <div class="filmography-body">
             <h3 class="filmography-title">The Road to Hanti <span class="filmography-format">&middot; Documentary, YouTube</span></h3>
             <p class="filmography-role">Cinematography, Aerial Filming, Editing</p>
             <p class="filmography-credit">Hanti Association, in partnership with Chilgok County</p>
           </div>
+          </div>
         </li>
-        <li class="filmography-item" data-reveal="true">
+        <li class="filmography-item">
+          <div class="filmography-item-inner">
           <span class="filmography-year">2021</span>
           <div class="filmography-body">
             <h3 class="filmography-title">Environmental Industry Financing Program <span class="filmography-format">&middot; YouTube</span></h3>
             <p class="filmography-role">Editing, Motion Graphics</p>
             <p class="filmography-credit">Korea Environmental Industry &amp; Technology Institute, in partnership with the Ministry of Environment</p>
           </div>
+          </div>
         </li>
-        <li class="filmography-item" data-reveal="true">
+        <li class="filmography-item">
+          <div class="filmography-item-inner">
           <span class="filmography-year">2021</span>
           <div class="filmography-body">
             <h3 class="filmography-title">Wild VR <span class="filmography-format">&middot; YouTube, 37 episodes</span></h3>
             <p class="filmography-role">Cinematography, Editing, Aerial Filming</p>
             <p class="filmography-credit">Outstanding Broadcast Content Support Program, with the Korea Creative Content Agency (KOCCA) and the Ministry of Culture, Sports and Tourism</p>
           </div>
+          </div>
         </li>
-        <li class="filmography-item" data-reveal="true">
+        <li class="filmography-item">
+          <div class="filmography-item-inner">
           <span class="filmography-year">2020</span>
           <div class="filmography-body">
             <h3 class="filmography-title">Basement <span class="filmography-format">&middot; Feature Film, 96 min</span></h3>
             <p class="filmography-role">Screenplay, On-set Editing, Title Design</p>
             <p class="filmography-credit">Official selection, Moscow International Film Festival &middot; Streamed on SK Wavve</p>
           </div>
+          </div>
         </li>
-        <li class="filmography-item" data-reveal="true">
+        <li class="filmography-item">
+          <div class="filmography-item-inner">
           <span class="filmography-year">2020</span>
           <div class="filmography-body">
             <h3 class="filmography-title">Daelim Acro <span class="filmography-format">&middot; Commercial, 1 min 49 sec</span></h3>
             <p class="filmography-role">Direction, Cinematography, Editing, Motion Graphics</p>
             <p class="filmography-credit">Sales gallery media wall, powered by ScreenX</p>
           </div>
+          </div>
         </li>
-        <li class="filmography-item" data-reveal="true">
+        <li class="filmography-item">
+          <div class="filmography-item-inner">
           <span class="filmography-year">2019</span>
           <div class="filmography-body">
             <h3 class="filmography-title">Seoul Through Quantum Physics <span class="filmography-format">&middot; Documentary, VR, 12 min</span></h3>
             <p class="filmography-role">Direction, Cinematography, Editing, Motion Graphics</p>
             <p class="filmography-credit">VR Content Competition, with NAVER, KOCCA and the Ministry of Culture, Sports and Tourism</p>
           </div>
+          </div>
         </li>
-        <li class="filmography-item" data-reveal="true">
+        <li class="filmography-item">
+          <div class="filmography-item-inner">
           <span class="filmography-year">2019</span>
           <div class="filmography-body">
             <h3 class="filmography-title">Legend of the Fox Woman <span class="filmography-format">&middot; Narrative Short, VR, 8 min</span></h3>
             <p class="filmography-role">Cinematography, Editing</p>
             <p class="filmography-credit">VR Content Competition, with NAVER, KOCCA and the Ministry of Culture, Sports and Tourism</p>
           </div>
+          </div>
         </li>
-        <li class="filmography-item" data-reveal="true">
+        <li class="filmography-item">
+          <div class="filmography-item-inner">
           <span class="filmography-year">2018</span>
           <div class="filmography-body">
             <h3 class="filmography-title">Love Is <span class="filmography-format">&middot; Feature Film, 81 min</span></h3>
             <p class="filmography-role">Direction, Screenplay, Aerial Filming, Editing</p>
             <p class="filmography-credit">Culture Technology R&amp;D Support Program, with KOCCA</p>
           </div>
+          </div>
         </li>
-        <li class="filmography-item" data-reveal="true">
+        <li class="filmography-item">
+          <div class="filmography-item-inner">
           <span class="filmography-year">2018</span>
           <div class="filmography-body">
             <h3 class="filmography-title">Tower the Most <span class="filmography-format">&middot; Commercial, 2 min 20 sec</span></h3>
             <p class="filmography-role">Direction, Cinematography, Editing</p>
             <p class="filmography-credit">Sales gallery media wall, powered by ScreenX</p>
           </div>
-        </li>
-        <li class="filmography-item" data-reveal="true">
-          <span class="filmography-year">2018</span>
-          <div class="filmography-body">
-            <h3 class="filmography-title">Hollow <span class="filmography-format">&middot; Short Film, 26 min</span> &middot; A Birthday Gift for Dad <span class="filmography-format">&middot; Short Film</span> <span class="filmography-format">&middot; and others</span></h3>
-            <p class="filmography-role">Editing</p>
           </div>
         </li>
-        <li class="filmography-item" data-reveal="true">
+        <li class="filmography-item">
+          <div class="filmography-item-inner">
+          <span class="filmography-year">2018</span>
+          <div class="filmography-body">
+            <h3 class="filmography-title">Hollow <span class="filmography-format">&middot; Short Film, 26 min</span></h3>
+            <h3 class="filmography-title">A Birthday Gift for Dad <span class="filmography-format">&middot; Short Film &middot; and others</span></h3>
+            <p class="filmography-role">Editing</p>
+          </div>
+          </div>
+        </li>
+        <li class="filmography-item">
+          <div class="filmography-item-inner">
           <span class="filmography-year">2017</span>
           <div class="filmography-body">
             <h3 class="filmography-title">King Jeongjo&rsquo;s Dream, Hwaseong Fortress <span class="filmography-format">&middot; Documentary, 3D, 14 min</span></h3>
             <p class="filmography-role">Direction, Aerial Filming</p>
             <p class="filmography-credit">In partnership with the Cultural Heritage Administration</p>
           </div>
+          </div>
         </li>
-        <li class="filmography-item" data-reveal="true">
+        <li class="filmography-item">
+          <div class="filmography-item-inner">
           <span class="filmography-year">2017</span>
           <div class="filmography-body">
             <h3 class="filmography-title">ASEAN Culture House <span class="filmography-format">&middot; Media Wall</span></h3>
             <p class="filmography-role">Direction, Cinematography &mdash; Cambodia, Myanmar &amp; Indonesia episodes</p>
             <p class="filmography-credit">With the Ministry of Foreign Affairs, the Korea Foundation and the ASEAN Culture House</p>
           </div>
+          </div>
         </li>
-        <li class="filmography-item" data-reveal="true">
+        <li class="filmography-item">
+          <div class="filmography-item-inner">
           <span class="filmography-year">2016&ndash;17</span>
           <div class="filmography-body">
             <h3 class="filmography-title">Bicycle Road <span class="filmography-format">&middot; Documentary, 4 episodes</span></h3>
             <p class="filmography-role">Direction, Editing &mdash; Japan &amp; Taiwan episodes</p>
             <p class="filmography-credit">With the Korea Independent Broadcasters Association, Contents Square and Paranoi Films</p>
           </div>
+          </div>
         </li>
-        <li class="filmography-item" data-reveal="true">
+        <li class="filmography-item">
+          <div class="filmography-item-inner">
           <span class="filmography-year">2016</span>
           <div class="filmography-body">
             <h3 class="filmography-title">TV Cello <span class="filmography-format">&middot; Feature Film, ScreenX</span></h3>
             <p class="filmography-role">Screenplay, Producer</p>
             <p class="filmography-credit">KAFA Film, with CGV ScreenX &middot; Official selection, Bucheon International Fantastic Film Festival (BIFAN)</p>
           </div>
+          </div>
         </li>
-        <li class="filmography-item" data-reveal="true">
+        <li class="filmography-item">
+          <div class="filmography-item-inner">
           <span class="filmography-year">2016</span>
           <div class="filmography-body">
             <h3 class="filmography-title">Amado Annual Nale &mdash; Currently in Progress <span class="filmography-format">&middot; Group Exhibition, 8 Artists</span></h3>
             <p class="filmography-role">Participating Artist</p>
             <p class="filmography-credit">&ldquo;Jouissance,&rdquo; with artist Sang-jin Kim &middot; 3-channel media installation</p>
           </div>
+          </div>
         </li>
-        <li class="filmography-item" data-reveal="true">
+        <li class="filmography-item">
+          <div class="filmography-item-inner">
           <span class="filmography-year">2015</span>
           <div class="filmography-body">
             <h3 class="filmography-title">Future Is Mine <span class="filmography-format">&middot; Feature Film, 3D</span></h3>
             <p class="filmography-role">Direction, Screenplay, Editing</p>
           </div>
+          </div>
         </li>
-        <li class="filmography-item" data-reveal="true">
+        <li class="filmography-item">
+          <div class="filmography-item-inner">
           <span class="filmography-year">2014</span>
           <div class="filmography-body">
-            <h3 class="filmography-title">29cm Shopping Video <span class="filmography-format">&middot; Commercial</span> &middot; Most Sweetest <span class="filmography-format">&middot; Short Film</span></h3>
+            <h3 class="filmography-title">29cm Shopping Video <span class="filmography-format">&middot; Commercial</span></h3>
+            <h3 class="filmography-title">Most Sweetest <span class="filmography-format">&middot; Short Film</span></h3>
             <p class="filmography-role">Producer &middot; Direction</p>
             <p class="filmography-credit">Official selection, International Thailand Film Festival</p>
           </div>
+          </div>
         </li>
-        <li class="filmography-item" data-reveal="true">
+        <li class="filmography-item">
+          <div class="filmography-item-inner">
           <span class="filmography-year">2008</span>
           <div class="filmography-body">
             <h3 class="filmography-title">Busan Horse Racing Association <span class="filmography-format">&middot; CM</span></h3>
             <p class="filmography-role">Lyrics, CM Song</p>
           </div>
+          </div>
         </li>
-        <li class="filmography-item" data-reveal="true">
+        <li class="filmography-item">
+          <div class="filmography-item-inner">
           <span class="filmography-year">1999&ndash;2013</span>
           <div class="filmography-body">
             <h3 class="filmography-title">Feature Film Script Doctoring &amp; Additional Work</h3>
             <p class="filmography-role">Direction, Cinematography, Art Direction, Music, Editing, Sound Recording across numerous features</p>
+          </div>
           </div>
         </li>
       </ol>
@@ -377,130 +470,85 @@
        on hover/tap (desktop hover, mobile tap-to-flip via CSS
        :focus/.is-active), rather than a static bar chart.
        ========================================================== -->
-  <section class="panel about-panel chapter-pin-panel" id="section-ch-edu-hero" data-index="4"></section>
+  <section class="panel about-panel chapter-title-pin-host" id="ch-edu-title-pin"></section>
 
-  <section class="panel about-panel chapter-detail-panel" id="section-ch-edu-detail" data-index="5">
-    <div class="chapter-detail-wrap chapter-detail-wrap--split" data-reveal="true">
-      <div class="edu-education-col">
-        <p class="chapter-detail-eyebrow" data-reveal="true">Background</p>
-        <h2 class="chapter-detail-heading" data-reveal="true">Education <em>&amp; Skills</em></h2>
+  <!-- School-logo crawl pin: mirrors ch-*-title-pin's rise -> hold ->
+       shrink-and-fade beat, but drives #ch-edu-logo-card (logo + degree
+       lines) instead of the eyebrow/heading text. Once THIS pin
+       releases (logo fully faded away), the skills grid below begins
+       its own reveal -- so the two never compete for attention, per
+       "로고가 사라지고 난 후에 [스킬 그리드가] 나오게". -->
+  <section class="panel about-panel chapter-title-pin-host" id="ch-edu-logo-pin"></section>
 
-        <ul class="education-list">
-          <li class="education-item" data-reveal="true">
-            <h3 class="education-school">Seoul Institute of the Arts</h3>
-            <p class="education-degree">B.A., Film &mdash; Dept. of Media Creation</p>
-          </li>
-          <li class="education-item" data-reveal="true">
-            <h3 class="education-school">Seoul Institute of the Arts</h3>
-            <p class="education-degree">Associate Degree, Directing &mdash; Dept. of Film</p>
-          </li>
-        </ul>
+  <section class="panel about-panel chapter-detail-panel" id="section-ch-edu-detail" data-index="3">
+    <div class="chapter-detail-wrap">
+      <!-- Round 20 ("세번째 이미지, 이건 하단에서 올라오다가, 중앙에서
+           멈춰서 있다가 올라가야지"): the skills grid no longer just
+           fades in and sits still -- it now plays the same rise-from-
+           below -> hold-centered -> continue-rising-and-recede crawl
+           beat as Works' filmography items (setupFilmographyCrawl()),
+           via a dedicated setupSkillsCrawl() in about.js targeting this
+           wrapper. Split into an outer (untransformed, hosts perspective
+           + acts as the ScrollTrigger trigger -- mirrors .filmography-item)
+           and an inner (the actual transform/opacity target -- mirrors
+           .filmography-item-inner), the same two-layer split
+           setupFilmographyCrawl() itself relies on. -->
+      <div class="edu-skills-crawl" id="edu-skills-crawl">
+      <div class="edu-skills-crawl-inner">
+      <p class="skills-hint"><i class="fa-solid fa-hand-pointer"></i> Hover or tap a skill</p>
+      <div class="skills-grid" id="skills-grid">
+        <button type="button" class="skill-tile" data-skill="92">
+          <span class="skill-tile-face skill-tile-face--front">
+            <img src="/SUPER-INTERACTIVE-WEBSITE/static/icons/premiere-pro.svg" alt="" class="skill-icon"/>
+            <span class="skill-name">Premiere Pro</span>
+          </span>
+          <span class="skill-tile-face skill-tile-face--back">
+            <span class="skill-percent" data-target="92">0%</span>
+            <span class="skill-bar"><span class="skill-bar-fill" data-fill="92"></span></span>
+          </span>
+        </button>
+        <button type="button" class="skill-tile" data-skill="85">
+          <span class="skill-tile-face skill-tile-face--front">
+            <img src="/SUPER-INTERACTIVE-WEBSITE/static/icons/photoshop.svg" alt="" class="skill-icon"/>
+            <span class="skill-name">Photoshop</span>
+          </span>
+          <span class="skill-tile-face skill-tile-face--back">
+            <span class="skill-percent" data-target="85">0%</span>
+            <span class="skill-bar"><span class="skill-bar-fill" data-fill="85"></span></span>
+          </span>
+        </button>
+        <button type="button" class="skill-tile" data-skill="75">
+          <span class="skill-tile-face skill-tile-face--front">
+            <img src="/SUPER-INTERACTIVE-WEBSITE/static/icons/after-effects.svg" alt="" class="skill-icon"/>
+            <span class="skill-name">After Effects</span>
+          </span>
+          <span class="skill-tile-face skill-tile-face--back">
+            <span class="skill-percent" data-target="75">0%</span>
+            <span class="skill-bar"><span class="skill-bar-fill" data-fill="75"></span></span>
+          </span>
+        </button>
+        <button type="button" class="skill-tile" data-skill="65">
+          <span class="skill-tile-face skill-tile-face--front">
+            <img src="/SUPER-INTERACTIVE-WEBSITE/static/icons/illustrator.svg" alt="" class="skill-icon"/>
+            <span class="skill-name">Illustrator</span>
+          </span>
+          <span class="skill-tile-face skill-tile-face--back">
+            <span class="skill-percent" data-target="65">0%</span>
+            <span class="skill-bar"><span class="skill-bar-fill" data-fill="65"></span></span>
+          </span>
+        </button>
+        <button type="button" class="skill-tile" data-skill="80">
+          <span class="skill-tile-face skill-tile-face--front">
+            <img src="/SUPER-INTERACTIVE-WEBSITE/static/icons/aerial.svg" alt="" class="skill-icon"/>
+            <span class="skill-name">Aerial Filming</span>
+          </span>
+          <span class="skill-tile-face skill-tile-face--back">
+            <span class="skill-percent" data-target="80">0%</span>
+            <span class="skill-bar"><span class="skill-bar-fill" data-fill="80"></span></span>
+          </span>
+        </button>
       </div>
-
-      <div class="edu-skills-col">
-        <p class="skills-hint" data-reveal="true"><i class="fa-solid fa-hand-pointer"></i> Hover or tap a skill</p>
-        <div class="skills-grid" id="skills-grid" data-reveal="true">
-          <button type="button" class="skill-tile" data-skill="92" style="--skill-delay:0">
-            <span class="skill-tile-face skill-tile-face--front">
-              <img src="/SUPER-INTERACTIVE-WEBSITE/static/icons/premiere-pro.svg" alt="" class="skill-icon"/>
-              <span class="skill-name">Premiere Pro</span>
-            </span>
-            <span class="skill-tile-face skill-tile-face--back">
-              <span class="skill-percent" data-target="92">0%</span>
-              <span class="skill-bar"><span class="skill-bar-fill" data-fill="92"></span></span>
-            </span>
-          </button>
-          <button type="button" class="skill-tile" data-skill="85" style="--skill-delay:1">
-            <span class="skill-tile-face skill-tile-face--front">
-              <img src="/SUPER-INTERACTIVE-WEBSITE/static/icons/photoshop.svg" alt="" class="skill-icon"/>
-              <span class="skill-name">Photoshop</span>
-            </span>
-            <span class="skill-tile-face skill-tile-face--back">
-              <span class="skill-percent" data-target="85">0%</span>
-              <span class="skill-bar"><span class="skill-bar-fill" data-fill="85"></span></span>
-            </span>
-          </button>
-          <button type="button" class="skill-tile" data-skill="75" style="--skill-delay:2">
-            <span class="skill-tile-face skill-tile-face--front">
-              <img src="/SUPER-INTERACTIVE-WEBSITE/static/icons/after-effects.svg" alt="" class="skill-icon"/>
-              <span class="skill-name">After Effects</span>
-            </span>
-            <span class="skill-tile-face skill-tile-face--back">
-              <span class="skill-percent" data-target="75">0%</span>
-              <span class="skill-bar"><span class="skill-bar-fill" data-fill="75"></span></span>
-            </span>
-          </button>
-          <button type="button" class="skill-tile" data-skill="80" style="--skill-delay:3">
-            <span class="skill-tile-face skill-tile-face--front">
-              <img src="/SUPER-INTERACTIVE-WEBSITE/static/icons/davinci-resolve.svg" alt="" class="skill-icon"/>
-              <span class="skill-name">DaVinci Resolve</span>
-            </span>
-            <span class="skill-tile-face skill-tile-face--back">
-              <span class="skill-percent" data-target="80">0%</span>
-              <span class="skill-bar"><span class="skill-bar-fill" data-fill="80"></span></span>
-            </span>
-          </button>
-          <button type="button" class="skill-tile" data-skill="65" style="--skill-delay:4">
-            <span class="skill-tile-face skill-tile-face--front">
-              <img src="/SUPER-INTERACTIVE-WEBSITE/static/icons/illustrator.svg" alt="" class="skill-icon"/>
-              <span class="skill-name">Illustrator</span>
-            </span>
-            <span class="skill-tile-face skill-tile-face--back">
-              <span class="skill-percent" data-target="65">0%</span>
-              <span class="skill-bar"><span class="skill-bar-fill" data-fill="65"></span></span>
-            </span>
-          </button>
-          <button type="button" class="skill-tile" data-skill="58" style="--skill-delay:5">
-            <span class="skill-tile-face skill-tile-face--front">
-              <img src="/SUPER-INTERACTIVE-WEBSITE/static/icons/storyboard.svg" alt="" class="skill-icon"/>
-              <span class="skill-name">Storyboarding</span>
-            </span>
-            <span class="skill-tile-face skill-tile-face--back">
-              <span class="skill-percent" data-target="58">0%</span>
-              <span class="skill-bar"><span class="skill-bar-fill" data-fill="58"></span></span>
-            </span>
-          </button>
-          <button type="button" class="skill-tile" data-skill="90" style="--skill-delay:6">
-            <span class="skill-tile-face skill-tile-face--front">
-              <img src="/SUPER-INTERACTIVE-WEBSITE/static/icons/camera.svg" alt="" class="skill-icon"/>
-              <span class="skill-name">Cinematography</span>
-            </span>
-            <span class="skill-tile-face skill-tile-face--back">
-              <span class="skill-percent" data-target="90">0%</span>
-              <span class="skill-bar"><span class="skill-bar-fill" data-fill="90"></span></span>
-            </span>
-          </button>
-          <button type="button" class="skill-tile" data-skill="80" style="--skill-delay:7">
-            <span class="skill-tile-face skill-tile-face--front">
-              <img src="/SUPER-INTERACTIVE-WEBSITE/static/icons/dji.svg" alt="" class="skill-icon"/>
-              <span class="skill-name">Aerial Filming</span>
-            </span>
-            <span class="skill-tile-face skill-tile-face--back">
-              <span class="skill-percent" data-target="80">0%</span>
-              <span class="skill-bar"><span class="skill-bar-fill" data-fill="80"></span></span>
-            </span>
-          </button>
-          <button type="button" class="skill-tile" data-skill="100" style="--skill-delay:8">
-            <span class="skill-tile-face skill-tile-face--front">
-              <img src="/SUPER-INTERACTIVE-WEBSITE/static/icons/flag-kr.svg" alt="" class="skill-icon skill-icon--flag"/>
-              <span class="skill-name">Korean</span>
-            </span>
-            <span class="skill-tile-face skill-tile-face--back">
-              <span class="skill-percent" data-target="100">0%</span>
-              <span class="skill-bar"><span class="skill-bar-fill" data-fill="100"></span></span>
-            </span>
-          </button>
-          <button type="button" class="skill-tile" data-skill="45" style="--skill-delay:9">
-            <span class="skill-tile-face skill-tile-face--front">
-              <img src="/SUPER-INTERACTIVE-WEBSITE/static/icons/flag-us.svg" alt="" class="skill-icon skill-icon--flag"/>
-              <span class="skill-name">English</span>
-            </span>
-            <span class="skill-tile-face skill-tile-face--back">
-              <span class="skill-percent" data-target="45">0%</span>
-              <span class="skill-bar"><span class="skill-bar-fill" data-fill="45"></span></span>
-            </span>
-          </button>
-        </div>
+      </div>
       </div>
     </div>
   </section>
@@ -511,30 +559,65 @@
        so this list is scoped to actual prizes/awards only, per
        spec ("영화제 참여는 따로 기재됐기 때문에, 수상내역만 기재").
        ========================================================== -->
-  <section class="panel about-panel chapter-pin-panel" id="section-ch-awards-hero" data-index="6"></section>
+  <section class="panel about-panel chapter-title-pin-host" id="ch-awards-title-pin"></section>
 
-  <section class="panel about-panel chapter-detail-panel" id="section-ch-awards-detail" data-index="7">
-    <div class="chapter-detail-wrap" data-reveal="true">
-      <p class="chapter-detail-eyebrow" data-reveal="true">Recognition</p>
-      <h2 class="chapter-detail-heading" data-reveal="true">Awards</h2>
-      <p class="chapter-detail-intro" data-reveal="true">Festival selections are credited alongside each project in Selected Works above &mdash; this list is reserved for actual prizes.</p>
-
+  <section class="panel about-panel chapter-detail-panel" id="section-ch-awards-detail" data-index="4">
+    <div class="chapter-detail-wrap">
+      <!-- Round 21 ("모든 컨텐츠들이 중앙에 유지되었다 위로 올라가면서
+           사라지게끔" -- like the skills grid (Education), the whole
+           awards list now rises in, holds centered together as ONE
+           block, then recedes/fades out together, via the shared
+           setupGroupCrawl() helper in about.js. The old per-item
+           divider lines are removed (see .awards-item in style.css) --
+           they read as static-list leftovers, at odds with a block
+           that floats in and out of the starfield as a single unit. -->
+      <div class="awards-crawl" id="awards-crawl">
+      <div class="awards-crawl-inner">
+      <!-- Round 22 ("영화제 로고만을 뽑아서... 외곽선에 글로우 느낌이
+           나게... 같이 본문과 함께 같이 사라지게끔"), Round 23 ("영화제
+           로고는 일렬로 좀더 크게 가는 게 나을 거 같아" -- single
+           horizontal row instead of the original scattered/rotated
+           layout), Round 24 ("크기를 더 키우고, 투명도를 50퍼센트까지
+           떨어뜨려주고, 위치는 텍스트 뒤로, 또한 점멸하게 만들어줘" --
+           bigger again, capped at 50% opacity, moved BEHIND the award
+           text as background depth, flickering like neon signage),
+           Round 25 ("필름페스티벌 로고는 홋카이도 필름페스티벌도
+           추가해줘야돼" -- added Hokkaido International Film Festival,
+           the 4th festival logo asset in /static/logos/, alongside the
+           original three): festival logos pulled from the HOME page's
+           client-wall (same /static/logos/*.svg files -- Moscow, BIFAN,
+           Thailand, Hokkaido, one of each, no duplicates). Each gets
+           the festival-logo-outline-glow filter (defined once near the
+           top of <body>) for the hollow/glowing-outline look from the
+           reference screenshot, plus a CSS flicker animation (see
+           .festival-logo-row-item in style.css). Absolutely positioned
+           + centered behind .awards-list (lower z-index) via style.css,
+           inside the same .awards-crawl-inner setupGroupCrawl() already
+           animates opacity/transform on -- so the row still rises in,
+           holds, and fades out together with the award entries as a
+           single unit, with no separate timing logic needed. -->
+      <div class="festival-logo-row" aria-hidden="true">
+        <img class="festival-logo-row-item" src="/SUPER-INTERACTIVE-WEBSITE/static/logos/moscow-iff.svg" alt=""/>
+        <img class="festival-logo-row-item" src="/SUPER-INTERACTIVE-WEBSITE/static/logos/bifan.svg" alt=""/>
+        <img class="festival-logo-row-item" src="/SUPER-INTERACTIVE-WEBSITE/static/logos/itff-thailand.svg" alt=""/>
+        <img class="festival-logo-row-item" src="/SUPER-INTERACTIVE-WEBSITE/static/logos/hokkaido-iff.svg" alt=""/>
+      </div>
       <ol class="awards-list">
-        <li class="awards-item" data-reveal="true">
+        <li class="awards-item">
           <span class="awards-year">2016</span>
           <div class="awards-body">
             <h3 class="awards-title">8th 3D KIFF (3D International Film Festival) &mdash; Special Award</h3>
             <p class="awards-project">Future Is Mine (2016, 3D) &mdash; Direction</p>
           </div>
         </li>
-        <li class="awards-item" data-reveal="true">
+        <li class="awards-item">
           <span class="awards-year">2019</span>
           <div class="awards-body">
             <h3 class="awards-title">1st VROUND VR Content Competition &mdash; Excellence Award</h3>
             <p class="awards-project">Seoul Through Quantum Physics (2019, VR) &mdash; Cinematography, Direction</p>
           </div>
         </li>
-        <li class="awards-item" data-reveal="true">
+        <li class="awards-item">
           <span class="awards-year">2019</span>
           <div class="awards-body">
             <h3 class="awards-title">1st VROUND VR Content Competition &mdash; Grand Prize</h3>
@@ -542,6 +625,8 @@
           </div>
         </li>
       </ol>
+      </div>
+      </div>
     </div>
   </section>
 
@@ -551,52 +636,78 @@
        heading; the standalone Freelance row has been removed per
        spec, and the PARANOI misspelling fixed to Paranoi.
        ========================================================== -->
-  <section class="panel about-panel chapter-pin-panel" id="section-ch-career-hero" data-index="8"></section>
+  <section class="panel about-panel chapter-title-pin-host" id="ch-career-title-pin"></section>
 
-  <section class="panel about-panel chapter-detail-panel" id="section-ch-career-detail" data-index="9">
-    <div class="chapter-detail-wrap" data-reveal="true">
-      <div class="career-heading-row">
-        <div>
-          <p class="chapter-detail-eyebrow" data-reveal="true">Career</p>
-          <h2 class="chapter-detail-heading" data-reveal="true">Professional <em>Experience</em></h2>
-        </div>
-        <p class="career-heading-note" data-reveal="true">Employment history, most recent first</p>
-      </div>
-
+  <section class="panel about-panel chapter-detail-panel" id="section-ch-career-detail" data-index="5">
+    <div class="chapter-detail-wrap">
+      <!-- Round 21: same rise -> hold -> recede-and-fade group crawl as
+           Awards above, applied here too for consistency across all
+           four chapter-body blocks (Filmography/Skills/Awards/Career)
+           now sharing the exact same "float in, hold centered, float
+           out" behavior instead of Career being the only one left on
+           the old one-way, no-exit generic reveal. -->
+      <div class="career-crawl" id="career-crawl">
+      <div class="career-crawl-inner">
       <ol class="career-list">
-        <li class="career-item" data-reveal="true">
+        <li class="career-item">
           <span class="career-year">2023 &mdash; Present</span>
           <div class="career-body">
             <h3 class="career-role">JK World Group <span class="career-title">&middot; Videographer / Video Editor</span> <span class="career-badge">Current</span></h3>
             <p class="career-desc">In-house video and photo production for the group&rsquo;s brand and marketing content.</p>
           </div>
         </li>
-        <li class="career-item" data-reveal="true">
+        <li class="career-item">
           <span class="career-year">2016.12 &mdash; 2022.12</span>
           <div class="career-body">
             <h3 class="career-role">Paranoi Co., Ltd. <span class="career-title">&middot; Producer, Content Development Team</span></h3>
-            <p class="career-desc">Direction, cinematography, editing and immersive-media production. All projects in progress were paused due to COVID-19.</p>
+            <p class="career-desc">Direction, cinematography, editing and immersive-media production.</p>
           </div>
         </li>
-        <li class="career-item" data-reveal="true">
+        <li class="career-item">
           <span class="career-year">2009.12 &mdash; 2012.12</span>
           <div class="career-body">
             <h3 class="career-role">DNAdvertising <span class="career-title">&middot; Team Lead, Content Development (Co-founder)</span></h3>
             <p class="career-desc">Sales, planning and production for advertising and building-facade signage.</p>
           </div>
         </li>
-        <li class="career-item" data-reveal="true">
+        <li class="career-item">
           <span class="career-year">2007.09 &mdash; 2009.02</span>
           <div class="career-body">
-            <h3 class="career-role">Yoo Si-min Editing Studio <span class="career-title">&middot; Video Editor</span></h3>
+            <h3 class="career-role">Simin Editing Studio <span class="career-title">&middot; Video Editor</span></h3>
             <p class="career-desc">Filming, editing and CG for web and video content production.</p>
           </div>
         </li>
       </ol>
+      </div>
+      </div>
     </div>
   </section>
 
+  <!-- ==========================================================
+       Chapter 6 — Closing outro. ROUND 26: once Career's own group
+       crawl (above) has fully receded and faded out, this pin takes
+       over -- hard-cutting the background from the looping starfield
+       (video2) to the new forest/campfire clip (video3), scrubbing it
+       across the scroll distance, holding on its last frame, then
+       revealing the contact footer (#about-outro-footer-text, fixed
+       overlay defined near the top of <body>) while still tracking
+       scroll. Driven by setupOutroSequence() in about.js -- the LAST
+       pin:true ScrollTrigger created in the file, since this is also
+       the LAST section in the DOM (see the Round 21 DOM-order note on
+       setupChapterTitleCard() above for why creation order matters).
+       ========================================================== -->
+  <section class="panel about-panel chapter-title-pin-host" id="ch-outro-pin"></section>
+
 </main>
+
+<!-- Reserves one extra viewport height of scroll room below the last
+     panel so #ch-outro-pin-scrub's own ScrollTrigger (end: '+=TOTAL_PX')
+     can actually reach progress 1.0. Without this, the document's max
+     scroll position falls exactly one viewport height short of the
+     pin's computed end, capping progress (and therefore the footer
+     reveal) short even at true scroll-bottom. Mirrors home.html's
+     #scroll-tail-spacer fix for the same underlying issue. -->
+<div id="scroll-tail-spacer" aria-hidden="true"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
