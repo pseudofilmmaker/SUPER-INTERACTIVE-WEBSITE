@@ -2064,11 +2064,19 @@ html, body {
    very top of the document, same reasoning as .detail-page--photos
    below -- #videos-hero-panel IS the header-clearing first screen
    now, so the shared 150px .detail-page top padding must be zeroed
-   here, and the shared opaque .detail-page background must be
-   forced transparent so the fixed video layer shows through behind
-   the rest of the page (.rec-works, .detail-filter-row, .detail-
-   grid), exactly like /photos. */
-.detail-page--videos { padding-top: 0; background: transparent; }
+   here. NOTE: the `background: transparent` override used to also
+   live on this same line, but since .detail-page--videos and
+   .detail-page are both single-class selectors (equal specificity),
+   whichever rule comes LAST in source order wins the cascade -- and
+   .detail-page (with its opaque `background: var(--bg)`) was
+   declared AFTER this block, so it silently re-painted an opaque
+   #050506 over the entire #videos-real-content, hiding the fixed
+   z-index:0 video layer behind it completely (Turn E bug report:
+   "영상이 안 보이는데?"). Padding-top is safe to keep here since it has
+   no such conflicting later declaration; the background override has
+   been moved down to right after .detail-page--photos's own
+   background override below, so both win the cascade the same way. */
+.detail-page--videos { padding-top: 0; }
 /* .rec-works sits directly below the hero panel now (no header-
    clearance padding above it anymore) -- give it its own top margin
    so "Featured Works" doesn't crowd the very bottom edge of the
@@ -2104,6 +2112,11 @@ html, body {
    painted inside the video layer, in front of the video but behind
    this content) keeps text legible over it. */
 .detail-page--photos { background: transparent; }
+/* ROUND E bug fix (see .detail-page--videos comment above): moved
+   here, AFTER .detail-page, so this transparent override actually
+   wins the cascade against .detail-page's opaque `var(--bg)` --
+   same fix pattern as .detail-page--photos immediately above. */
+.detail-page--videos { background: transparent; }
 /* ROUND 3: the (eyebrow-only, since ROUND 9) hero row and filter row
    now live INSIDE the same single-viewport .photos-conveyor-panel as
    the card row (see below), so the old margin-top:90px "extra
