@@ -27,7 +27,7 @@
 <!-- ============================================================
      PHOTOS video-hero intro ("첫번째 영상과 두번째 영상이 이어지고,
      두번째 영상을 룹으로 돌리면서"): video-1 (campfire pulling back
-     into the Milky Way) autoplays once; on its native 'ended' event
+     into the Milky Way) plays; once it reaches its own end,
      photos-hero.js hard-cuts to video-2 (a seamless starfield loop)
      and sets it to loop forever as the page's persistent full-bleed
      backdrop -- same fixed position:fixed / z-index:0 "media player"
@@ -35,17 +35,26 @@
      (ABOUT), so it paints behind the header and the real page content
      below rather than being its own separate splash screen.
 
-     ROUND 2: this layer is now a genuinely independent, ALWAYS-ON
-     backdrop -- there is no more scroll-lock gate. video2's loop
-     continues regardless of scroll position; #photos-hero-panel
-     below is just a transparent 100vh spacer that lets it show
-     through unobstructed for exactly one viewport before the user's
-     own scroll-down carries them into the real page content. -->
+     ROUND 8 (user feedback: "포토에서 처음 영상 시작부터 스크롤다운으로
+     반응연동형 재생이 되어야해. 오토 플레이가 먹히는 영상이 아니구"):
+     video-1 no longer autoplays in real time -- it has NO `autoplay`
+     attribute at all now. Its `currentTime` is instead scrubbed
+     0 -> duration directly off the pinned #photos-hero-panel's own
+     ScrollTrigger progress (same "pin + scrub currentTime 1:1" pattern
+     HOME's setupFixedBgVideo()/cubeScrubRenderer uses for bg-video-1a),
+     so scrolling down through this section plays the clip forward and
+     scrolling back up rewinds it -- there is no time-based playback
+     driving it at all. #photos-hero-panel is now PINNED for the
+     duration of that scrub (photos-hero.js) rather than being a plain
+     transparent spacer; once the pin releases (video-1 has reached its
+     own end), the layer hard-cuts to video-2, which THEN plays/loops
+     forever in real time as the persistent backdrop behind the rest of
+     the page, exactly as before. -->
 <div id="photos-hero-video-layer" aria-hidden="true">
   <video class="photos-hero-video-el" id="photos-hero-video-1"
          src="/static/media/photos/photos-hero-01-campfire.mp4"
          poster="/static/media/photos/photos-hero-01-poster.jpg"
-         autoplay muted playsinline preload="auto"></video>
+         muted playsinline preload="auto"></video>
   <video class="photos-hero-video-el" id="photos-hero-video-2"
          src="/static/media/photos/photos-hero-02-starfield-loop.mp4"
          muted playsinline preload="auto" loop></video>

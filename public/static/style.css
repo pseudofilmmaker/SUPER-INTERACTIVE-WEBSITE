@@ -1982,20 +1982,31 @@ html, body {
    and since it comes later in the DOM, it paints on top. */
 #photos-real-content { position: relative; z-index: 2; }
 
-/* Transparent 100vh spacer sitting as the FIRST child of
-   #photos-real-content: reserves exactly one viewport of ordinary
-   scroll distance during which the fixed video hero underneath is
-   fully unobstructed, then normal scrolling carries the page on into
-   .detail-page-content's opaque body below. Free-scrollable at all
-   times -- there is no pin/lock on this section. */
+/* PINNED for the duration of video-1's scroll scrub (ROUND 8 —
+   "포토에서 처음 영상 시작부터 스크롤다운으로 반응연동형 재생이
+   되어야해"). GSAP's pin mechanism reserves this box's OWN natural
+   height as the resting (pre/post-pin) layout space, and appends the
+   ScrollTrigger's `end: '+=140%'` distance as the actual scrubbed
+   scroll range on top of that -- so keeping this at a plain 100vh is
+   correct: it's the box the pin holds fixed on screen while
+   photos-hero.js's ScrollTrigger progresses through its own separate
+   140% scroll distance underneath. */
 .photos-hero-panel {
   position: relative;
   height: 100vh;
   height: calc(var(--vh, 1vh) * 100);
   background: transparent;
 }
+/* position:fixed (not absolute) -- while GSAP pins .photos-hero-panel
+   it wraps the element in its own pin-spacer, which would otherwise
+   make an absolutely-positioned child's "bottom" offset resolve
+   against the TALL spacer box (the full 140% scrub distance) instead
+   of the actual viewport, sending the cue far down off-screen. fixed
+   positions it against the viewport directly, immune to that wrapper,
+   exactly like HOME/ABOUT's own .scroll-cue (see style.css's shared
+   ruleset -- this ID only carries position/placement overrides). */
 #photos-scroll-cue {
-  position: absolute;
+  position: fixed;
   bottom: 40px;
   left: 50%;
   transform: translateX(-50%);
