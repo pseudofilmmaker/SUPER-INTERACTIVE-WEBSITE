@@ -93,21 +93,30 @@
        feedback -- "베드슽 셀러, 뉴 뱃지를 절대적으로 필요치가 않아"). -->
   <section class="photos-conveyor-panel" id="photos-conveyor-section">
 
-    <div class="detail-hero detail-hero--split">
-      <div class="detail-hero-copy">
-        <p class="detail-eyebrow">FULL COLLECTION</p>
-        <h1 class="detail-title">Photos</h1>
-      </div>
-      <a class="panel-pill pill-outline detail-cta" href="#photos-conveyor-section">ALL PHOTOS &rarr;</a>
+    <div class="detail-hero">
+      <p class="detail-eyebrow">FULL COLLECTION</p>
     </div>
 
-    <nav class="detail-filter" id="photos-category-filter" aria-label="photo category filter">
-      <span class="detail-filter-pill active" data-cat-index="0">Food</span>
-      <span class="detail-filter-pill" data-cat-index="1">Fashion</span>
-      <span class="detail-filter-pill" data-cat-index="2">Product</span>
-      <span class="detail-filter-pill" data-cat-index="3">Places</span>
-      <span class="detail-filter-pill" data-cat-index="4">AI</span>
-    </nav>
+    <!-- ROUND 9 ("포토와 비디오의 버튼 위치를 통일시켜주고, 포토스 비디오스 글자는
+         제거해줘도 될 거 같아"): the "Photos" <h1> is gone (see .detail-hero
+         above, now eyebrow-only, mirroring /videos' own now-title-less
+         .detail-hero), and the CTA button has moved out of the old
+         title row into THIS row, sitting directly beside the (read-only,
+         conveyor-position-indicator) category pills -- /videos' own
+         "View All Videos" button now lives in the exact same structural
+         slot (a .detail-filter-row beside ITS filter nav, right above
+         its grid), so both pages' CTA now shares one consistent position
+         + one consistent .panel-pill.pill-outline.detail-cta style. -->
+    <div class="detail-filter-row">
+      <nav class="detail-filter" id="photos-category-filter" aria-label="photo category filter">
+        <span class="detail-filter-pill active" data-cat-index="0">Food</span>
+        <span class="detail-filter-pill" data-cat-index="1">Fashion</span>
+        <span class="detail-filter-pill" data-cat-index="2">Product</span>
+        <span class="detail-filter-pill" data-cat-index="3">Places</span>
+        <span class="detail-filter-pill" data-cat-index="4">AI</span>
+      </nav>
+      <a class="panel-pill pill-outline detail-cta" href="#photos-grid-section">ALL PHOTOS &rarr;</a>
+    </div>
 
     <div class="thumb-frame thumb-frame--photos-detail" id="photos-conveyor-frame">
 
@@ -254,6 +263,68 @@
     </div>
     <div class="carousel-dots" id="photos-conveyor-dots">
       <span class="carousel-dot active"></span><span class="carousel-dot"></span><span class="carousel-dot"></span><span class="carousel-dot"></span><span class="carousel-dot"></span><span class="carousel-dot"></span><span class="carousel-dot"></span><span class="carousel-dot"></span><span class="carousel-dot"></span><span class="carousel-dot"></span>
+    </div>
+  </section>
+
+  <!-- ROUND 9 ("포토에서도 올 포토를 누르면, 비디오 페이지처럼 모든 걸 동시에
+       볼 수 있게끔 해줘"): "ALL PHOTOS ->" above now targets THIS section
+       instead of its old no-op self-anchor -- a plain static all-cards
+       grid, structurally identical to /videos' own #video-grid (same
+       .detail-grid/.detail-card/.detail-filter-pill[data-filter] click-
+       to-filter vocabulary, driven by the SAME shared detail-page.js
+       logic with zero code changes there), so every photo across every
+       category is viewable at once here, exactly like /videos' "ALL"
+       filter reveals its full multi-category grid. -->
+  <section class="photos-grid-panel" id="photos-grid-section" aria-label="all photos">
+    <nav class="detail-filter" aria-label="all photos category filter">
+      <button class="detail-filter-pill active" data-filter="all">All</button>
+      <button class="detail-filter-pill" data-filter="Food">Food</button>
+      <button class="detail-filter-pill" data-filter="Fashion">Fashion</button>
+      <button class="detail-filter-pill" data-filter="Product">Product</button>
+      <button class="detail-filter-pill" data-filter="Places">Places</button>
+      <button class="detail-filter-pill" data-filter="AI">AI</button>
+    </nav>
+    <div class="detail-grid" id="photos-grid">
+      <div class="detail-card" data-category="Food">
+        <div class="detail-card-media"><img src="/static/media/photos/food/food-01.jpg" alt="Golden Hour Feast" loading="lazy"></div>
+        <div class="detail-card-caption">Golden Hour Feast</div>
+      </div>
+      <div class="detail-card" data-category="Food">
+        <div class="detail-card-media"><img src="/static/media/photos/food/food-02.jpg" alt="Street Bites" loading="lazy"></div>
+        <div class="detail-card-caption">Street Bites</div>
+      </div>
+      <div class="detail-card" data-category="Fashion">
+        <div class="detail-card-media"><img src="/static/media/photos/fashion/fashion-01.jpg" alt="Studio Light" loading="lazy"></div>
+        <div class="detail-card-caption">Studio Light</div>
+      </div>
+      <div class="detail-card" data-category="Fashion">
+        <div class="detail-card-media"><img src="/static/media/photos/fashion/fashion-02.jpg" alt="Street Style" loading="lazy"></div>
+        <div class="detail-card-caption">Street Style</div>
+      </div>
+      <div class="detail-card" data-category="Product">
+        <div class="detail-card-media"><img src="/static/media/photos/product/product-01.jpg" alt="Clean Lines" loading="lazy"></div>
+        <div class="detail-card-caption">Clean Lines</div>
+      </div>
+      <div class="detail-card" data-category="Product">
+        <div class="detail-card-media"><img src="/static/media/photos/product/product-02.jpg" alt="Texture Study" loading="lazy"></div>
+        <div class="detail-card-caption">Texture Study</div>
+      </div>
+      <div class="detail-card" data-category="Places">
+        <div class="detail-card-media"><img src="/static/media/photos/places/places-01.jpg" alt="Quiet Hours" loading="lazy"></div>
+        <div class="detail-card-caption">Quiet Hours</div>
+      </div>
+      <div class="detail-card" data-category="Places">
+        <div class="detail-card-media"><img src="/static/media/photos/places/places-02.jpg" alt="City Pulse" loading="lazy"></div>
+        <div class="detail-card-caption">City Pulse</div>
+      </div>
+      <div class="detail-card" data-category="AI">
+        <div class="detail-card-media"><img src="/static/media/photos/ai/ai-01.jpg" alt="Synthetic Light" loading="lazy"></div>
+        <div class="detail-card-caption">Synthetic Light</div>
+      </div>
+      <div class="detail-card" data-category="AI">
+        <div class="detail-card-media"><img src="/static/media/photos/ai/ai-02.jpg" alt="Digital Dream" loading="lazy"></div>
+        <div class="detail-card-caption">Digital Dream</div>
+      </div>
     </div>
   </section>
 
