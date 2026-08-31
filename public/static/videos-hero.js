@@ -2,18 +2,19 @@
    /videos page video-hero backdrop (ROUND 10, user request: "비디오
    페이지도 포토 페이지처럼 영상을 활용해, 비디오 포트폴리오 진입을 똑같이
    만들어줘" -- give /videos the same video-based scroll-scrubbed
-   entry /photos already has). Direct structural port of
+   entry /photos already has; ROUND 11, user supplied the actual
+   footage: "비디오스에 들어갈 영상이야"). Direct structural port of
    photos-hero.js's setupHeroVideo() (PART 1 only -- /videos has no
-   conveyor, so there is no PART 2 equivalent here): video-1 (a torch
-   held in close-up that zooms out to reveal a smiling photographer
-   holding the torch AND a camera) is scroll-scrubbed across the
-   pinned #videos-hero-panel; once the scrub reaches its own end, it
-   hard-cuts to video-2 (a tight ~2s loop of the same held pose),
-   which then plays/loops forever as this page's persistent fixed
-   backdrop, decoupled from scroll from that point on -- exactly
-   mirroring /photos' campfire->starfield hand-off, just re-namespaced
-   videos-hero-* / with its own dedicated media files (see
-   videos.html's own comment block for asset provenance).
+   conveyor, so there is no PART 2 equivalent here): video-1 (a
+   campfire that tilts up into a starry Milky Way sky, fading to a
+   sparse starfield) is scroll-scrubbed across the pinned
+   #videos-hero-panel; once the scrub reaches its own end, it
+   hard-cuts to video-2 (a seamless-looping animated starfield that
+   breathes/flares), which then plays/loops forever as this page's
+   persistent fixed backdrop, decoupled from scroll from that point
+   on -- exactly mirroring /photos' campfire->starfield hand-off,
+   just re-namespaced videos-hero-* / with its own dedicated media
+   files (see videos.html's own comment block for asset provenance).
    ============================================================ */
 (function () {
   'use strict';
@@ -67,7 +68,7 @@
     gsap.set([video1, video2], { opacity: 0 });
     gsap.set(video1, { opacity: 1 });
 
-    let dur1 = 3.75; // fallback until loadedmetadata resolves the real duration
+    let dur1 = 8.0; // fallback until loadedmetadata resolves the real duration
     video1.addEventListener('loadedmetadata', () => { if (video1.duration) dur1 = video1.duration; });
 
     const scrollCue = document.getElementById('videos-scroll-cue');

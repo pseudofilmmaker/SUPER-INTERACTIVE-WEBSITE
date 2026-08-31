@@ -7,44 +7,52 @@
      VIDEOS video-hero intro (ROUND 10, user request: "비디오 페이지도
      포토 페이지처럼 영상을 활용해, 비디오 포트폴리오 진입을 똑같이
      만들어줘" -- Videos should get the same kind of video-based
-     scroll-scrubbed entry /photos already has, not just the static
-     bfc.or.kr poster carousel it had before). Same structural
+     scroll-scrubbed entry /photos already has). Same structural
      "fixed media player" pattern as #photos-hero-video-layer /
-     #about-bg-video-layer: video-1 (a torch held in close-up that
-     zooms out to reveal a smiling photographer holding the torch AND
-     a camera with a telephoto lens -- i.e. a literal "the person
-     behind the videos" reveal, thematically fitting for a VIDEO
-     portfolio's own entry, distinct from /photos' campfire-pulls-
-     back-to-Milky-Way shot) is scroll-scrubbed via the pinned
-     #videos-hero-panel below; once its own pin releases, the layer
-     hard-cuts to video-2 (a tight ~2s loop of the same held pose --
-     frame-diffed against dozens of start/end candidates to find the
-     tightest visual match, see videos-hero.js/git log for the
-     analysis), which then plays/loops forever as this page's own
-     persistent full-bleed backdrop while the real page content
-     (#videos-real-content) scrolls over it, exactly like /photos.
+     #about-bg-video-layer: video-1 (a campfire in a forest clearing,
+     camera tilting up through the trees into a dense starry Milky
+     Way sky, then fading down to a sparse, minimalist starfield) is
+     scroll-scrubbed via the pinned #videos-hero-panel below; once
+     its own pin releases, the layer hard-cuts to video-2 (an
+     animated/motion-graphics starfield that "breathes" -- stars
+     flare up with lens-flare/starburst bursts around its midpoint,
+     then dim back down), which then plays/loops forever as this
+     page's own persistent full-bleed backdrop while the real page
+     content (#videos-real-content) scrolls over it, exactly like
+     /photos.
 
-     Asset provenance: both clips are freshly re-encoded, page-
-     dedicated crops of the existing videos-bg-13.mp4 (itself only
-     ever used inside HOME's own unrelated 8-video
-     torch->campfire->Milky-Way chain in app.js/home.html) --
-     videos-hero-01 keeps 0.0-3.75s (the torch-closeup-to-full-reveal
-     action, dense GOP for scroll-scrub), videos-hero-02 keeps
-     3.75-5.75s (the best-matching 2.0s loop window found by
-     frame-diffing every 0.05s pair in that range). Per this
-     project's established "each detail page gets its own dedicated
-     file, even when reusing similar source footage" convention (see
-     /photos' photos-hero-01/02 vs. HOME's photos-intro-07/outro-08,
-     or /about's about-bg-01/02/03), these live in their own
-     public/static/media/videos/hero/ folder, untouched from/by
-     HOME's own videos-bg-9..16.mp4 chain. -->
+     Asset provenance (ROUND 11, user-supplied footage): user
+     uploaded two purpose-shot/rendered clips specifically for this
+     page ("비디오스에 들어갈 영상이야"). video-1 (8.0s, 4K source) and
+     video-2 (4.01s, 4K source, an intentionally seamless-loop
+     animation) were confirmed via frame-by-frame pixel-diff analysis
+     to hand off and loop cleanly: video-1's very last frame and
+     video-2's very first frame show the same star field (diff
+     ~1.14, vs. an adjacent-frame noise floor of ~0.25 -- close
+     enough that the same-star-pattern match, not motion continuity,
+     is what makes the cut read as seamless), and video-2's own last
+     frame vs. its first frame are visually identical (confirmed by
+     direct comparison, no detectable difference) -- safe for
+     loop=true. Both were re-encoded 4K->1080p (matching this
+     project's other hero videos), audio-stripped (-an, unused since
+     playback is always muted), dense GOP=12 (~0.5s keyframe
+     interval) for fast arbitrary-seek scroll-scrubbing, no B-frames
+     for cheap random access, faststart. Quality verified via SSIM
+     against each 1080p-scaled source: video-1 All=0.977, video-2
+     All=0.994. Per this project's established "each detail page
+     gets its own dedicated file" convention (see /photos'
+     photos-hero-01/02 or /about's about-bg-01/02/03), these live in
+     their own public/static/media/videos/hero/ folder, replacing the
+     prior placeholder clips originally cropped from HOME's
+     videos-bg-13.mp4 (see git history at 56ba167 for that first
+     pass). -->
 <div id="videos-hero-video-layer" aria-hidden="true">
   <video class="videos-hero-video-el" id="videos-hero-video-1"
-         src="/static/media/videos/hero/videos-hero-01-photographer.mp4"
+         src="/static/media/videos/hero/videos-hero-01-campfire.mp4"
          poster="/static/media/videos/hero/videos-hero-01-poster.jpg"
          muted playsinline preload="auto"></video>
   <video class="videos-hero-video-el" id="videos-hero-video-2"
-         src="/static/media/videos/hero/videos-hero-02-loop.mp4"
+         src="/static/media/videos/hero/videos-hero-02-starfield-loop.mp4"
          muted playsinline preload="auto" loop></video>
   <div class="videos-hero-scrim"></div>
 </div>
