@@ -2012,6 +2012,69 @@ html, body {
   transform: translateX(-50%);
 }
 
+/* ============================================================
+   /videos video-hero intro (ROUND 10 -- "비디오 페이지도 포토 페이지처럼
+   영상을 활용해, 비디오 포트폴리오 진입을 똑같이 만들어줘"). Structurally
+   IDENTICAL rule-for-rule to the /photos block above (see that
+   block's own comments for the full rationale) -- same "fixed media
+   player" pattern, same pin+scrub-then-hard-cut-to-persistent-loop
+   behavior (see videos-hero.js), just re-namespaced videos-hero-*
+   instead of photos-hero-* since /videos is its own separate HTML
+   document with no shared layout/state with /photos. */
+#videos-hero-video-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.videos-hero-video-el {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  will-change: opacity;
+}
+.videos-hero-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(5,3,2,0) 0%, rgba(5,3,2,0.32) 82%),
+    linear-gradient(180deg, rgba(5,3,2,0.22) 0%, transparent 22%, transparent 78%, rgba(5,3,2,0.3) 100%);
+}
+/* #videos-real-content must always paint above the fixed z-index:0
+   video layer -- same reasoning as #photos-real-content above. */
+#videos-real-content { position: relative; z-index: 2; }
+
+.videos-hero-panel {
+  position: relative;
+  height: 100vh;
+  height: calc(var(--vh, 1vh) * 100);
+  background: transparent;
+}
+#videos-scroll-cue {
+  position: fixed;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+/* /videos (ROUND 10): the hero video panel must sit flush against the
+   very top of the document, same reasoning as .detail-page--photos
+   below -- #videos-hero-panel IS the header-clearing first screen
+   now, so the shared 150px .detail-page top padding must be zeroed
+   here, and the shared opaque .detail-page background must be
+   forced transparent so the fixed video layer shows through behind
+   the rest of the page (.rec-works, .detail-filter-row, .detail-
+   grid), exactly like /photos. */
+.detail-page--videos { padding-top: 0; background: transparent; }
+/* .rec-works sits directly below the hero panel now (no header-
+   clearance padding above it anymore) -- give it its own top margin
+   so "Featured Works" doesn't crowd the very bottom edge of the
+   hero video. */
+.detail-page--videos .rec-works { margin-top: 40px; }
+
 .detail-page {
   min-height: 100vh;
   padding: 150px 6vw 100px;
